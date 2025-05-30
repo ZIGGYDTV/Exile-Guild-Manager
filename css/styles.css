@@ -470,6 +470,39 @@ h2 {
 }
 /* End of Columns for Log and Missions */
 
+/* Combat log dropdown styling */
+.combat-breakdown-details { transition: all 0.2s; }
+.combat-breakdown-toggle:hover { color: #ffd700; }
+
+/* ELement Colors for Combat Log */
+.element-physical   { color: #b8b8b8; }  /* Silver/gray */
+.element-fire       { color: #ff6040; }  /* Orange-red */
+.element-cold       { color: #40a0ff; }  /* Blue */
+.element-lightning  { color: #ffe94a; }  /* Yellow */
+.element-chaos      { color: #b85cff; }  /* Purple */
+
+
+/* Level-up burst animation - golden/copper glow */
+@keyframes levelup-burst {
+  0% {
+    box-shadow: 0 0 0 0 rgba(202, 167, 100, 0.8), 0 0 0 0 rgba(230, 197, 133, 0.5);
+    outline: 0 solid #c09d5b;
+  }
+  60% {
+    box-shadow: 0 0 40px 20px rgba(186, 151, 88, 0.9), 0 0 60px 30px rgba(230, 197, 133, 0.5);
+    outline: 8px solid #e6c27c;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(201, 170, 113, 0);
+    outline: 0 solid #c9a86b;
+  }
+}
+
+.levelup-animate {
+  animation: levelup-burst 0.8s ease-out;
+  z-index: 10;
+}
+
 
 /* ========== Exile Summary Card =============== */
 .exile-summary-card {

@@ -19,32 +19,31 @@ const game = {
     // Run combat simulation
     const combatResult = this.simulateCombat(exile, mission);
     
+    let goldEarned = 0;
+    let expEarned = 0;
+    let moraleHtml = "";
+
+
     if (combatResult.outcome === 'victory') {
         // Success! Award rewards
-        const goldEarned = this.randomBetween(mission.rewards.gold.min, mission.rewards.gold.max);
+        goldEarned = this.randomBetween(mission.rewards.gold.min, mission.rewards.gold.max);
+
+        // Apply gold find bonus
+        const goldFindMultiplier = 1 + (exile.stats.goldFindBonus || 0) / 100;
+        goldEarned = Math.floor(goldEarned * goldFindMultiplier);
+
         gameState.resources.gold += goldEarned;
-        const expEarned = typeof mission.rewards.experience === 'object' 
+        expEarned = typeof mission.rewards.experience === 'object' 
             ? this.randomBetween(mission.rewards.experience.min, mission.rewards.experience.max)
             : mission.rewards.experience;
         gameState.exile.experience += expEarned;
+
         
         // Calculate final life after combat
         const finalLife = exile.stats.life - combatResult.totalDamageTaken;
         
         let message = `✓ ${mission.name} cleared! +${goldEarned} gold, +${expEarned} exp`;
-        this.log(message, "success");
         
-        // Enhanced combat report with damage breakdown
-        const lastHit = combatResult.damageLog[combatResult.damageLog.length - 1];
-        if (lastHit && lastHit.breakdown) {
-            const breakdownText = lastHit.breakdown.map(b => 
-                `${Math.round(b.final * 10) / 10} ${b.type} (${b.method})`
-            ).join(' + ');
-            
-            const actualDamage = lastHit.breakdown.reduce((sum, b) => sum + b.final, 0);
-            const combatReport = `⚔️ Damage breakdown: ${Math.round(combatResult.heaviestHit * 10) / 10} raw → ${breakdownText} = ${Math.round(actualDamage * 10) / 10} total`;
-            this.log(combatReport, "info");
-        }
         
         // Check for orb drops
         let orbMessage = "";
@@ -77,25 +76,70 @@ if (combatResult.outcome !== 'death') {
     const moraleResult = this.calculateMoraleChange(combatResult, exile);
     if (moraleResult.change !== 0) {
         gameState.exile.morale = Math.max(0, Math.min(100, gameState.exile.morale + moraleResult.change));
-        
         const moraleIcon = moraleResult.change > 0 ? "🔥" : "😴";
         const moraleText = moraleResult.change > 0 ? `(+${moraleResult.change} morale)` : `(${moraleResult.change} morale)`;
-        this.log(`${moraleIcon} ${exile.name}: "${moraleResult.message}" ${moraleText}`, moraleResult.change > 0 ? "success" : "failure");
+        moraleHtml = `<br><span style="font-size:0.65em; color:#aaa;">${moraleIcon} ${exile.name}: "${moraleResult.message}" ${moraleText}</span>`;
     }
 }
         
     } else if (combatResult.outcome === 'death') {
         // Death! Generate detailed death message
         const deathMessage = this.generateDeathMessage(combatResult);
-        this.log(deathMessage, "failure");
         this.gameOver();
         
     } else {
     // Retreat - either early escape or round limit
     const retreatReason = combatResult.rounds >= 5 ? "after a prolonged fight" : "badly wounded";
-    this.log(`✗ ${exile.name} retreated from ${mission.name} ${retreatReason} (${combatResult.rounds} rounds, ${Math.floor(combatResult.heaviestHit * 10) / 10} heaviest hit).`, "failure");
 }
-    
+
+let mainMessage = "";
+let breakdownHtml = "";
+
+// Build the main message for each outcome
+if (combatResult.outcome === 'victory') {
+    mainMessage = `✓ ${mission.name} cleared! +${goldEarned} gold, +${expEarned} exp`;
+} else if (combatResult.outcome === 'death') {
+    mainMessage = this.generateDeathMessage(combatResult);
+} else if (combatResult.outcome === 'retreat') {
+    const retreatReason = combatResult.rounds >= 5 ? "after a prolonged fight" : "badly wounded";
+    mainMessage = `✗ ${exile.name} retreated from ${mission.name} ${retreatReason} (${combatResult.rounds} rounds, ${Math.floor(combatResult.heaviestHit * 10) / 10} heaviest hit).`;
+}
+
+// Build the breakdown if available
+const breakdownSource =
+    combatResult.heaviestHitBreakdown ||
+    (combatResult.damageLog.length > 0 ? combatResult.damageLog[combatResult.damageLog.length - 1].breakdown : null);
+
+if (breakdownSource) {
+    const lines = breakdownSource.map(b => {
+        const typeClass = `element-${b.type.toLowerCase()}`;
+        return `<span class="${typeClass}">${b.type.charAt(0).toUpperCase() + b.type.slice(1)}: ${Math.round(b.raw * 10) / 10} → ${Math.round(b.final * 10) / 10}</span>`;
+    }).join(' / ');
+
+    const totalUnmitigated = breakdownSource.reduce((sum, b) => sum + b.raw, 0);
+    const totalMitigated = breakdownSource.reduce((sum, b) => sum + b.final, 0);
+
+    const logId = `combat-breakdown-${Date.now()}-${Math.floor(Math.random()*10000)}`;
+    breakdownHtml = `
+        <span class="combat-breakdown-toggle" style="cursor:pointer;" onclick="game.toggleBreakdown('${logId}')">
+            <span class="triangle">&#x25BC;</span>
+            ⚔️ Heaviest hit breakdown: ${Math.round(totalMitigated * 10) / 10}
+        </span>
+        <div id="${logId}" class="combat-breakdown-details" style="display:none; margin-left:1.5em; color:#bbb; font-size:0.95em;">
+            &gt; ${lines} / Total: ${Math.round(totalUnmitigated * 10) / 10} → ${Math.round(totalMitigated * 10) / 10}
+        </div>
+    `;
+}
+
+// Combine and log as a single entry
+if (mainMessage) {
+    this.log(
+        `${mainMessage}${breakdownHtml ? "<br>" + breakdownHtml : ""}${moraleHtml || ""}`,
+        combatResult.outcome === 'victory' ? "success" : "failure",
+        true // isHtml
+    );
+}
+
     this.updateDisplay();
     this.saveGame();
 },
@@ -116,6 +160,14 @@ if (combatResult.outcome !== 'death') {
         
         // Immediately offer passive selection
         this.startPassiveSelection();
+
+                // ...inside checkLevelUp, after level up is processed...
+    const summaryEl = document.getElementById('exile-summary-card');
+    if (summaryEl) {
+        summaryEl.classList.remove('levelup-animate'); // Reset if already animating
+        void summaryEl.offsetWidth; // Force reflow to restart animation
+        summaryEl.classList.add('levelup-animate');
+    }
     }
 },
  
@@ -140,7 +192,7 @@ if (combatResult.outcome !== 'death') {
     
     while (currentLife > 0 && combatData.rounds < maxRounds) {
         combatData.rounds++;
-        
+   
         // Mission attacks
         const damageRoll = this.randomBetween(mission.damage.min, mission.damage.max);
         const damageResult = this.calculateDamageReduction(damageRoll, exile, mission);
@@ -148,8 +200,10 @@ if (combatResult.outcome !== 'death') {
         
         currentLife -= damageTaken;
         combatData.totalDamageTaken += damageTaken;
-        combatData.heaviestHit = Math.max(combatData.heaviestHit, damageTaken);
-        
+        if (damageTaken > combatData.heaviestHit) {
+            combatData.heaviestHit = damageTaken;
+            combatData.heaviestHitBreakdown = damageResult.breakdown; // Store the breakdown of heaviest hit
+}        
         // Log this hit for detailed analysis
         combatData.damageLog.push({
             round: combatData.rounds,
@@ -816,6 +870,9 @@ updateCharacterScreen() {
     document.getElementById('char-morale').textContent = gameState.exile.morale;
     document.getElementById('char-morale-status').textContent = this.getMoraleStatus(gameState.exile.morale);
     
+    // Optionally, display gold find bonus in character info
+    document.getElementById('char-goldfind').textContent = gameState.exile.stats.goldFindBonus + "%";
+    
     // Calculate all the breakdown components
     const gearBonuses = this.calculateGearBonuses();
     const passiveBonuses = this.calculatePassiveBonusesForDisplay();
@@ -986,7 +1043,7 @@ handlePassiveModalClick(event) {
     }
 },
 
-// PASSIVE TREE
+// PASSIVE SCREEN
 updatePassiveSelectionDisplay() {
     if (!this.currentPassiveChoices) return;
     
@@ -1229,22 +1286,26 @@ updateCharacterScreenIfOpen() {
 // End of Exile Summary Button to Exile Screen ========    
 
 // Additional Helper Functions
-    log(message, type = "info") {
+log(message, type = "info", isHtml = false) {
     const logContainer = document.getElementById('log');
     const entry = document.createElement('div');
     entry.className = `log-entry ${type}`;
-    entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    if (isHtml) {
+        entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+    } else {
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    }
     logContainer.insertBefore(entry, logContainer.firstChild);
-    
+
     // Always scroll to top to show newest entry
     logContainer.scrollTop = 0;
-    
+
     // Keep only last 100 entries
     while (logContainer.children.length > 100) {
         logContainer.removeChild(logContainer.lastChild);
     }
 },
-    
+
     saveGame() {
         if (gameState.settings.autoSave) {
             localStorage.setItem('exileManagerSave', JSON.stringify(gameState));
@@ -1293,6 +1354,21 @@ getStatRangeForIlvl(statDef, ilvl) {
     // Fallback to first breakpoint
     return { min: breakpoints[0].min, max: breakpoints[0].max };
 },
+
+// Breakdown toggle function
+toggleBreakdown(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isOpen = el.style.display === 'block';
+    el.style.display = isOpen ? 'none' : 'block';
+    // Toggle triangle direction if present
+    const parent = el.previousElementSibling || el.parentElement.querySelector('.combat-breakdown-toggle');
+    if (parent) {
+        const triangle = parent.querySelector('.triangle');
+        if (triangle) triangle.innerHTML = isOpen ? '&#x25BC;' : '&#x25B2;';
+    }
+},
+
 // End of Additional Helper Functions
 
 

@@ -53,7 +53,7 @@ const passiveDefinitions = {
         name: "Fortune",
         tier: "normal",
         description: "+25% Gold Find (not yet implemented)",
-        effects: [{ type: passiveTypes.GOLD_FIND, value: 25 }],
+        effects: [{ type: passiveTypes.GOLD_FIND, value: 1000 }],
         tags: ["utility", "gold"]
     },
     

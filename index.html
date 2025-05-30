@@ -11,7 +11,7 @@
             <div class="container">    
 
 <!-- Exile Summary Card -->
-        <div class="exile-summary-card" onclick="game.openCharacterScreen()">
+        <div id="exile-summary-card" class="exile-summary-card" onclick="game.openCharacterScreen()">
     <div class="exile-basic-info">
         <div class="exile-name-class">
             <span id="exile-name-summary">Unnamed Exile</span>
@@ -143,6 +143,10 @@
                         <div class="detail-row">
                             <span class="detail-label">Morale:</span>
                             <span id="char-morale">-</span> (<span id="char-morale-status">-</span>)
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Gold Find Bonus:</span>
+                            <span id="char-goldfind">0%</span>
                         </div>
                     </div>
                 </div>
