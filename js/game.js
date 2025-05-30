@@ -34,9 +34,17 @@ const game = {
         let message = `✓ ${mission.name} cleared! +${goldEarned} gold, +${expEarned} exp`;
         this.log(message, "success");
         
-        // Combat report
-        const combatReport = `⚔️ Combat Report: Took ${Math.floor(combatResult.heaviestHit * 10) / 10} damage (heaviest hit), finished with ${Math.floor(finalLife * 10) / 10}/${exile.stats.life} life`;
-        this.log(combatReport, "info");
+        // Enhanced combat report with damage breakdown
+        const lastHit = combatResult.damageLog[combatResult.damageLog.length - 1];
+        if (lastHit && lastHit.breakdown) {
+            const breakdownText = lastHit.breakdown.map(b => 
+                `${Math.round(b.final * 10) / 10} ${b.type} (${b.method})`
+            ).join(' + ');
+            
+            const actualDamage = lastHit.breakdown.reduce((sum, b) => sum + b.final, 0);
+            const combatReport = `⚔️ Damage breakdown: ${Math.round(combatResult.heaviestHit * 10) / 10} raw → ${breakdownText} = ${Math.round(actualDamage * 10) / 10} total`;
+            this.log(combatReport, "info");
+        }
         
         // Check for orb drops
         let orbMessage = "";
@@ -54,8 +62,8 @@ const game = {
         }
         
         // Check for gear drops
-        const gearDropChance = difficulty === 'hard' ? 0.5 : difficulty === 'medium' ? 0.3 : 0.15;
-        if (Math.random() < gearDropChance) {
+        const difficultyData = getDifficultyConfig(difficulty);
+        if (Math.random() < difficultyData.gearDropChance) {
             const newGear = this.generateGear(difficulty);
             gameState.inventory.backpack.push(newGear);
             this.log(`⭐ Found ${newGear.name}!`, newGear.rarity === 'rare' ? 'legendary' : 'success');
@@ -135,19 +143,21 @@ if (combatResult.outcome !== 'death') {
         
         // Mission attacks
         const damageRoll = this.randomBetween(mission.damage.min, mission.damage.max);
-        const damageTaken = this.calculateDamageReduction(damageRoll, exile.stats.defense);
+        const damageResult = this.calculateDamageReduction(damageRoll, exile, mission);
+        const damageTaken = damageResult.damage;
         
         currentLife -= damageTaken;
         combatData.totalDamageTaken += damageTaken;
         combatData.heaviestHit = Math.max(combatData.heaviestHit, damageTaken);
         
-    // Log this hit for detailed analysis
-            combatData.damageLog.push({
-        round: combatData.rounds,
-        rawDamage: damageRoll,
-        actualDamage: damageTaken,
-        lifeRemaining: Math.max(0, currentLife)
-    });
+        // Log this hit for detailed analysis
+        combatData.damageLog.push({
+            round: combatData.rounds,
+            rawDamage: damageRoll,
+            actualDamage: damageTaken,
+            breakdown: damageResult.breakdown,  // NEW: Store the breakdown
+            lifeRemaining: Math.max(0, currentLife)
+        });
 
         // Check for death
         if (currentLife <= 0) {
@@ -177,10 +187,50 @@ if (combatResult.outcome !== 'death') {
     return combatData;
 },
 
-calculateDamageReduction(rawDamage, defense, damageType = 'physical') {
-    // Hybrid defense formula: percentage + flat reduction
-    return Math.max(1, rawDamage * (1 - defense/200) - defense/4);
+// DAMAGE CALCS FOR MISSION DAMAGE - RETURNS CALCULATIONS FOR LOG
+calculateDamageReduction(rawDamage, exile, mission) {
+    // Get damage type breakdown from mission
+    const damageTypes = mission.damage.types || { physical: 1.0 };
+    
+    let totalDamageAfterReduction = 0;
+    const breakdown = []; // NEW: Track each damage type
+    
+    // Process each damage type separately
+    Object.entries(damageTypes).forEach(([damageType, percentage]) => {
+        const typeDamage = rawDamage * percentage;
+        let reducedDamage = typeDamage;
+        let reductionMethod = '';
+        
+        if (damageType === 'physical') {
+            // Physical damage uses defense (hybrid formula)
+            reducedDamage = Math.max(1, typeDamage * (1 - exile.stats.defense/200) - exile.stats.defense/4);
+            const reductionPercent = Math.round((1 - reducedDamage/typeDamage) * 100);
+            reductionMethod = `${reductionPercent}% reduced`;
+        } else {
+            // Elemental damage uses resistances (simple percentage)
+            const resistance = exile.stats[damageType + 'Resist'] || 0;
+            reducedDamage = typeDamage * (1 - resistance/100);
+            reductionMethod = `${resistance}% resisted`;
+        }
+        
+        // Store breakdown info
+        breakdown.push({
+            type: damageType,
+            raw: typeDamage,
+            final: reducedDamage,
+            method: reductionMethod
+        });
+        
+        totalDamageAfterReduction += reducedDamage;
+    });
+    
+    // Return both damage and breakdown
+    return {
+        damage: Math.max(1, totalDamageAfterReduction),
+        breakdown: breakdown
+    };
 },
+// End Damage Calcs for Mission + Log
 
 calculatePowerRating(exile = null) {
     // Use provided exile or default to current game exile
@@ -295,12 +345,6 @@ getMoraleStatus(morale) {
     return "Broken";
 },
 
-calculateDamageReduction(rawDamage, defense, damageType = 'physical') {
-    // Future: could check exile.resistances[damageType]
-    // For now, only physical damage with hybrid defense formula
-    return Math.max(1, rawDamage * (1 - defense/200) - defense/4);
-},
-
 calculatePowerRating(exile = null) {
     // Use provided exile or default to current game exile
     const targetExile = exile || gameState.exile;
@@ -311,7 +355,10 @@ calculatePowerRating(exile = null) {
 
 // GEAR GEAR GEAR GEAR =====================>>>>>>>>>>> 
 generateGear(missionDifficulty) {
-    // Determine item type
+    // Get difficulty config from centralized location
+    const difficultyData = getDifficultyConfig(missionDifficulty);
+    
+    // Determine item type (WILL NEED UPDATE FOR ITEM EXPANSIONS)
     const typeRoll = Math.random();
     let gearType;
     if (typeRoll < 0.4) gearType = gearTypes.weapon;
@@ -334,24 +381,31 @@ generateGear(missionDifficulty) {
     const baseType = gearType.baseTypes[Math.floor(Math.random() * gearType.baseTypes.length)];
     const rarityData = rarityTiers[rarity];
     
-    // Generate stats
+    // Generate stats using centralized multiplier
     const stats = {};
     const statTypes = getAllStatTypes();
     const selectedStats = this.shuffleArray(statTypes).slice(0, rarityData.statCount);
-    
-selectedStats.forEach(stat => {
-    const weight = gearType.statWeights[stat] || 1; // Default weight if not defined
-    const statDef = statDefinitions[stat];
-    const difficultyMultiplier = missionDifficulty === 'hard' ? 2 : missionDifficulty === 'medium' ? 1.5 : 1;
-    const baseValue = this.randomBetween(statDef.baseRange.min, statDef.baseRange.max) * difficultyMultiplier;
-    stats[stat] = Math.floor(baseValue * weight * rarityData.statMultiplier);
-});
+
+    const mission = missions[missionDifficulty];
+
+        selectedStats.forEach(stat => {
+        const weight = gearType.statWeights[stat] || 1;
+        const statDef = statDefinitions[stat];
+        const statRange = this.getStatRangeForIlvl(statDef, mission.ilvl);
+        const baseValue = this.randomBetween(statRange.min, statRange.max);
+        stats[stat] = Math.floor(baseValue * weight);
+        
+        console.log('missionDifficulty:', missionDifficulty);
+        console.log('missions object:', missions);
+        console.log('mission found:', missions[missionDifficulty]);
+    });
     
     return {
-        id: Date.now() + Math.random(), // Simple unique ID
+        id: Date.now() + Math.random(),
         name: `${rarity.charAt(0).toUpperCase() + rarity.slice(1)} ${baseType}`,
         slot: gearType.slot,
         rarity: rarity,
+        ilvl: mission.ilvl,
         stats: stats,
         equipped: false
     };
@@ -443,6 +497,24 @@ recalculateStats() {
     gameState.exile.stats.moraleResistance = passiveEffects.moraleResistance;
     gameState.exile.stats.moraleGain = passiveEffects.moraleGain;
     
+    // NEW: Calculate resistances from gear
+let gearFireResist = 0, gearColdResist = 0, gearLightningResist = 0, gearChaosResist = 0;
+Object.values(gameState.inventory.equipped).forEach(item => {
+    if (item) {
+        gearFireResist += item.stats.fireResist || 0;
+        gearColdResist += item.stats.coldResist || 0;
+        gearLightningResist += item.stats.lightningResist || 0;
+        gearChaosResist += item.stats.chaosResist || 0;
+    }
+});
+
+// Apply resistance caps using constants
+gameState.exile.stats.fireResist = Math.min(gearFireResist, RESISTANCE_CAPS.default);
+gameState.exile.stats.coldResist = Math.min(gearColdResist, RESISTANCE_CAPS.default);
+gameState.exile.stats.lightningResist = Math.min(gearLightningResist, RESISTANCE_CAPS.default);
+gameState.exile.stats.chaosResist = Math.min(gearChaosResist, RESISTANCE_CAPS.default);
+
+
     // Ensure minimum values
     gameState.exile.stats.life = Math.max(1, gameState.exile.stats.life);
     gameState.exile.stats.damage = Math.max(1, gameState.exile.stats.damage);
@@ -487,10 +559,10 @@ useChaosOrb(itemId) {
     // Add new stat using our centralized system
     const gearType = gearTypes[Object.keys(gearTypes).find(key => gearTypes[key].slot === item.slot)];
     const weight = gearType.statWeights[newStat] || 1;
-    const rarityData = rarityTiers[item.rarity];
     const statDef = statDefinitions[newStat];
-    const baseValue = this.randomBetween(statDef.baseRange.min, statDef.baseRange.max);
-    item.stats[newStat] = Math.floor(baseValue * weight * rarityData.statMultiplier);
+    const statRange = this.getStatRangeForIlvl(statDef, item.ilvl);
+    const baseValue = this.randomBetween(statRange.min, statRange.max);
+    item.stats[newStat] = Math.floor(baseValue * weight);
     
     // Consume orb
     gameState.resources.chaosOrbs--;
@@ -537,10 +609,10 @@ useExaltedOrb(itemId) {
     // Add the stat
     const gearType = gearTypes[Object.keys(gearTypes).find(key => gearTypes[key].slot === item.slot)];
     const weight = gearType.statWeights[newStat] || 1;
-    const rarityData = rarityTiers[item.rarity];
     const statDef = statDefinitions[newStat];
-    const baseValue = this.randomBetween(statDef.baseRange.min, statDef.baseRange.max);
-    item.stats[newStat] = Math.floor(baseValue * weight * rarityData.statMultiplier);
+    const statRange = this.getStatRangeForIlvl(statDef, item.ilvl);
+    const baseValue = this.randomBetween(statRange.min, statRange.max);
+    item.stats[newStat] = Math.floor(baseValue * weight);
     
     // Consume orb
     gameState.resources.exaltedOrbs--;
@@ -574,9 +646,9 @@ updateInventoryDisplay() {
                         <div class="item-equipped">
                             <div class="item-name ${equipped.rarity}">${equipped.name}</div>
                             <div class="item-stats">
-                                ${Object.entries(equipped.stats).map(([stat, value]) => 
-                                    `<div class="item-stat">+${value} ${stat}</div>`
-                                ).join('')}
+                                ${Object.entries(item.stats).map(([stat, value]) => 
+                                     `<div class="item-stat">+${value} ${this.getStatDisplayName(stat)}</div>`
+                                  ).join('')}
                             </div>
                         </div>
                     `;
@@ -603,9 +675,10 @@ updateInventoryDisplay() {
         <div class="inventory-item ${item.rarity}">
             <div class="item-name ${item.rarity}">${item.name}</div>
             <div class="item-type">${item.slot}</div>
+            <div class="item-ilvl" style="font-size: 0.7em; color: #666; font-style: italic;">ilvl ${item.ilvl}</div>
             <div class="item-stats">
                 ${Object.entries(item.stats).map(([stat, value]) => 
-                    `<div class="item-stat">+${value} ${stat}</div>`
+                 `<div class="item-stat">+${value} ${this.getStatDisplayName(stat)}</div>`
                 ).join('')}
             </div>
             <div class="item-actions">
@@ -630,57 +703,6 @@ getAvailableStats(item) {
     const currentStats = Object.keys(item.stats);
     return allStats.filter(stat => !currentStats.includes(stat));
 },
-
-// Crafting Subsection
-useChaosOrb(itemId) {
-    const item = gameState.inventory.backpack.find(i => i.id === itemId);
-    if (!item || gameState.resources.chaosOrbs < 1) return false;
-    
-    // Get current stats and available stats
-    const currentStatKeys = Object.keys(item.stats);
-    const availableStats = this.getAvailableStats(item);
-    
-    // Need at least one current stat and one available stat
-    if (currentStatKeys.length === 0 || availableStats.length === 0) {
-        this.log("Cannot use Chaos Orb on this item!", "failure");
-        return false;
-    }
-    
-    // Pick random current stat to remove
-    const statToRemove = currentStatKeys[Math.floor(Math.random() * currentStatKeys.length)];
-    const oldValue = item.stats[statToRemove];
-    
-    // Pick random new stat to add
-    const newStat = availableStats[Math.floor(Math.random() * availableStats.length)];
-    
-    // Remove old stat
-    delete item.stats[statToRemove];
-    
-    // Add new stat with similar value range
-// Replace the stat generation part in useChaosOrb:
-    const gearType = gearTypes[Object.keys(gearTypes).find(key => gearTypes[key].slot === item.slot)];
-    const weight = gearType.statWeights[newStat] || 1; // Default weight
-    const rarityData = rarityTiers[item.rarity];
-    const statDef = statDefinitions[newStat];
-    const baseValue = this.randomBetween(statDef.baseRange.min, statDef.baseRange.max);
-    item.stats[newStat] = Math.floor(baseValue * weight * rarityData.statMultiplier);
-    
-    // Consume orb
-    gameState.resources.chaosOrbs--;
-    
-    this.log(`🌀 Chaos Orb used! ${statToRemove} (${oldValue}) → ${newStat} (${item.stats[newStat]})`, "legendary");
-    
-    // Update displays if item is equipped
-    if (item.equipped) {
-        this.recalculateStats();
-        this.updateDisplay();
-    }
-    this.updateInventoryDisplay();
-    this.saveGame();
-    
-    return true;
-},
-    // End of Crafting Subsection
 // END OF GEAR ====================>>>>
     
     gameOver() {
@@ -1144,7 +1166,7 @@ updateCharacterEquipment() {
                     <div class="item-name ${equipped.rarity}">${equipped.name}</div>
                     <div class="item-stats">
                         ${Object.entries(equipped.stats).map(([stat, value]) => 
-                            `<div class="item-stat">+${value} ${stat}</div>`
+                           `<div class="item-stat">+${value} ${this.getStatDisplayName(stat)}</div>`
                         ).join('')}
                     </div>
                 </div>
@@ -1169,9 +1191,10 @@ updateCharacterInventory() {
             <div class="inventory-item ${item.rarity}">
                 <div class="item-name ${item.rarity}">${item.name}</div>
                 <div class="item-type">${item.slot}</div>
+                <div class="item-ilvl" style="font-size: 0.7em; color: #666; font-style: italic;">ilvl ${item.ilvl}</div>
                 <div class="item-stats">
                     ${Object.entries(item.stats).map(([stat, value]) => 
-                        `<div class="item-stat">+${value} ${stat}</div>`
+                        `<div class="item-stat">+${value} ${this.getStatDisplayName(stat)}</div>`
                     ).join('')}
                 </div>
                 <div class="item-actions">
@@ -1205,7 +1228,7 @@ updateCharacterScreenIfOpen() {
     // End of Character Stat Calcs for Exile Screen
 // End of Exile Summary Button to Exile Screen ========    
 
-
+// Additional Helper Functions
     log(message, type = "info") {
     const logContainer = document.getElementById('log');
     const entry = document.createElement('div');
@@ -1241,6 +1264,37 @@ updateCharacterScreenIfOpen() {
     randomBetween(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     },
+
+    // What determines stat scaling for ilvl of gear
+    calculateIlvlMultiplier(ilvl) {
+    return 1 + (ilvl - 1) * 0.05; // 5% per ilvl above 1
+},
+
+// Helper function to get proper stat display name
+getStatDisplayName(statKey) {
+    return statDefinitions[statKey]?.name || statKey;
+},
+
+// Helper function to get stat range for specific ilvl
+getStatRangeForIlvl(statDef, ilvl) {
+    const breakpoints = statDef.ilvlBreakpoints;
+    if (!breakpoints) {
+        // Fallback for old baseRange format
+        return statDef.baseRange;
+    }
+    
+    // Find highest breakpoint <= ilvl
+    for (let i = breakpoints.length - 1; i >= 0; i--) {
+        if (ilvl >= breakpoints[i].ilvl) {
+            return { min: breakpoints[i].min, max: breakpoints[i].max };
+        }
+    }
+    
+    // Fallback to first breakpoint
+    return { min: breakpoints[0].min, max: breakpoints[0].max };
+},
+// End of Additional Helper Functions
+
 
 // PASSIVE SYSTEM METHODS
 initializeExile() {

@@ -155,10 +155,12 @@ h2 {
     background-color: #1a1a1a;
     padding: 15px;
     border-radius: 3px;
-    height: 200px;
+    height: auto; /* Remove fixed height */
+    min-height: 400px; /* Set minimum height to match missions */
+    max-height: 500px;
     overflow-y: auto;
     font-family: monospace;
-    font-size: 0.9em;
+    font-size: 1.5em; /* Increased from 0.9em */
 }
 
 .log-entry {
@@ -420,6 +422,53 @@ h2 {
 #morale-status {
     color: #888; /* Default */
 }
+
+/* New two-column layout for missions and log */
+.missions-log-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+/* End of Columns for Log and Missions */
+.missions-column,
+.log-column {
+    flex: 1; /* Equal width columns */
+}
+
+/* Override game-panel styles for our new layout */
+.missions-log-container .game-panel {
+    display: block !important;
+    width: 100% !important;
+    margin-right: 0 !important;
+}
+
+/* Update mission container for vertical layout */
+.missions-column .mission-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Make mission buttons shorter */
+.missions-column .mission-btn {
+    padding: 14px; /* 30% less than original 20px */
+}
+
+/* Make both columns match height */
+.missions-log-container .game-panel {
+    display: block !important;
+    width: 100% !important;
+    margin-right: 0 !important;
+    min-height: 100% /* Ensure both panels are at least this tall */
+}
+
+/* Make the log container fill the available space */
+.log-column .log-container {
+    height: calc(100% - 60px); /* Account for header and padding */
+    min-height: 350px;
+}
+/* End of Columns for Log and Missions */
 
 
 /* ========== Exile Summary Card =============== */

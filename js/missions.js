@@ -1,8 +1,42 @@
+// Difficulty configuration - centralized place to modify game balance
+const difficultyConfig = {
+    easy: {
+        gearDropChance: 0.15, // gear drop chance
+        gearMultiplier: 1, // gear stat values get changed by this
+        name: 'Easy'
+    },
+    medium: {
+        gearDropChance: 0.3,
+        gearMultiplier: 1.5,
+        name: 'Medium'
+    },
+    hard: {
+        gearDropChance: 0.5,
+        gearMultiplier: 2,
+        name: 'Hard'
+    },
+    nightmare: {
+        gearDropChance: 0.7,
+        gearMultiplier: 3,
+        name: 'Nightmare'
+    }
+};
+
+// Helper function to get difficulty config (defaults to easy if undef)
+const getDifficultyConfig = (difficulty) => {
+    return difficultyConfig[difficulty] || difficultyConfig.easy;
+};
+
+// End Difficulties
+
+
 // Mission definitions
 const missions = {
     a1: {
         name: "The Coast",
         difficulty: 150,
+        ilvl: 1,
+        themes: [],  
         damage: { 
             min: 10, max: 35,
             types: { physical: 1.0 }
@@ -17,23 +51,27 @@ const missions = {
      a1b: {
         name: "The Fire Fury", 
         difficulty: 400,
+        ilvl: 5,
+        themes: [],  
         damage: { 
             min: 30, max: 55,
-            types: { physical: 0.5, fire: 0.5 }
+            types: { physical: 0.1, fire: 0.9 }
         },
         rewards: {
-            gold: { min: 60, max: 90 },
+            gold: { min: 50, max: 80 },
             experience: { min: 40, max: 75 },                
             chaosOrbChance: 0.25,
-            exaltedOrbChance: 0.13
+            exaltedOrbChance: 0.16
         }
     },
     a2: {
         name: "The Mud Flats", 
         difficulty: 300,
+        ilvl: 7,
+        themes: [],  
         damage: { 
             min: 40, max: 75,
-            types: { physical: 1.0 }
+            types: { physical: 0.8, chaos: 0.2 }
         },
         rewards: {
             gold: { min: 20, max: 40 },
@@ -45,9 +83,11 @@ const missions = {
     a3: {
         name: "The Climb",
         difficulty: 500,
+        ilvl: 10,
+        themes: [],  
         damage: { 
             min: 80, max: 140,
-            types: { physical: 1.0 }
+            types: { physical: 0.6, lightning: 0.4 }
         },
         rewards: {
             gold: { min: 50, max: 100 },
@@ -59,9 +99,11 @@ const missions = {
     a4: {
         name: "The Prison",
         difficulty: 800,
+        ilvl: 13,
+        themes: [], 
         damage: { 
             min: 150, max: 250,
-            types: { physical: 1.0 }
+            types: { physical: 0.6, cold: 0.4 }
         },
         rewards: {
             gold: { min: 100, max: 200 },
@@ -73,6 +115,8 @@ const missions = {
     a4b: {
         name: "The Warden",
         difficulty: 1000,
+        ilvl: 15,
+        themes: [], 
         damage: { 
             min: 150, max: 400,
             types: { physical: 1.0 }

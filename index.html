@@ -8,9 +8,7 @@
 </head>
 <body>  
          <button id="reset-btn" onclick="game.resetGame()">Reset Save</button>
-            <div class="container">
-                <h1>Exile Manager</h1>      
-    
+            <div class="container">    
 
 <!-- Exile Summary Card -->
         <div class="exile-summary-card" onclick="game.openCharacterScreen()">
@@ -68,44 +66,49 @@
             </div>
         </div>
 
-                <div class="game-panel full-width">
+
+<div class="missions-log-container">
+    <div class="missions-column">
+        <div class="game-panel">
             <h2>Missions</h2>
             <div id="missions" class="mission-container">
-                    <button class="mission-btn easy" onclick="game.runMission('a1')">
-                        <div class="mission-title">The Coast</div>
-                        <div class="mission-info">Difficulty: Easy | Scavenging</div>
-                    </button>
-                    <button class="mission-btn easy" onclick="game.runMission('a1b')">
-                        <div class="mission-title">The Fire Fury</div>
-                        <div class="mission-info">Difficulty: Easy | Boss Fight</div>
-                    </button>
-                    <button class="mission-btn medium" onclick="game.runMission('a2')">
-                        <div class="mission-title">The Mud Flats</div>
-                        <div class="mission-info">Difficulty: Medium | Arduous Exploration</div>
-                    </button>
-                    <button class="mission-btn hard" onclick="game.runMission('a3')">
-                        <div class="mission-title">The Climb</div>
-                        <div class="mission-info">Difficulty: Hard | Dangerous Travel</div>
-                    </button>
-                    <button class="mission-btn nightmare" onclick="game.runMission('a4')">
-                        <div class="mission-title">The Prison</div>
-                        <div class="mission-info">Difficulty: Nightmare | Come Here to Die</div>
-                    </button>
-                    <button class="mission-btn nightmare" onclick="game.runMission('a4b')">
-                        <div class="mission-title">The Warden</div>
-                        <div class="mission-info">Difficulty: Nightmare | Let Death Embrace You</div>
-                    </button>
-                </div>
+                <button class="mission-btn easy" onclick="game.runMission('a1')">
+                    <div class="mission-title">The Coast</div>
+                    <div class="mission-info">Difficulty: Easy | Scavenging</div>
+                </button>
+                <button class="mission-btn easy" onclick="game.runMission('a1b')">
+                    <div class="mission-title">The Fire Fury</div>
+                    <div class="mission-info">Difficulty: Easy | Boss Fight</div>
+                </button>
+                <button class="mission-btn medium" onclick="game.runMission('a2')">
+                    <div class="mission-title">The Mud Flats</div>
+                    <div class="mission-info">Difficulty: Medium | Arduous Exploration</div>
+                </button>
+                <button class="mission-btn hard" onclick="game.runMission('a3')">
+                    <div class="mission-title">The Climb</div>
+                    <div class="mission-info">Difficulty: Hard | Dangerous Travel</div>
+                </button>
+                <button class="mission-btn nightmare" onclick="game.runMission('a4')">
+                    <div class="mission-title">The Prison</div>
+                    <div class="mission-info">Difficulty: Nightmare | Come Here to Die</div>
+                </button>
+                <button class="mission-btn nightmare" onclick="game.runMission('a4b')">
+                    <div class="mission-title">The Warden</div>
+                    <div class="mission-info">Difficulty: Nightmare | Let Death Embrace You</div>
+                </button>
             </div>
-        
-        <div class="game-panel full-width">
+        </div>
+    </div>
+    
+    <div class="log-column">
+        <div class="game-panel">
             <h2>Activity Log</h2>
             <div id="log" class="log-container"></div>
         </div>
-    
-
-
     </div>
+</div>
+        
+    
 
 <!-- Character Screen Modal - add this before </body> -->
 <div id="character-screen-modal" class="modal-overlay" style="display: none;" onclick="game.handleModalClick(event)">

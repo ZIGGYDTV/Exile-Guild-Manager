@@ -1,3 +1,9 @@
+// Resistance system constants
+const RESISTANCE_CAPS = {
+    default: 75,        // Normal resistance cap
+    hardMax: 90         // Absolute maximum (even with +max res gear)
+};
+
 // Updated gameState with class and passive system
 const gameState = {
     exile: {
@@ -20,7 +26,13 @@ const gameState = {
             life: 105, // Will be recalculated based on class
             damage: 11,
             defense: 5,
-            
+
+            // Resistance values (ADD THESE)
+            fireResist: 0,
+            coldResist: 0,
+            lightningResist: 0,
+            chaosResist: 0,
+
             // Bonus stats for future expansion
             goldFindBonus: 0,
             escapeChance: 0,

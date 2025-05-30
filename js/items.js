@@ -2,21 +2,169 @@
 const statDefinitions = {
     life: {
         name: 'Life',
-        baseRange: { min: 10, max: 20 }
+        ilvlBreakpoints: [
+            { ilvl: 1, min: 10, max: 20 },
+            { ilvl: 5, min: 12, max: 25 },
+            { ilvl: 10, min: 15, max: 30 },
+            { ilvl: 15, min: 18, max: 36 },
+            { ilvl: 20, min: 22, max: 44 },
+            { ilvl: 25, min: 27, max: 54 },
+            { ilvl: 30, min: 33, max: 66 },
+            { ilvl: 35, min: 40, max: 80 },
+            { ilvl: 40, min: 48, max: 96 },
+            { ilvl: 45, min: 58, max: 116 },
+            { ilvl: 50, min: 70, max: 140 }
+        ]
     },
     damage: {
         name: 'Damage', 
-        baseRange: { min: 5, max: 15 }
+        ilvlBreakpoints: [
+            { ilvl: 1, min: 5, max: 15 },
+            { ilvl: 5, min: 6, max: 18 },
+            { ilvl: 10, min: 8, max: 24 },
+            { ilvl: 15, min: 10, max: 30 },
+            { ilvl: 20, min: 13, max: 39 },
+            { ilvl: 25, min: 16, max: 48 },
+            { ilvl: 30, min: 20, max: 60 },
+            { ilvl: 35, min: 25, max: 75 },
+            { ilvl: 40, min: 31, max: 93 },
+            { ilvl: 45, min: 38, max: 114 },
+            { ilvl: 50, min: 47, max: 141 }
+        ]
     },
     defense: {
         name: 'Defense',
-        baseRange: { min: 3, max: 12 }
+        ilvlBreakpoints: [
+            { ilvl: 1, min: 3, max: 12 },
+            { ilvl: 5, min: 4, max: 15 },
+            { ilvl: 10, min: 5, max: 20 },
+            { ilvl: 15, min: 6, max: 24 },
+            { ilvl: 20, min: 8, max: 32 },
+            { ilvl: 25, min: 10, max: 40 },
+            { ilvl: 30, min: 13, max: 52 },
+            { ilvl: 35, min: 16, max: 64 },
+            { ilvl: 40, min: 20, max: 80 },
+            { ilvl: 45, min: 25, max: 100 },
+            { ilvl: 50, min: 31, max: 124 }
+        ]
+    },
+lightRadius: {
+        name: 'Light Radius',
+        ilvlBreakpoints: [
+            { ilvl: 1, min: 10, max: 50 },
+            { ilvl: 5, min: 12, max: 60 },
+            { ilvl: 10, min: 15, max: 65 },
+            { ilvl: 15, min: 18, max: 70 },
+            { ilvl: 20, min: 22, max: 75 },
+            { ilvl: 25, min: 27, max: 80 },
+            { ilvl: 30, min: 33, max: 85 },
+            { ilvl: 35, min: 40, max: 90 },
+            { ilvl: 40, min: 48, max: 95 },
+            { ilvl: 45, min: 58, max: 98 },
+            { ilvl: 50, min: 70, max: 100 }
+        ],
+        minDifficulty: '',
+        minIlvl: 25,
+        restrictedToSlots: ['helmet']  // NEW PROPERTY
+    },
+    moveSpeed: {
+        name: 'Movement Speed',
+        ilvlBreakpoints: [
+            { ilvl: 1, min: 10, max: 30 },
+            { ilvl: 5, min: 12, max: 35 },
+            { ilvl: 10, min: 15, max: 40 },
+            { ilvl: 15, min: 18, max: 50 },
+            { ilvl: 20, min: 22, max: 60 },
+            { ilvl: 25, min: 27, max: 70 },
+            { ilvl: 30, min: 33, max: 80 },
+            { ilvl: 35, min: 40, max: 85 },
+            { ilvl: 40, min: 48, max: 90 },
+            { ilvl: 45, min: 58, max: 95 },
+            { ilvl: 50, min: 70, max: 100 }
+        ],
+        minDifficulty: '',
+        minIlvl: 10,
+        restrictedToSlots: ['boots']  // NEW PROPERTY
+    },
+        fireResist: {
+        name: 'Fire Resistance',
+        ilvlBreakpoints: [
+            { ilvl: 1, min: 9, max: 15 },
+            { ilvl: 5, min: 11, max: 18 },
+            { ilvl: 10, min: 14, max: 24 },
+            { ilvl: 15, min: 17, max: 29 },
+            { ilvl: 20, min: 21, max: 36 },
+            { ilvl: 25, min: 26, max: 45 },
+            { ilvl: 30, min: 32, max: 56 },
+            { ilvl: 35, min: 39, max: 65 },
+            { ilvl: 40, min: 48, max: 70 },
+            { ilvl: 45, min: 58, max: 73 },
+            { ilvl: 50, min: 65, max: 75 }
+        ],
+        minDifficulty: '',
+        requiredThemes: [],
+        minIlvl: 15
+    },
+       coldResist: {
+        name: 'Cold Resistance',
+        ilvlBreakpoints: [
+            { ilvl: 1, min: 9, max: 15 },
+            { ilvl: 5, min: 11, max: 18 },
+            { ilvl: 10, min: 14, max: 24 },
+            { ilvl: 15, min: 17, max: 29 },
+            { ilvl: 20, min: 21, max: 36 },
+            { ilvl: 25, min: 26, max: 45 },
+            { ilvl: 30, min: 32, max: 56 },
+            { ilvl: 35, min: 39, max: 65 },
+            { ilvl: 40, min: 48, max: 70 },
+            { ilvl: 45, min: 58, max: 73 },
+            { ilvl: 50, min: 65, max: 75 }
+        ],
+        minDifficulty: '',
+        requiredThemes: [],
+        minIlvl: 15
+    },
+       lightningResist: {
+        name: 'Lightning Resistance',
+        ilvlBreakpoints: [
+            { ilvl: 1, min: 9, max: 15 },
+            { ilvl: 5, min: 11, max: 18 },
+            { ilvl: 10, min: 14, max: 24 },
+            { ilvl: 15, min: 17, max: 29 },
+            { ilvl: 20, min: 21, max: 36 },
+            { ilvl: 25, min: 26, max: 45 },
+            { ilvl: 30, min: 32, max: 56 },
+            { ilvl: 35, min: 39, max: 65 },
+            { ilvl: 40, min: 48, max: 70 },
+            { ilvl: 45, min: 58, max: 73 },
+            { ilvl: 50, min: 65, max: 75 }
+        ],
+        minDifficulty: '',
+        requiredThemes: [],
+        minIlvl: 15
+    },    
+       chaosResist: {
+        name: 'Chaos Resistance',
+        ilvlBreakpoints: [
+            { ilvl: 1, min: 9, max: 15 },
+            { ilvl: 5, min: 11, max: 18 },
+            { ilvl: 10, min: 14, max: 24 },
+            { ilvl: 15, min: 17, max: 29 },
+            { ilvl: 20, min: 21, max: 36 },
+            { ilvl: 25, min: 26, max: 45 },
+            { ilvl: 30, min: 32, max: 56 },
+            { ilvl: 35, min: 39, max: 65 },
+            { ilvl: 40, min: 48, max: 70 },
+            { ilvl: 45, min: 58, max: 73 },
+            { ilvl: 50, min: 65, max: 75 }
+        ],
+        minDifficulty: '',
+        requiredThemes: [],
+        minIlvl: 15
     }
-    // Future stats go here:
-    // critChance: { name: 'Crit Chance', baseRange: { min: 2, max: 8 } },
-    // speed: { name: 'Speed', baseRange: { min: 5, max: 15 } },
-    // resistance: { name: 'Resistance', baseRange: { min: 4, max: 10 } }
 };
+
+
 // Helper to get all available stat types
 const getAllStatTypes = () => Object.keys(statDefinitions);
 
@@ -69,7 +217,14 @@ const rarityTiers = {
     rare: { 
         color: '#FFD700', 
         statMultiplier: 2, 
-        statCount: 3,
+        statCount: 4,
         dropWeight: 5 
     }
+};
+
+const rarityBonusByDifficulty = {
+    easy: { rareBonus: 0 },      // No bonus to rare chance
+    medium: { rareBonus: 2 },    // +2% rare chance (5→7%)  
+    hard: { rareBonus: 5 },      // +5% rare chance (5→10%)
+    nightmare: { rareBonus: 10 } // +10% rare chance (5→15%)
 };

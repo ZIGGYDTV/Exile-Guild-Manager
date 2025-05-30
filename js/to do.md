@@ -10,12 +10,15 @@ TO DO:
 - Capital on classname
 - supposed to be 1 decimal for damage taken (death maybe isnt doing it?)
 - "in the warden"
+- passive allocation generating two of the same passive
+- Can close out of passive alloction (want it to be commitment)
 - Allocated a keystone at level 7 (supposed to be every 10)
     // Filter out already allocated passives
     const available = pool.filter(passive => 
         !gameState.exile.passives.allocated.includes(passive.id)
     ); 
     // running out of passives to allocate so are we allocating the remaining keystones early? We should add that Normal passives can be repeated and ensure ensure enough Notables for 50 levels? YEP CONFIRMED RUNNING OUT OF PASSIVES LOL
+- Lost remaining health report on max hit taken calc 
 
 https://medium.com/@EclecticCoder/manage-todo-list-in-vscode-beb53774d776
 
@@ -25,9 +28,22 @@ https://medium.com/@EclecticCoder/manage-todo-list-in-vscode-beb53774d776
 - drop rates for gear isnt based on mission type?
 - Random starting passive for each character with biasing based on class
 - Reroll button needs current gold near it.
+- xp display on exile summary
+- Player damage is just "Damage", get it using same system as missions?
+- Add permanent tracking of scouting info for missions  
+    - Add more scouting info options
+    - Add Scouting stat / skills / class
+    - !IMPORTANT add scouting info to log on fail, very limited atm
+- Crafting popup for items (lil craft button for window)
+    - needs to show current currency not vis in exile screen
+
+
 
 # Ideas
 - Auction house with simulated non-responding traders
+- last epoch crafting combo
+    - break down items for an affix shard
+    - unique modifiers via shards?
 
 TIPS FORM CHAT
 
