@@ -24,3 +24,16 @@ https://medium.com/@EclecticCoder/manage-todo-list-in-vscode-beb53774d776
 - Log entries should be combined for single map actions
 - drop rates for gear isnt based on mission type?
 - Random starting passive for each character with biasing based on class
+- Reroll button needs current gold near it.
+
+# Ideas
+- Auction house with simulated non-responding traders
+
+TIPS FORM CHAT
+
+f u want to "auto indent" u can ctrl shift P and search for format, u can use a extension called prettier. and later on u can also auto format on save 
+
+BOW https://i.imgur.com/Y81WrBY.png
+
+
+you can use css variables to use colors (ask claude about naming colors)

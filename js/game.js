@@ -378,6 +378,7 @@ equipItem(itemId) {
     this.recalculateStats();
     this.updateDisplay();
     this.updateInventoryDisplay();
+    this.updateCharacterScreenIfOpen();
     this.saveGame();
 },
 
@@ -392,6 +393,7 @@ unequipItem(slot) {
     this.recalculateStats();
     this.updateDisplay();
     this.updateInventoryDisplay();
+    this.updateCharacterScreenIfOpen();
     this.saveGame();
 },
 
@@ -502,7 +504,8 @@ useChaosOrb(itemId) {
     }
     this.updateInventoryDisplay();
     this.saveGame();
-    
+    this.updateCharacterScreenIfOpen();
+
     return true;
 },
     // END USE CHAOS ORB
@@ -551,64 +554,74 @@ useExaltedOrb(itemId) {
     }
     this.updateInventoryDisplay();
     this.saveGame();
-    
+    this.updateCharacterScreenIfOpen();
+
     return true;
 },
     // End of use Alchemy
 
 updateInventoryDisplay() {
-    // Update equipped items
+    // Update equipped items (only if elements exist - old main screen)
     ['weapon', 'armor', 'jewelry'].forEach(slot => {
-        const slotElement = document.getElementById(`${slot}-slot`).querySelector('.slot-content');
-        const equipped = gameState.inventory.equipped[slot];
-        
-        if (equipped) {
-            slotElement.innerHTML = `
-                <div class="item-equipped">
-                    <div class="item-name ${equipped.rarity}">${equipped.name}</div>
-                    <div class="item-stats">
-                        ${Object.entries(equipped.stats).map(([stat, value]) => 
-                            `<div class="item-stat">+${value} ${stat}</div>`
-                        ).join('')}
-                    </div>
-                </div>
-            `;
-        } else {
-            slotElement.innerHTML = '<div class="empty-slot">Empty</div>';
+        const slotElement = document.getElementById(`${slot}-slot`);
+        if (slotElement) {
+            const slotContent = slotElement.querySelector('.slot-content');
+            if (slotContent) {
+                const equipped = gameState.inventory.equipped[slot];
+                
+                if (equipped) {
+                    slotContent.innerHTML = `
+                        <div class="item-equipped">
+                            <div class="item-name ${equipped.rarity}">${equipped.name}</div>
+                            <div class="item-stats">
+                                ${Object.entries(equipped.stats).map(([stat, value]) => 
+                                    `<div class="item-stat">+${value} ${stat}</div>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    slotContent.innerHTML = '<div class="empty-slot">Empty</div>';
+                }
+            }
         }
     });
     
-    // Update inventory
+    // Update inventory (only if elements exist - old main screen)
     const inventoryElement = document.getElementById('inventory');
     const inventoryCount = document.getElementById('inventory-count');
     
-    inventoryCount.textContent = `(${gameState.inventory.backpack.length}/20)`;
+    if (inventoryCount) {
+        inventoryCount.textContent = `(${gameState.inventory.backpack.length}/20)`;
+    }
     
-    if (gameState.inventory.backpack.length === 0) {
-        inventoryElement.innerHTML = '<div style="color: #666; text-align: center;">No items in inventory</div>';
-    } else {
-        inventoryElement.innerHTML = gameState.inventory.backpack.map(item => `
-    <div class="inventory-item ${item.rarity}">
-        <div class="item-name ${item.rarity}">${item.name}</div>
-        <div class="item-type">${item.slot}</div>
-        <div class="item-stats">
-            ${Object.entries(item.stats).map(([stat, value]) => 
-                `<div class="item-stat">+${value} ${stat}</div>`
-            ).join('')}
+    if (inventoryElement) {
+        if (gameState.inventory.backpack.length === 0) {
+            inventoryElement.innerHTML = '<div style="color: #666; text-align: center;">No items in inventory</div>';
+        } else {
+            inventoryElement.innerHTML = gameState.inventory.backpack.map(item => `
+        <div class="inventory-item ${item.rarity}">
+            <div class="item-name ${item.rarity}">${item.name}</div>
+            <div class="item-type">${item.slot}</div>
+            <div class="item-stats">
+                ${Object.entries(item.stats).map(([stat, value]) => 
+                    `<div class="item-stat">+${value} ${stat}</div>`
+                ).join('')}
+            </div>
+            <div class="item-actions">
+                <button class="action-btn equip" onclick="game.equipItem(${item.id})">Equip</button>
+                <button class="action-btn chaos" onclick="game.useChaosOrb(${item.id})" 
+                    ${gameState.resources.chaosOrbs < 1 ? 'disabled' : ''}>
+                    Chaos (${gameState.resources.chaosOrbs})
+                </button>
+                <button class="action-btn exalted" onclick="game.useExaltedOrb(${item.id})" 
+                    ${gameState.resources.exaltedOrbs < 1 ? 'disabled' : ''}>
+                    Exalted (${gameState.resources.exaltedOrbs})
+                </button>
+            </div>
         </div>
-        <div class="item-actions">
-            <button class="action-btn equip" onclick="game.equipItem(${item.id})">Equip</button>
-            <button class="action-btn chaos" onclick="game.useChaosOrb(${item.id})" 
-                ${gameState.resources.chaosOrbs < 1 ? 'disabled' : ''}>
-                Chaos (${gameState.resources.chaosOrbs})
-            </button>
-            <button class="action-btn exalted" onclick="game.useExaltedOrb(${item.id})" 
-                ${gameState.resources.exaltedOrbs < 1 ? 'disabled' : ''}>
-                Exalted (${gameState.resources.exaltedOrbs})
-            </button>
-        </div>
-    </div>
-`).join('');
+    `).join('');
+        }
     }
 },
 
@@ -690,41 +703,509 @@ useChaosOrb(itemId) {
         location.reload();
     },
     
-    updateDisplay() {
-        // Update exile info
-        document.getElementById('exile-name').textContent = gameState.exile.name;
-        document.getElementById('exile-class').textContent = gameState.exile.class;
-        document.getElementById('exile-level').textContent = gameState.exile.level;
-        document.getElementById('exile-exp').textContent = gameState.exile.experience;
-        document.getElementById('exile-exp-needed').textContent = gameState.exile.experienceNeeded;
-        
-        // Apply morale effects before displaying
-        this.applyMoraleEffects(gameState.exile);
 
-        // Update stats
-        document.getElementById('stat-life').textContent = gameState.exile.stats.life;
-        document.getElementById('stat-damage').textContent = gameState.exile.stats.damage;
-        document.getElementById('stat-defense').textContent = gameState.exile.stats.defense;
-        document.getElementById('power-rating').textContent = this.calculatePowerRating();
-        
-        // Update resources
-        document.getElementById('gold').textContent = gameState.resources.gold;
-        document.getElementById('chaos-orbs').textContent = gameState.resources.chaosOrbs;
-        document.getElementById('exalted-orbs').textContent = gameState.resources.exaltedOrbs;
-        // Update morale
-        const moraleValue = gameState.exile.morale;
-        const moraleStatus = this.getMoraleStatus(moraleValue);
-        document.getElementById('morale-value').textContent = gameState.exile.morale;
-        document.getElementById('morale-status').textContent = this.getMoraleStatus(gameState.exile.morale);
-
-            // Set color based on morale level
-            const moraleElement = document.getElementById('morale-status');
-            if (moraleValue >= 85) moraleElement.style.color = '#4CAF50'; // Green
-            else if (moraleValue >= 70) moraleElement.style.color = '#888'; // Gray
-            else if (moraleValue >= 50) moraleElement.style.color = '#ff9800'; // Orange  
-            else moraleElement.style.color = '#f44336'; // Red
-    },
+  updateDisplay() {
+    // Only update elements that still exist
+        // Try to update old elements if they exist (for backwards compatibility)
+    const elements = {
+        'exile-name': gameState.exile.name,
+        'exile-class': gameState.exile.class,
+        'exile-level': gameState.exile.level,
+        'exile-exp': gameState.exile.experience,
+        'exile-exp-needed': gameState.exile.experienceNeeded,
+        'stat-life': gameState.exile.stats.life,
+        'stat-damage': gameState.exile.stats.damage,
+        'stat-defense': gameState.exile.stats.defense,
+        'power-rating': this.calculatePowerRating(),
+        'morale-value': gameState.exile.morale,
+        'morale-status': this.getMoraleStatus(gameState.exile.morale)
+    };
     
+    // Safely update elements that exist
+    Object.entries(elements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    });
+    
+    // Update resources
+    document.getElementById('gold').textContent = gameState.resources.gold;
+    document.getElementById('chaos-orbs').textContent = gameState.resources.chaosOrbs;
+    document.getElementById('exalted-orbs').textContent = gameState.resources.exaltedOrbs;
+    
+    // Apply morale effects before displaying
+    this.applyMoraleEffects(gameState.exile);
+    
+    // Set morale color if element exists
+    const moraleElement = document.getElementById('morale-status');
+    if (moraleElement) {
+        const moraleValue = gameState.exile.morale;
+        if (moraleValue >= 85) moraleElement.style.color = '#4CAF50';
+        else if (moraleValue >= 70) moraleElement.style.color = '#888';
+        else if (moraleValue >= 50) moraleElement.style.color = '#ff9800';
+        else moraleElement.style.color = '#f44336';
+    }
+    
+    // Update exile summary for new UI
+    this.updateExileSummary();
+},
+
+// Exile Summary Button to Exile Screen ========    
+openCharacterScreen() {
+    // Show the character screen modal
+    const modal = document.getElementById('character-screen-modal');
+    modal.style.display = 'flex';
+    this.updateCharacterScreen();
+    
+    // Add escape key listener
+    document.addEventListener('keydown', this.handleModalKeydown.bind(this));
+},
+
+closeCharacterScreen() {
+    const modal = document.getElementById('character-screen-modal');
+    modal.style.display = 'none';
+    
+    // Remove escape key listener
+    document.removeEventListener('keydown', this.handleModalKeydown.bind(this));
+},
+
+handleModalKeydown(event) {
+    if (event.key === 'Escape') {
+        this.closeCharacterScreen();
+    }
+},
+
+handleModalClick(event) {
+    // Only close if clicking the overlay (not the content)
+    if (event.target.classList.contains('modal-overlay')) {
+        this.closeCharacterScreen();
+    }
+},
+
+
+updateCharacterScreen() {
+    // Update character info
+    document.getElementById('char-name').textContent = gameState.exile.name;
+    document.getElementById('char-class').textContent = classDefinitions[gameState.exile.class].name;
+    document.getElementById('char-level').textContent = gameState.exile.level;
+    document.getElementById('char-exp').textContent = gameState.exile.experience;
+    document.getElementById('char-exp-needed').textContent = gameState.exile.experienceNeeded;
+    document.getElementById('char-morale').textContent = gameState.exile.morale;
+    document.getElementById('char-morale-status').textContent = this.getMoraleStatus(gameState.exile.morale);
+    
+    // Calculate all the breakdown components
+    const gearBonuses = this.calculateGearBonuses();
+    const passiveBonuses = this.calculatePassiveBonusesForDisplay();
+    const moraleBonuses = this.calculateMoraleBonuses();
+    
+    // Create formatted tooltips with aligned numbers
+    const lifeTooltip = this.createStatTooltip(
+        gameState.exile.baseStats.life,
+        gearBonuses.life,
+        passiveBonuses.life,
+        moraleBonuses.life,
+        gameState.exile.stats.life
+    );
+    
+    const damageTooltip = this.createStatTooltip(
+        gameState.exile.baseStats.damage,
+        gearBonuses.damage,
+        passiveBonuses.damage,
+        moraleBonuses.damage,
+        gameState.exile.stats.damage
+    );
+    
+    const defenseTooltip = this.createStatTooltip(
+        gameState.exile.baseStats.defense,
+        gearBonuses.defense,
+        passiveBonuses.defense,
+        moraleBonuses.defense,
+        gameState.exile.stats.defense
+    );
+    
+    // Set the values and tooltips
+    document.getElementById('final-life').textContent = gameState.exile.stats.life;
+    document.getElementById('final-damage').textContent = gameState.exile.stats.damage;
+    document.getElementById('final-defense').textContent = gameState.exile.stats.defense;
+    document.getElementById('power-rating-calc').textContent = this.calculatePowerRating();
+    
+    // Find and update tooltips
+    const tooltipElements = document.querySelectorAll('.stat-value-with-tooltip');
+    if (tooltipElements[0]) tooltipElements[0].title = lifeTooltip;
+    if (tooltipElements[1]) tooltipElements[1].title = damageTooltip;
+    if (tooltipElements[2]) tooltipElements[2].title = defenseTooltip;
+    
+    // Update allocated passives
+    this.updateAllocatedPassives();
+    
+    // Update passive allocation button
+    this.updatePassiveButton();
+    
+    // Update equipment and inventory
+    this.updateCharacterEquipment();
+    this.updateCharacterInventory();
+},
+
+createStatTooltip(base, gear, passives, morale, final) {
+    // Create formatted tooltip with aligned columns
+    return `Base (${base}) + Gear (${gear}) + Passives (${passives}) + Morale (${morale})
+―――――――――――――――――――――――――――
+Final: ${final}`;
+},
+
+calculatePassiveBonusesForDisplay() {
+    // Calculate the total passive contribution to final stats
+    const baseStats = gameState.exile.baseStats;
+    const gearBonuses = this.calculateGearBonuses();
+    const passiveEffects = this.calculatePassiveEffects();
+    
+    // Calculate what passives contribute to final totals
+    const flatBase = {
+        life: baseStats.life + gearBonuses.life,
+        damage: baseStats.damage + gearBonuses.damage,
+        defense: baseStats.defense + gearBonuses.defense
+    };
+    
+    // Apply passive scaling
+    const passiveContribution = {
+        life: Math.floor(flatBase.life * (passiveEffects.increasedLife / 100) + 
+              flatBase.life * (passiveEffects.moreLife / 100) + 
+              passiveEffects.flatLife),
+        damage: Math.floor(flatBase.damage * (passiveEffects.increasedDamage / 100) + 
+                flatBase.damage * (passiveEffects.moreDamage / 100) + 
+                passiveEffects.flatDamage),
+        defense: Math.floor(flatBase.defense * (passiveEffects.increasedDefense / 100) + 
+                 flatBase.defense * (passiveEffects.moreDefense / 100) + 
+                 passiveEffects.flatDefense)
+    };
+    
+    return passiveContribution;
+},
+
+updateAllocatedPassives() {
+    const container = document.getElementById('allocated-passives-list');
+    
+    if (gameState.exile.passives.allocated.length === 0) {
+        container.innerHTML = '<div style="color: #666; text-align: center;">No passives allocated</div>';
+        return;
+    }
+    
+    container.innerHTML = gameState.exile.passives.allocated.map(passiveId => {
+        const passive = passiveDefinitions[passiveId];
+        if (!passive) return '';
+        
+        return `
+            <div class="passive-item">
+                <div class="passive-name ${passive.tier}">${passive.name}</div>
+                <div class="passive-description">${passive.description}</div>
+            </div>
+        `;
+    }).join('');
+},
+
+updatePassiveButton() {
+    const button = document.getElementById('allocate-passive-btn');
+    if (gameState.exile.passives.pendingPoints > 0) {
+        button.style.display = 'block';
+        button.textContent = `Allocate Passive Skill (${gameState.exile.passives.pendingPoints})`;
+    } else {
+        button.style.display = 'none';
+    }
+},
+
+updateCharacterEquipment() {
+    // TODO: Update character screen equipment (placeholder for now)
+    console.log("Updating character equipment display");
+},
+
+updateCharacterInventory() {
+    // TODO: Update character screen inventory (placeholder for now)
+    console.log("Updating character inventory display");
+},
+
+openPassiveSelection() {
+    // Make sure we have pending points and choices ready
+    if (gameState.exile.passives.pendingPoints <= 0) {
+        this.log("No passive points to spend!", "failure");
+        return;
+    }
+    
+    // Generate choices if we don't have them
+    if (!this.currentPassiveChoices) {
+        this.startPassiveSelection();
+    }
+    
+    // Show the passive selection modal
+    document.getElementById('passive-selection-modal').style.display = 'flex';
+    this.updatePassiveSelectionDisplay();
+    
+    // Add escape key listener
+    document.addEventListener('keydown', this.handlePassiveModalKeydown.bind(this));
+},
+
+closePassiveSelection() {
+    document.getElementById('passive-selection-modal').style.display = 'none';
+    
+    // Remove escape key listener
+    document.removeEventListener('keydown', this.handlePassiveModalKeydown.bind(this));
+},
+
+handlePassiveModalKeydown(event) {
+    if (event.key === 'Escape') {
+        this.closePassiveSelection();
+    }
+},
+
+handlePassiveModalClick(event) {
+    // Only close if clicking the overlay (not the content)
+    if (event.target.classList.contains('modal-overlay')) {
+        this.closePassiveSelection();
+    }
+},
+
+// PASSIVE TREE
+updatePassiveSelectionDisplay() {
+    if (!this.currentPassiveChoices) return;
+    
+    const { tier, choice1, choice2, rerollCost } = this.currentPassiveChoices;
+    
+    // Update modal title
+    document.getElementById('passive-modal-title').textContent = `Choose Your ${tier.charAt(0).toUpperCase() + tier.slice(1)} Passive`;
+    
+    // Update choice 1
+    const choice1Element = document.getElementById('passive-choice-1');
+    choice1Element.querySelector('.passive-choice-name').textContent = choice1.name;
+    choice1Element.querySelector('.passive-choice-tier').textContent = choice1.tier;
+    choice1Element.querySelector('.passive-choice-tier').className = `passive-choice-tier ${choice1.tier}`;
+    choice1Element.querySelector('.passive-choice-description').textContent = choice1.description;
+    
+    // Update choice 2
+    const choice2Element = document.getElementById('passive-choice-2');
+    choice2Element.querySelector('.passive-choice-name').textContent = choice2.name;
+    choice2Element.querySelector('.passive-choice-tier').textContent = choice2.tier;
+    choice2Element.querySelector('.passive-choice-tier').className = `passive-choice-tier ${choice2.tier}`;
+    choice2Element.querySelector('.passive-choice-description').textContent = choice2.description;
+    
+    // Update reroll button
+    const rerollBtn = document.getElementById('reroll-passive-btn');
+    rerollBtn.textContent = `Reroll (${rerollCost} gold)`;
+    rerollBtn.disabled = gameState.resources.gold < rerollCost;
+},
+
+selectPassive(choiceNumber) {
+    if (!this.currentPassiveChoices) return;
+    
+    const selectedPassive = choiceNumber === 1 ? this.currentPassiveChoices.choice1 : this.currentPassiveChoices.choice2;
+    
+    // Allocate the passive
+    const success = this.allocatePassive(selectedPassive.id);
+    
+    if (success) {
+        // Clear current choices
+        this.currentPassiveChoices = null;
+        
+        // Close the modal
+        this.closePassiveSelection();
+        
+        // Update character screen if open
+        this.updateCharacterScreenIfOpen();
+        
+        this.log(`Selected ${selectedPassive.name}!`, "legendary");
+    }
+},
+
+rerollPassiveChoices() {
+    if (!this.currentPassiveChoices) return;
+    
+    const { tier, rerollCost } = this.currentPassiveChoices;
+    
+    // Check if player can afford reroll
+    if (gameState.resources.gold < rerollCost) {
+        this.log("Not enough gold to reroll!", "failure");
+        return;
+    }
+    
+    // Spend gold
+    gameState.resources.gold -= rerollCost;
+    gameState.exile.passives.rerollsUsed++;
+    
+    // Generate new choices
+    const choice1 = this.selectPassiveForLevelUp(tier);
+    const choice2 = this.selectPassiveForLevelUp(tier);
+    
+    if (!choice1 || !choice2) {
+        this.log("No more passives available for reroll!", "failure");
+        return;
+    }
+    
+    // Update choices
+    this.currentPassiveChoices = {
+        tier: tier,
+        choice1: choice1,
+        choice2: choice2,
+        rerollCost: this.getRerollCost(tier, gameState.exile.passives.rerollsUsed)
+    };
+    
+    // Update display
+    this.updatePassiveSelectionDisplay();
+    this.updateDisplay(); // Update gold
+    
+    this.log(`Rerolled passive choices! (-${rerollCost} gold)`, "info");
+},
+    // End of Passive Screen
+// End of Exile Screen from Exile Button
+
+
+updateExileSummary() {
+    // Update the compact exile summary on main screen
+    document.getElementById('exile-name-summary').textContent = gameState.exile.name;
+    document.getElementById('exile-class-summary').textContent = classDefinitions[gameState.exile.class].name;
+    document.getElementById('exile-level-summary').textContent = gameState.exile.level;
+    
+    document.getElementById('exile-life-summary').textContent = gameState.exile.stats.life;
+    document.getElementById('exile-damage-summary').textContent = gameState.exile.stats.damage;
+    document.getElementById('exile-defense-summary').textContent = gameState.exile.stats.defense;
+    document.getElementById('exile-morale-summary').textContent = gameState.exile.morale;
+    
+    // Set morale color
+    const moraleElement = document.getElementById('exile-morale-summary');
+    const moraleValue = gameState.exile.morale;
+    if (moraleValue >= 85) moraleElement.style.color = '#4CAF50';
+    else if (moraleValue >= 70) moraleElement.style.color = '#888';
+    else if (moraleValue >= 50) moraleElement.style.color = '#ff9800';
+    else moraleElement.style.color = '#f44336';
+    
+    // Show passive points indicator
+    const indicator = document.getElementById('passive-points-indicator');
+    if (gameState.exile.passives.pendingPoints > 0) {
+        indicator.style.display = 'block';
+        indicator.textContent = `(+) ${gameState.exile.passives.pendingPoints} Passive Point${gameState.exile.passives.pendingPoints > 1 ? 's' : ''} Available`;
+    } else {
+        indicator.style.display = 'none';
+    }
+},
+
+    // Stat Calcs for Exile Screen (including Morale)
+
+calculateGearBonuses() {
+    let life = 0, damage = 0, defense = 0;
+    Object.values(gameState.inventory.equipped).forEach(item => {
+        if (item) {
+            life += item.stats.life || 0;
+            damage += item.stats.damage || 0;
+            defense += item.stats.defense || 0;
+        }
+    });
+    return { life, damage, defense };
+},
+
+calculateMoraleBonuses() {
+    // Calculate what morale is contributing to current stats
+    const morale = gameState.exile.morale;
+    let damageBonus = 0;
+    let defenseBonus = 0;
+    
+    // We need to get the pre-morale stats to calculate the bonus
+    const baseStats = gameState.exile.baseStats;
+    const gearBonuses = this.calculateGearBonuses();
+    const passiveBonuses = this.calculatePassiveBonusesForDisplay();
+    
+    const premoraleStats = {
+        damage: baseStats.damage + gearBonuses.damage + passiveBonuses.damage,
+        defense: baseStats.defense + gearBonuses.defense + passiveBonuses.defense
+    };
+    
+    if (morale >= 85) {
+        // Confident: +10% damage, +5% defense
+        damageBonus = Math.floor(premoraleStats.damage * 0.1);
+        defenseBonus = Math.floor(premoraleStats.defense * 0.05);
+    } else if (morale <= 49) {
+        // Demoralized: -10% damage, -5% defense
+        damageBonus = -Math.floor(premoraleStats.damage * 0.1);
+        defenseBonus = -Math.floor(premoraleStats.defense * 0.05);
+    } else if (morale <= 69) {
+        // Discouraged: -5% damage
+        damageBonus = -Math.floor(premoraleStats.damage * 0.05);
+    }
+    
+    return { life: 0, damage: damageBonus, defense: defenseBonus };
+},
+
+updateCharacterEquipment() {
+    // Update character screen equipment display
+    ['weapon', 'armor', 'jewelry'].forEach(slot => {
+        const slotElement = document.getElementById(`char-${slot}-slot`).querySelector('.slot-content');
+        const equipped = gameState.inventory.equipped[slot];
+        
+        if (equipped) {
+            slotElement.innerHTML = `
+                <div class="item-equipped">
+                    <div class="item-name ${equipped.rarity}">${equipped.name}</div>
+                    <div class="item-stats">
+                        ${Object.entries(equipped.stats).map(([stat, value]) => 
+                            `<div class="item-stat">+${value} ${stat}</div>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+        } else {
+            slotElement.innerHTML = '<div class="empty-slot">Empty</div>';
+        }
+    });
+},
+
+updateCharacterInventory() {
+    // Update character screen inventory display
+    const inventoryElement = document.getElementById('char-inventory');
+    const inventoryCount = document.getElementById('char-inventory-count');
+    
+    inventoryCount.textContent = `(${gameState.inventory.backpack.length}/20)`;
+    
+    if (gameState.inventory.backpack.length === 0) {
+        inventoryElement.innerHTML = '<div style="color: #666; text-align: center;">No items in inventory</div>';
+    } else {
+        inventoryElement.innerHTML = gameState.inventory.backpack.map(item => `
+            <div class="inventory-item ${item.rarity}">
+                <div class="item-name ${item.rarity}">${item.name}</div>
+                <div class="item-type">${item.slot}</div>
+                <div class="item-stats">
+                    ${Object.entries(item.stats).map(([stat, value]) => 
+                        `<div class="item-stat">+${value} ${stat}</div>`
+                    ).join('')}
+                </div>
+                <div class="item-actions">
+                    <button class="action-btn equip" onclick="game.equipItem(${item.id})">Equip</button>
+                    <button class="action-btn chaos" onclick="game.useChaosOrb(${item.id})" 
+                        ${gameState.resources.chaosOrbs < 1 ? 'disabled' : ''}>
+                        Chaos (${gameState.resources.chaosOrbs})
+                    </button>
+                    <button class="action-btn exalted" onclick="game.useExaltedOrb(${item.id})" 
+                        ${gameState.resources.exaltedOrbs < 1 ? 'disabled' : ''}>
+                        Exalted (${gameState.resources.exaltedOrbs})
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+},
+
+// Helpers for Exile Screen
+isCharacterScreenOpen() {
+    const modal = document.getElementById('character-screen-modal');
+    return modal && modal.style.display === 'flex';
+},
+
+updateCharacterScreenIfOpen() {
+    if (this.isCharacterScreenOpen()) {
+        this.updateCharacterScreen();
+    }
+},
+
+    // End of Character Stat Calcs for Exile Screen
+// End of Exile Summary Button to Exile Screen ========    
+
+
     log(message, type = "info") {
     const logContainer = document.getElementById('log');
     const entry = document.createElement('div');
@@ -948,9 +1429,6 @@ startPassiveSelection() {
     };
     
     this.log(`Choose your ${tier} passive! (Reroll cost: ${this.currentPassiveChoices.rerollCost} gold)`, "legendary");
-    
-    // For now, auto-select first choice (we'll add UI next phase)
-    this.allocatePassive(choice1.id);
 },
 
 getRerollCost(tier, rerollsUsed) {

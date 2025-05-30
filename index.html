@@ -10,54 +10,46 @@
          <button id="reset-btn" onclick="game.resetGame()">Reset Save</button>
             <div class="container">
                 <h1>Exile Manager</h1>      
-        <div class="game-panel">
-            <h2>Your Exile</h2>
-            <div id="exile-info" class="info-box">
-                <div class="stat-row">
-                    <span class="stat-label">Name:</span>
-                    <span id="exile-name">Unnamed Exile</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Class:</span>
-                    <span id="exile-class">Marauder</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Level:</span>
-                    <span id="exile-level">1</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Experience:</span>
-                    <span id="exile-exp">0</span>/<span id="exile-exp-needed">100</span>
-                </div>
-            </div>
+    
+
+<!-- Exile Summary Card -->
+        <div class="exile-summary-card" onclick="game.openCharacterScreen()">
+    <div class="exile-basic-info">
+        <div class="exile-name-class">
+            <span id="exile-name-summary">Unnamed Exile</span>
+            <span class="exile-class-badge" id="exile-class-summary">Marauder</span>
         </div>
-        
-        <div class="game-panel">
-            <h2>Stats</h2>
-            <div id="stats" class="info-box">
-                <div class="stat-row">
-                    <span class="stat-label">Life:</span>
-                    <span id="stat-life">100</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Damage:</span>
-                    <span id="stat-damage">10</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Defense:</span>
-                    <span id="stat-defense">5</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Morale:</span>
-                    <span id="morale-value">75</span> (<span id="morale-status">Content</span>)
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Power Rating:</span>
-                    <span id="power-rating" class="highlight">0</span>
-                </div>
-            </div>
+        <div class="exile-level">Level <span id="exile-level-summary">1</span></div>
+    </div>
+    
+    <div class="exile-quick-stats">
+        <div class="quick-stat">
+            <span class="stat-value" id="exile-life-summary">100</span>
+            <span class="stat-label">Life</span>
         </div>
-        
+        <div class="quick-stat">
+            <span class="stat-value" id="exile-damage-summary">10</span>
+            <span class="stat-label">Damage</span>
+        </div>
+        <div class="quick-stat">
+            <span class="stat-value" id="exile-defense-summary">5</span>
+            <span class="stat-label">Defense</span>
+        </div>
+        <div class="quick-stat morale-stat">
+            <span class="stat-value" id="exile-morale-summary">75</span>
+            <span class="stat-label">Morale</span>
+        </div>
+    </div>
+    
+    <div class="exile-notifications">
+        <div id="passive-points-indicator" class="notification-badge" style="display: none;">
+            (+) Passive Points Available
+        </div>
+        <div class="click-hint">Click to view character</div>
+    </div>
+</div>
+<!-- End of exile summary -->
+
         <div class="game-panel">
             <h2>Resources</h2>
             <div id="resources" class="info-box">
@@ -112,40 +104,199 @@
         </div>
     
 
-        <div class="game-panel full-width">
-            <h2>Equipment</h2>
-            <div class="equipment-grid">
-                <div class="equipment-slot" id="weapon-slot">
-                    <div class="slot-label">Weapon</div>
-                    <div class="slot-content" onclick="game.unequipItem('weapon')">
-                        <div class="empty-slot">Empty</div>
+
+    </div>
+
+<!-- Character Screen Modal - add this before </body> -->
+<div id="character-screen-modal" class="modal-overlay" style="display: none;" onclick="game.handleModalClick(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2>Character Details</h2>
+            <button class="close-btn" onclick="game.closeCharacterScreen()">&times;</button>
+        </div>
+        
+        <div class="character-screen-layout">
+            <!-- Left Column: Character Info & Stats -->
+            <div class="character-left-column">
+                <div class="character-info-section">
+                    <h3>Character Information</h3>
+                    <div class="character-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Name:</span>
+                            <span id="char-name">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Class:</span>
+                            <span id="char-class">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Level:</span>
+                            <span id="char-level">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Experience:</span>
+                            <span id="char-exp">-</span> / <span id="char-exp-needed">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Morale:</span>
+                            <span id="char-morale">-</span> (<span id="char-morale-status">-</span>)
+                        </div>
                     </div>
                 </div>
-                <div class="equipment-slot" id="armor-slot">
-                    <div class="slot-label">Armor</div>
-                    <div class="slot-content" onclick="game.unequipItem('armor')">
-                        <div class="empty-slot">Empty</div>
+                
+                <div class="stats-breakdown-section">
+                    <h3>Combat Statistics</h3>
+                    <div class="stat-breakdown">
+                        <div class="stat-breakdown-row">
+                            <span class="stat-name">Life:</span>
+                            <span class="stat-value-with-tooltip" 
+                                title="Base + Gear + Passives + Morale">
+                                <span id="final-life" class="final-stat">100</span>
+                            </span>
+                        </div>
+                        <div class="stat-breakdown-row">
+                            <span class="stat-name">Damage:</span>
+                            <span class="stat-value-with-tooltip" 
+                                title="Base + Gear + Passives + Morale">
+                                <span id="final-damage" class="final-stat">10</span>
+                            </span>
+                        </div>
+                        <div class="stat-breakdown-row">
+                            <span class="stat-name">Defense:</span>
+                            <span class="stat-value-with-tooltip" 
+                                title="Base + Gear + Passives + Morale">
+                                <span id="final-defense" class="final-stat">5</span>
+                            </span>
+                        </div>
+                        <div class="stat-breakdown-row">
+                            <span class="stat-name">Power Rating:</span>
+                            <span class="stat-formula">
+                                <span id="power-rating-calc" class="final-stat">0</span>
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <div class="equipment-slot" id="jewelry-slot">
-                    <div class="slot-label">Jewelry</div>
-                    <div class="slot-content" onclick="game.unequipItem('jewelry')">
-                        <div class="empty-slot">Empty</div>
+            </div>
+            
+            <!-- Middle Column: Passives -->
+            <div class="character-middle-column">
+                <div class="passives-section">
+                    <h3>Passive Skills</h3>
+                    <div id="allocated-passives-list" class="allocated-passives">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    
+                    <div id="passive-allocation-area">
+                        <button id="allocate-passive-btn" class="allocate-btn" onclick="game.openPassiveSelection()" style="display: none;">
+                            Allocate Passive Skill (1)
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column: Equipment & Inventory -->
+            <div class="character-right-column">
+                <div class="equipment-section">
+                    <h3>Equipment</h3>
+                    <div class="character-equipment-grid">
+                        <!-- Main equipment slots -->
+                        <div class="char-equip-slot" id="char-weapon-slot">
+                            <div class="slot-label">Weapon</div>
+                            <div class="slot-content" onclick="game.unequipItem('weapon')">
+                                <div class="empty-slot">Empty</div>
+                            </div>
+                        </div>
+                        <div class="char-equip-slot" id="char-armor-slot">
+                            <div class="slot-label">Armor</div>
+                            <div class="slot-content" onclick="game.unequipItem('armor')">
+                                <div class="empty-slot">Empty</div>
+                            </div>
+                        </div>
+                        <div class="char-equip-slot" id="char-jewelry-slot">
+                            <div class="slot-label">Jewelry</div>
+                            <div class="slot-content" onclick="game.unequipItem('jewelry')">
+                                <div class="empty-slot">Empty</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Future equipment slots (placeholder) -->
+                        <div class="char-equip-slot future-slot">
+                            <div class="slot-label">Helm</div>
+                            <div class="slot-content"><div class="empty-slot">Coming Soon</div></div>
+                        </div>
+                        <div class="char-equip-slot future-slot">
+                            <div class="slot-label">Gloves</div>
+                            <div class="slot-content"><div class="empty-slot">Coming Soon</div></div>
+                        </div>
+                        <div class="char-equip-slot future-slot">
+                            <div class="slot-label">Boots</div>
+                            <div class="slot-content"><div class="empty-slot">Coming Soon</div></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="character-inventory-section">
+                    <h3>Inventory <span id="char-inventory-count">(0/20)</span></h3>
+                    <div id="char-inventory" class="character-inventory-grid">
+                        <!-- Will be populated by JavaScript -->
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+</div>    
+<!-- End of Model Char Popup -->
 
-        <div class="game-panel full-width">
-            <h2>Inventory <span id="inventory-count">(0/20)</span></h2>
-            <div id="inventory" class="inventory-grid"></div>
+<!-- Passive Selection Modal -->
+<div id="passive-selection-modal" class="modal-overlay" style="display: none;" onclick="game.handlePassiveModalClick(event)">
+    <div class="passive-modal-content" onclick="event.stopPropagation()">
+        <div class="passive-modal-header">
+            <h2 id="passive-modal-title">Choose Your Passive Skill</h2>
+            <button class="close-btn" onclick="game.closePassiveSelection()">&times;</button>
+        </div>
+        
+        <div class="passive-choices-container">
+            <div class="passive-choice" id="passive-choice-1" onclick="game.selectPassive(1)">
+                <div class="passive-choice-header">
+                    <span class="passive-choice-name">Passive Name</span>
+                    <span class="passive-choice-tier">Notable</span>
+                </div>
+                <div class="passive-choice-description">
+                    Passive description goes here
+                </div>
+            </div>
+            
+            <div class="passive-choice" id="passive-choice-2" onclick="game.selectPassive(2)">
+                <div class="passive-choice-header">
+                    <span class="passive-choice-name">Passive Name</span>
+                    <span class="passive-choice-tier">Notable</span>
+                </div>
+                <div class="passive-choice-description">
+                    Passive description goes here
+                </div>
+            </div>
+        </div>
+        
+        <div class="passive-modal-footer">
+            <button id="reroll-passive-btn" class="reroll-btn" onclick="game.rerollPassiveChoices()">
+                Reroll (50 gold)
+            </button>
+            <div class="passive-help-text">
+                Click a passive to select it, or reroll for new options
+            </div>
         </div>
     </div>
+</div>
+<!-- Passive Screen Modal END -->
+
+<!-- SCRIPTS MUST GO LAST html elements need to be loaded for these to interact with -->
     <script src="js/gameState.js"></script>
     <script src="js/items.js"></script>
     <script src="js/missions.js"></script>
     <script src="js/passives.js"></script>
     <script src="js/game.js"></script>
     <script src="js/main.js"></script>
+
+
 </body>
 </html>
