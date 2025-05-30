@@ -457,7 +457,7 @@ shuffleArray(array) {
 },
 
 // CRAFTING
-// USE CHAOS ORB
+    // USE CHAOS ORB
 useChaosOrb(itemId) {
     const item = gameState.inventory.backpack.find(i => i.id === itemId);
     if (!item || gameState.resources.chaosOrbs < 1) return false;
@@ -505,8 +505,9 @@ useChaosOrb(itemId) {
     
     return true;
 },
-// END USE CHAOS ORB
-// USE ALCHEMY
+    // END USE CHAOS ORB
+
+    // USE ALCHEMY
 useExaltedOrb(itemId) {
     const item = gameState.inventory.backpack.find(i => i.id === itemId);
     if (!item || gameState.resources.exaltedOrbs < 1) return false;
@@ -553,7 +554,7 @@ useExaltedOrb(itemId) {
     
     return true;
 },
-// End of use Alchemy
+    // End of use Alchemy
 
 updateInventoryDisplay() {
     // Update equipped items
@@ -666,7 +667,7 @@ useChaosOrb(itemId) {
     
     return true;
 },
-// End of Crafting Subsection
+    // End of Crafting Subsection
 // END OF GEAR ====================>>>>
     
     gameOver() {
@@ -762,10 +763,14 @@ useChaosOrb(itemId) {
 
 // PASSIVE SYSTEM METHODS
 initializeExile() {
-    // Randomize class if not set or on new game
-    if (!gameState.exile.class || gameState.exile.class === "Marauder") {
-        this.randomizeExileClass();
-    }
+   // Randomize class on truly new games (Not reliant on initial class name)
+const isNewGame = gameState.exile.level === 1 && 
+                  gameState.exile.experience === 0 && 
+                  gameState.exile.passives.allocated.length <= 1;
+
+if (isNewGame) {
+    this.randomizeExileClass();
+}
     
     // Set base stats from class
     const classData = classDefinitions[gameState.exile.class];
@@ -790,17 +795,8 @@ randomizeExileClass() {
     this.log(`${gameState.exile.name} is a ${classDefinitions[randomClass].name}!`, "info");
 },
 
-giveStartingNotable() {
-    // Initialize passives if missing
-    if (!gameState.exile.passives) {
-        gameState.exile.passives = {
-            allocated: [],
-            pendingPoints: 0,
-            rerollsUsed: 0
-        };
-    }
-    
     // Give a random notable as starting passive
+giveStartingNotable() {
     const notables = passiveHelpers.getPassivesByTier('notable');
     const randomNotable = notables[Math.floor(Math.random() * notables.length)];
     gameState.exile.passives.allocated.push(randomNotable.id);

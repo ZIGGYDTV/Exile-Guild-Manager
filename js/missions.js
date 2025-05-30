@@ -18,7 +18,7 @@ const missions = {
         name: "The Fire Fury", 
         difficulty: 400,
         damage: { 
-            min: 30, max: 95,
+            min: 30, max: 55,
             types: { physical: 0.5, fire: 0.5 }
         },
         rewards: {

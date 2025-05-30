@@ -2,7 +2,7 @@
 const gameState = {
     exile: {
         name: "Grimjaw",
-        class: "brawler", // Will be randomized on creation
+        class: null, // Will be randomized on creation
         level: 1,
         experience: 0,
         experienceNeeded: 100,
@@ -10,7 +10,7 @@ const gameState = {
         
         // Passive system
         passives: {
-            allocated: ["berserker"], // Starting with one notable
+            allocated: [], // Starting with no passives (given a random one via game.js)
             pendingPoints: 0, // Points available to spend
             rerollsUsed: 0 // Resets each level-up choice
         },
