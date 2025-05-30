@@ -1,0 +1,423 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px; 
+}
+
+h1 {
+    text-align: center;
+    color: #c9aa71;
+    margin-bottom: 30px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+h2 {
+    color: #c9aa71;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.game-panel {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 20px;
+    display: inline-block;
+    width: calc(32% - 14px);
+    margin-right: 20px;
+    vertical-align: top;
+}
+
+.game-panel:nth-child(3n+1) {
+    margin-right: 0;
+}
+
+.game-panel.full-width {
+    width: 100%;
+    margin-right: 0;
+    display: block;
+    box-sizing: border-box;
+    max-width: 100%;           /* Force maximum width */
+    overflow-x: hidden;        /* Hide any overflow */
+    contain: layout;           /* Contain the layout */
+}
+
+.info-box {
+    background-color: #1a1a1a;
+    padding: 15px;
+    border-radius: 3px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.stat-row:last-child {
+    margin-bottom: 0;
+}
+
+.stat-label {
+    color: #888;
+}
+
+.highlight {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.mission-container {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.mission-btn {
+    flex: 1;
+    min-width: 200px;
+    padding: 20px;
+    background-color: #1a1a1a;
+    border: 2px solid #444;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #e0e0e0;
+}
+
+.mission-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.mission-btn.easy {
+    border-color: #4CAF50;
+}
+
+.mission-btn.easy:hover {
+    background-color: #4CAF50;
+    color: #000;
+}
+
+.mission-btn.medium {
+    border-color: #ff9800;
+}
+
+.mission-btn.medium:hover {
+    background-color: #ff9800;
+    color: #000;
+}
+
+.mission-btn.hard {
+    border-color: #f44336;
+}
+
+.mission-btn.hard:hover {
+    background-color: #f44336;
+    color: #000;
+}
+
+.mission-btn.nightmare {
+    border-color: #9c27b0; 
+}
+
+.mission-btn.nightmare:hover {
+    background-color: #9c27b0;
+    color: #000;
+}
+
+.mission-title {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.mission-info {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.log-container {
+    background-color: #1a1a1a;
+    padding: 15px;
+    border-radius: 3px;
+    height: 200px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+.log-entry {
+    margin-bottom: 5px;
+    padding: 5px;
+    border-left: 3px solid #444;
+}
+
+.log-entry.success {
+    border-color: #4CAF50;
+    color: #4CAF50;
+}
+
+.log-entry.failure {
+    border-color: #f44336;
+    color: #f44336;
+}
+
+.log-entry.info {
+    border-color: #2196F3;
+    color: #2196F3;
+}
+
+.log-entry.legendary {
+    border-color: #c9aa71;
+    color: #c9aa71;
+    font-weight: bold;
+}
+
+/* Scrollbar styling for log */
+.log-container::-webkit-scrollbar {
+    width: 10px;
+}
+
+.log-container::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+.log-container::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 5px;
+}
+
+.log-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Equipment styles */
+.equipment-grid {
+    display: flex;
+    gap: 15px;                 
+    justify-content: center;
+    margin-top: 20px;
+    max-width: 100%;
+    box-sizing: border-box;
+    flex-wrap: wrap;           /* Allow wrapping if needed */
+}
+
+.equipment-slot {
+    width: 120px;              /* Reduce from 150px to 120px */
+    flex-shrink: 1;            /* Allow shrinking if needed */
+}
+
+.slot-label {
+    text-align: center;
+    margin-bottom: 10px;
+    color: #c9aa71;
+    font-weight: bold;
+}
+
+.slot-content {
+    background-color: #1a1a1a;
+    border: 2px solid #444;
+    border-radius: 5px;
+    padding: 20px;
+    min-height: 100px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.slot-content:hover {
+    border-color: #666;
+}
+
+.empty-slot {
+    color: #666;
+    font-style: italic;
+}
+
+.item-equipped {
+    text-align: center;
+}
+
+.item-equipped .item-name {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.item-stat {
+    font-size: 0.9em;
+    color: #4CAF50;
+    margin: 2px 0;
+}
+
+/* Inventory styles */
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+    max-width: 100%;       
+    overflow: hidden;       
+}
+
+.inventory-item {
+    background-color: #1a1a1a;
+    border: 2px solid #444;
+    border-radius: 5px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.inventory-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.inventory-item.common {
+    border-color: #888;
+}
+
+.inventory-item.magic {
+    border-color: #4169E1;
+}
+
+.inventory-item.rare {
+    border-color: #FFD700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.item-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.item-name.common { color: #888; }
+.item-name.magic { color: #4169E1; }
+.item-name.rare { color: #FFD700; }
+
+.item-type {
+    font-size: 0.8em;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.item-stats {
+    font-size: 0.9em;
+}
+
+#inventory-count {
+    font-size: 0.9em;
+    color: #888;
+    font-weight: normal;
+}
+
+/* Crafting button styles */
+.item-actions {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.action-btn {
+    padding: 5px 8px;
+    border: 1px solid #444;
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover:not(:disabled) {
+    background-color: #444;
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.action-btn.equip {
+    border-color: #4CAF50;
+}
+
+.action-btn.equip:hover:not(:disabled) {
+    background-color: #4CAF50;
+    color: #000;
+}
+
+.action-btn.chaos {
+    border-color: #ff9800;
+}
+
+.action-btn.chaos:hover:not(:disabled) {
+    background-color: #ff9800;
+    color: #000;
+}
+
+.action-btn.exalted {
+    border-color: #c9aa71;
+}
+
+.action-btn.exalted:hover:not(:disabled) {
+    background-color: #c9aa71;
+    color: #000;
+}
+
+/* Reset button in top-right corner */
+#reset-btn {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: #f44336;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    z-index: 100;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    transition: all 0.2s ease;
+}
+
+#reset-btn:hover {
+    background: #d32f2f;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+}
+
+#reset-btn:active {
+    transform: translateY(0);
+}
+
+/* MORALE */
+#morale-status {
+    font-weight: bold;
+}
+
+/* Morale status colors - dynamic colors provided by javascript */
+#morale-status {
+    color: #888; /* Default */
+}
+

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exile Manager</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>  
+         <button id="reset-btn" onclick="game.resetGame()">Reset Save</button>
+            <div class="container">
+                <h1>Exile Manager</h1>      
+        <div class="game-panel">
+            <h2>Your Exile</h2>
+            <div id="exile-info" class="info-box">
+                <div class="stat-row">
+                    <span class="stat-label">Name:</span>
+                    <span id="exile-name">Unnamed Exile</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Class:</span>
+                    <span id="exile-class">Marauder</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Level:</span>
+                    <span id="exile-level">1</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Experience:</span>
+                    <span id="exile-exp">0</span>/<span id="exile-exp-needed">100</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="game-panel">
+            <h2>Stats</h2>
+            <div id="stats" class="info-box">
+                <div class="stat-row">
+                    <span class="stat-label">Life:</span>
+                    <span id="stat-life">100</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Damage:</span>
+                    <span id="stat-damage">10</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Defense:</span>
+                    <span id="stat-defense">5</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Morale:</span>
+                    <span id="morale-value">75</span> (<span id="morale-status">Content</span>)
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Power Rating:</span>
+                    <span id="power-rating" class="highlight">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="game-panel">
+            <h2>Resources</h2>
+            <div id="resources" class="info-box">
+                <div class="stat-row">
+                    <span class="stat-label">Gold:</span>
+                    <span id="gold">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Orbs of Chaos:</span>
+                    <span id="chaos-orbs">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Exalted Orbs:</span>
+                    <span id="exalted-orbs">0</span>
+                </div>
+            </div>
+        </div>
+
+                <div class="game-panel full-width">
+            <h2>Missions</h2>
+            <div id="missions" class="mission-container">
+                    <button class="mission-btn easy" onclick="game.runMission('a1')">
+                        <div class="mission-title">The Coast</div>
+                        <div class="mission-info">Difficulty: Easy | Scavenging</div>
+                    </button>
+                    <button class="mission-btn easy" onclick="game.runMission('a1b')">
+                        <div class="mission-title">The Fire Fury</div>
+                        <div class="mission-info">Difficulty: Easy | Boss Fight</div>
+                    </button>
+                    <button class="mission-btn medium" onclick="game.runMission('a2')">
+                        <div class="mission-title">The Mud Flats</div>
+                        <div class="mission-info">Difficulty: Medium | Arduous Exploration</div>
+                    </button>
+                    <button class="mission-btn hard" onclick="game.runMission('a3')">
+                        <div class="mission-title">The Climb</div>
+                        <div class="mission-info">Difficulty: Hard | Dangerous Travel</div>
+                    </button>
+                    <button class="mission-btn nightmare" onclick="game.runMission('a4')">
+                        <div class="mission-title">The Prison</div>
+                        <div class="mission-info">Difficulty: Nightmare | Come Here to Die</div>
+                    </button>
+                    <button class="mission-btn nightmare" onclick="game.runMission('a4b')">
+                        <div class="mission-title">The Warden</div>
+                        <div class="mission-info">Difficulty: Nightmare | Let Death Embrace You</div>
+                    </button>
+                </div>
+            </div>
+        
+        <div class="game-panel full-width">
+            <h2>Activity Log</h2>
+            <div id="log" class="log-container"></div>
+        </div>
+    
+
+        <div class="game-panel full-width">
+            <h2>Equipment</h2>
+            <div class="equipment-grid">
+                <div class="equipment-slot" id="weapon-slot">
+                    <div class="slot-label">Weapon</div>
+                    <div class="slot-content" onclick="game.unequipItem('weapon')">
+                        <div class="empty-slot">Empty</div>
+                    </div>
+                </div>
+                <div class="equipment-slot" id="armor-slot">
+                    <div class="slot-label">Armor</div>
+                    <div class="slot-content" onclick="game.unequipItem('armor')">
+                        <div class="empty-slot">Empty</div>
+                    </div>
+                </div>
+                <div class="equipment-slot" id="jewelry-slot">
+                    <div class="slot-label">Jewelry</div>
+                    <div class="slot-content" onclick="game.unequipItem('jewelry')">
+                        <div class="empty-slot">Empty</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-panel full-width">
+            <h2>Inventory <span id="inventory-count">(0/20)</span></h2>
+            <div id="inventory" class="inventory-grid"></div>
+        </div>
+    </div>
+    <script src="js/gameState.js"></script>
+    <script src="js/items.js"></script>
+    <script src="js/missions.js"></script>
+    <script src="js/passives.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
