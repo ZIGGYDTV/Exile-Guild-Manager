@@ -16,10 +16,14 @@
         <div class="exile-name-class">
             <span id="exile-name-summary">Unnamed Exile</span>
             <span class="exile-class-badge" id="exile-class-summary">Marauder</span>
+                <div class="exile-notifications">
+        <div id="passive-points-indicator" class="notification-badge" style="display: none;">
+            (+) Passive Points Available
+        </div>
+    </div>   
         </div>
         <div class="exile-level">Level <span id="exile-level-summary">1</span></div>
-    </div>
-    
+    </div> 
     <div class="exile-quick-stats">
         <div class="quick-stat">
             <span class="stat-value" id="exile-life-summary">100</span>
@@ -37,14 +41,13 @@
             <span class="stat-value" id="exile-morale-summary">75</span>
             <span class="stat-label">Morale</span>
         </div>
-    </div>
-    
-    <div class="exile-notifications">
-        <div id="passive-points-indicator" class="notification-badge" style="display: none;">
-            (+) Passive Points Available
+    </div>   
+        <div class="exp-bar-container">
+            <div id="exp-bar" class="exp-bar">
+                <div id="exp-bar-fill" class="exp-bar-fill"></div>
+                <span id="exp-bar-label" class="exp-bar-label">0 / 100</span>
+            </div>
         </div>
-        <div class="click-hint">Click to view character</div>
-    </div>
 </div>
 <!-- End of exile summary -->
 
@@ -56,7 +59,7 @@
                     <span id="gold">0</span>
                 </div>
                 <div class="stat-row">
-                    <span class="stat-label">Orbs of Chaos:</span>
+                    <span class="stat-label">Chaos Orbs:</span>
                     <span id="chaos-orbs">0</span>
                 </div>
                 <div class="stat-row">
@@ -113,11 +116,9 @@
 <!-- Character Screen Modal - add this before </body> -->
 <div id="character-screen-modal" class="modal-overlay" style="display: none;" onclick="game.handleModalClick(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
-        <div class="modal-header">
-            <h2>Character Details</h2>
-            <button class="close-btn" onclick="game.closeCharacterScreen()">&times;</button>
-        </div>
-        
+
+<button class="close-btn" onclick="game.closeCharacterScreen()">&times;</button>
+
         <div class="character-screen-layout">
             <!-- Left Column: Character Info & Stats -->
             <div class="character-left-column">
@@ -157,27 +158,50 @@
                         <div class="stat-breakdown-row">
                             <span class="stat-name">Life:</span>
                             <span class="stat-value-with-tooltip" 
-                                title="Base + Gear + Passives + Morale">
+                                data-tooltip="Base + Gear + Passives + Morale">
                                 <span id="final-life" class="final-stat">100</span>
                             </span>
                         </div>
                         <div class="stat-breakdown-row">
                             <span class="stat-name">Damage:</span>
                             <span class="stat-value-with-tooltip" 
-                                title="Base + Gear + Passives + Morale">
+                                data-tooltip="Base + Gear + Passives + Morale">
                                 <span id="final-damage" class="final-stat">10</span>
                             </span>
                         </div>
                         <div class="stat-breakdown-row">
                             <span class="stat-name">Defense:</span>
                             <span class="stat-value-with-tooltip" 
-                                title="Base + Gear + Passives + Morale">
+                                data-tooltip="Base + Gear + Passives + Morale">
                                 <span id="final-defense" class="final-stat">5</span>
                             </span>
                         </div>
+
+                        <div class="stat-breakdown-row">
+                            <span class="stat-name">Resists:</span>
+                            <span id="final-resists-line"></span>
+                        </div>
+
+                        <div class="stat-breakdown-row">
+                            <span class="stat-name">Gold Find:</span>
+                            <span class="stat-value-with-tooltip" id="final-gold-find"
+                                data-tooltip="Increases the amount of gold found from missions.">0%</span>
+                        </div>
+                        <div class="stat-breakdown-row">
+                            <span class="stat-name">Morale:</span>
+                            <span class="stat-value-with-tooltip" id="final-morale-gain"
+                                data-tooltip="Flat bonuses or penalties to all morale changes from Missions.">0</span>
+                        </div>
+                        <div class="stat-breakdown-row">
+                            <span class="stat-name">Stability:</span>
+                            <span class="stat-value-with-tooltip" id="final-morale-resist"
+                                data-tooltip="Reduces (or increases, if negative) the impact of morale gains and losses.">0%</span>
+                        </div>
+                        
                         <div class="stat-breakdown-row">
                             <span class="stat-name">Power Rating:</span>
-                            <span class="stat-formula">
+                            <span class="stat-value-with-tooltip" 
+                                data-tooltip="Overall offensive power, affecting the chance of success in each round of combat.">
                                 <span id="power-rating-calc" class="final-stat">0</span>
                             </span>
                         </div>
@@ -189,18 +213,16 @@
             <div class="character-middle-column">
                 <div class="passives-section">
                     <h3>Passive Skills</h3>
-                    <div id="allocated-passives-list" class="allocated-passives">
-                        <!-- Will be populated by JavaScript -->
-                    </div>
-                    
                     <div id="passive-allocation-area">
                         <button id="allocate-passive-btn" class="allocate-btn" onclick="game.openPassiveSelection()" style="display: none;">
                             Allocate Passive Skill (1)
                         </button>
+                    </div>                    
+                    <div id="allocated-passives-list" class="allocated-passives">
+                        <!-- Will be populated by JavaScript -->
                     </div>
                 </div>
             </div>
-            
             <!-- Right Column: Equipment & Inventory -->
             <div class="character-right-column">
                 <div class="equipment-section">

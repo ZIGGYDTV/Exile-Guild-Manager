@@ -170,6 +170,7 @@ if (mainMessage) {
     }
     }
 },
+
  
  simulateCombat(exile, mission) {
     const combatData = {
@@ -335,30 +336,48 @@ generateDeathMessage(combatData) {
 },
 
 calculateMoraleChange(combatResult, exile) {
+    // Get morale resistance (can be negative)
+    const moraleResist = (exile.stats.moraleResistance || 0) / 100;
+    const moraleGain = exile.stats.moraleGain || 0; // NEW: flat morale gain
+
+    let result;
     if (combatResult.outcome === 'victory') {
         const lifePercent = (exile.stats.life - combatResult.totalDamageTaken) / exile.stats.life;
-        
-        if (lifePercent <= 0.1) {
-            return { change: +8, message: "I just barely survived, my heart races, I feel... ALIVE!" };
+        if (lifePercent <= 0.15) {
+            result = { change: +8, message: "I just barely survived, my heart races, I feel... ALIVE!" };
         } else if (lifePercent <= 0.3) {
-            return { change: +4, message: "Hah! A good challenge!" };
+            result = { change: +4, message: "Hah! A good challenge!" };
         } else if (lifePercent >= 0.95) {
-            return { change: -4, message: "This is beneath me..." };
-        } else if (lifePercent >= 0.85) {
-            return { change: -2, message: "This is too easy, I need a real challenge!" };
+            result = { change: -4, message: "This is beneath me..." };
+        } else if (lifePercent >= 0.90) {
+            result = { change: -2, message: "This is too easy, I need a real challenge!" };
         } else {
-            return { change: +1, message: "A fair and reasonable fight." };
+            result = { change: +1, message: "A fair and reasonable fight." };
         }
     } else if (combatResult.outcome === 'retreat') {
-        if (combatResult.rounds >= 4) {
-            return { change: +3, message: "Phew that was a close one, but I did it!" };
+        if (combatResult.rounds >= 3) {
+            result = { change: +3, message: "Phew that was a close one, but I did it!" };
         } else {
-            return { change: -1, message: "This is embarrassing..." };
+            result = { change: -2, message: "This is embarrassing..." };
         }
     } else {
         // Death - no morale change since exile is dead
         return { change: 0, message: "" };
     }
+
+    // Apply morale resistance scaling (works both positive and negative)
+    let adjustedChange = result.change;
+    if (adjustedChange !== 0 && moraleResist !== 0) {
+        adjustedChange = Math.round(adjustedChange * (1 + moraleResist));
+        if (adjustedChange === 0 && result.change !== 0) {
+            adjustedChange = result.change > 0 ? 1 : -1;
+        }
+    }
+
+    // Apply flat morale gain/penalty
+    adjustedChange += moraleGain;
+
+    return { change: adjustedChange, message: result.message };
 },
 
 applyMoraleEffects(exile) {
@@ -551,23 +570,34 @@ recalculateStats() {
     gameState.exile.stats.moraleResistance = passiveEffects.moraleResistance;
     gameState.exile.stats.moraleGain = passiveEffects.moraleGain;
     
-    // NEW: Calculate resistances from gear
-let gearFireResist = 0, gearColdResist = 0, gearLightningResist = 0, gearChaosResist = 0;
-Object.values(gameState.inventory.equipped).forEach(item => {
-    if (item) {
-        gearFireResist += item.stats.fireResist || 0;
-        gearColdResist += item.stats.coldResist || 0;
-        gearLightningResist += item.stats.lightningResist || 0;
-        gearChaosResist += item.stats.chaosResist || 0;
-    }
-});
+    // Calculate resistances from gear + passives
+    let gearFireResist = 0, gearColdResist = 0, gearLightningResist = 0, gearChaosResist = 0;
+    Object.values(gameState.inventory.equipped).forEach(item => {
+        if (item) {
+            gearFireResist += item.stats.fireResist || 0;
+            gearColdResist += item.stats.coldResist || 0;
+            gearLightningResist += item.stats.lightningResist || 0;
+            gearChaosResist += item.stats.chaosResist || 0;
+        }
+    });
 
-// Apply resistance caps using constants
-gameState.exile.stats.fireResist = Math.min(gearFireResist, RESISTANCE_CAPS.default);
-gameState.exile.stats.coldResist = Math.min(gearColdResist, RESISTANCE_CAPS.default);
-gameState.exile.stats.lightningResist = Math.min(gearLightningResist, RESISTANCE_CAPS.default);
-gameState.exile.stats.chaosResist = Math.min(gearChaosResist, RESISTANCE_CAPS.default);
+// Add passives
+const totalFireResist = gearFireResist + (passiveEffects.fireResist || 0);
+const totalColdResist = gearColdResist + (passiveEffects.coldResist || 0);
+const totalLightningResist = gearLightningResist + (passiveEffects.lightningResist || 0);
+const totalChaosResist = gearChaosResist + (passiveEffects.chaosResist || 0);
 
+// Calculate max resist caps (default + passives)
+const maxFireResist = (RESISTANCE_CAPS.default + (passiveEffects.maxFireResist || 0));
+const maxColdResist = (RESISTANCE_CAPS.default + (passiveEffects.maxColdResist || 0));
+const maxLightningResist = (RESISTANCE_CAPS.default + (passiveEffects.maxLightningResist || 0));
+const maxChaosResist = (RESISTANCE_CAPS.default + (passiveEffects.maxChaosResist || 0));
+
+// Apply resistance caps
+gameState.exile.stats.fireResist = Math.min(totalFireResist, maxFireResist);
+gameState.exile.stats.coldResist = Math.min(totalColdResist, maxColdResist);
+gameState.exile.stats.lightningResist = Math.min(totalLightningResist, maxLightningResist);
+gameState.exile.stats.chaosResist = Math.min(totalChaosResist, maxChaosResist);
 
     // Ensure minimum values
     gameState.exile.stats.life = Math.max(1, gameState.exile.stats.life);
@@ -809,6 +839,7 @@ getAvailableStats(item) {
     document.getElementById('gold').textContent = gameState.resources.gold;
     document.getElementById('chaos-orbs').textContent = gameState.resources.chaosOrbs;
     document.getElementById('exalted-orbs').textContent = gameState.resources.exaltedOrbs;
+    this.updateResourceDisplay();
     
     // Apply morale effects before displaying
     this.applyMoraleEffects(gameState.exile);
@@ -869,10 +900,23 @@ updateCharacterScreen() {
     document.getElementById('char-exp-needed').textContent = gameState.exile.experienceNeeded;
     document.getElementById('char-morale').textContent = gameState.exile.morale;
     document.getElementById('char-morale-status').textContent = this.getMoraleStatus(gameState.exile.morale);
+  
+    // Combined resistances display
+    const resists = [
+        { key: 'fireResist', color: '#ff7043', label: 'Fire' },
+        { key: 'coldResist', color: '#42a5f5', label: 'Cold' },
+        { key: 'lightningResist', color: '#ffd600', label: 'Lightning' },
+        { key: 'chaosResist', color: '#ab47bc', label: 'Chaos' }
+    ];
+    const resistsHtml = resists.map(r =>
+        `<span style="color:${r.color};font-weight:bold;cursor:help;" title="${r.label} Resist">${gameState.exile.stats[r.key] || 0}%</span>`
+    ).join(' / ');
+    document.getElementById('final-resists-line').innerHTML = resistsHtml;
     
-    // Optionally, display gold find bonus in character info
-    document.getElementById('char-goldfind').textContent = gameState.exile.stats.goldFindBonus + "%";
-    
+    document.getElementById('final-gold-find').textContent = gameState.exile.stats.goldFindBonus + "%";
+    document.getElementById('final-morale-gain').textContent = gameState.exile.stats.moraleGain;
+    document.getElementById('final-morale-resist').textContent = gameState.exile.stats.moraleResistance + "%";
+
     // Calculate all the breakdown components
     const gearBonuses = this.calculateGearBonuses();
     const passiveBonuses = this.calculatePassiveBonusesForDisplay();
@@ -1147,6 +1191,13 @@ updateExileSummary() {
     document.getElementById('exile-defense-summary').textContent = gameState.exile.stats.defense;
     document.getElementById('exile-morale-summary').textContent = gameState.exile.morale;
     
+    // Update EXP bar
+    const exp = gameState.exile.experience;
+    const expNeeded = gameState.exile.experienceNeeded;
+    const percent = Math.min(100, Math.round((exp / expNeeded) * 100));
+    document.getElementById('exp-bar-fill').style.width = percent + "%";
+    document.getElementById('exp-bar-label').textContent = `${exp} / ${expNeeded} EXP`;
+
     // Set morale color
     const moraleElement = document.getElementById('exile-morale-summary');
     const moraleValue = gameState.exile.morale;
@@ -1164,8 +1215,6 @@ updateExileSummary() {
         indicator.style.display = 'none';
     }
 },
-
-    // Stat Calcs for Exile Screen (including Morale)
 
 calculateGearBonuses() {
     let life = 0, damage = 0, defense = 0;
@@ -1306,6 +1355,41 @@ log(message, type = "info", isHtml = false) {
     }
 },
 
+// Helper to Update Resources Display Effects
+updateResourceDisplay() {
+    const chaosElem = document.getElementById('chaos-orbs');
+    const exaltedElem = document.getElementById('exalted-orbs');
+
+    // Store previous values using data attributes
+    const prevChaos = parseInt(chaosElem.getAttribute('data-prev') || "0", 10);
+    const prevExalted = parseInt(exaltedElem.getAttribute('data-prev') || "0", 10);
+
+    // Get new values from game state
+    const chaosVal = gameState.resources.chaosOrbs;
+    const exaltedVal = gameState.resources.exaltedOrbs;
+
+    // Update display
+    chaosElem.textContent = chaosVal;
+    exaltedElem.textContent = exaltedVal;
+
+    // Store new values for next tick
+    chaosElem.setAttribute('data-prev', chaosVal);
+    exaltedElem.setAttribute('data-prev', exaltedVal);
+
+    // Trigger pulse if value increased
+    if (chaosVal > prevChaos) {
+        chaosElem.classList.remove('resource-glow-pulse');
+        void chaosElem.offsetWidth; // Force reflow to restart animation
+        chaosElem.classList.add('resource-glow-pulse');
+    }
+    if (exaltedVal > prevExalted) {
+        exaltedElem.classList.remove('resource-glow-pulse');
+        void exaltedElem.offsetWidth;
+        exaltedElem.classList.add('resource-glow-pulse');
+    }
+},
+
+
     saveGame() {
         if (gameState.settings.autoSave) {
             localStorage.setItem('exileManagerSave', JSON.stringify(gameState));
@@ -1432,6 +1516,16 @@ calculatePassiveEffects() {
         flatLife: 0,
         flatDamage: 0,
         flatDefense: 0,
+
+        // Resistances
+        fireResist: 0,
+        coldResist: 0,
+        lightningResist: 0,
+        chaosResist: 0,
+        maxFireResist: 0,
+        maxColdResist: 0,
+        maxLightningResist: 0,
+        maxChaosResist: 0,
         
         // Special stats
         goldFindBonus: 0,
@@ -1472,6 +1566,30 @@ calculatePassiveEffects() {
                         break;
                     case passiveTypes.FLAT_DEFENSE:
                         effects.flatDefense += effect.value;
+                        break;
+                    case passiveTypes.FIRE_RESISTANCE:
+                        effects.fireResist += effect.value;
+                        break;
+                    case passiveTypes.COLD_RESISTANCE:
+                        effects.coldResist += effect.value;
+                        break;
+                    case passiveTypes.LIGHTNING_RESISTANCE:
+                        effects.lightningResist += effect.value;
+                        break;
+                    case passiveTypes.CHAOS_RESISTANCE:
+                        effects.chaosResist += effect.value;
+                        break;
+                    case passiveTypes.MAX_FIRE_RESISTANCE:
+                        effects.maxFireResist += effect.value;
+                        break;
+                    case passiveTypes.MAX_COLD_RESISTANCE:
+                        effects.maxColdResist += effect.value;
+                        break;
+                    case passiveTypes.MAX_LIGHTNING_RESISTANCE:
+                        effects.maxLightningResist += effect.value;
+                        break;
+                    case passiveTypes.MAX_CHAOS_RESISTANCE:
+                        effects.maxChaosResist += effect.value;
                         break;
                     case passiveTypes.GOLD_FIND:
                         effects.goldFindBonus += effect.value;
@@ -1537,28 +1655,41 @@ getPassiveTierForLevel(level) {
 
 startPassiveSelection() {
     if (gameState.exile.passives.pendingPoints <= 0) return;
-    
+
     const currentLevel = gameState.exile.level;
     const tier = this.getPassiveTierForLevel(currentLevel);
-    
-    // Generate two random choices
-    const choice1 = this.selectPassiveForLevelUp(tier);
-    const choice2 = this.selectPassiveForLevelUp(tier);
-    
-    if (!choice1 || !choice2) {
+
+    // Get available passives for this tier
+    const pool = passiveHelpers.getWeightedPassivePool(gameState.exile.class, tier)
+        .filter(passive => !gameState.exile.passives.allocated.includes(passive.id));
+
+    if (pool.length === 0) {
         this.log("No more passives available!", "failure");
         return;
     }
-    
-    // Store choices in temporary state (we'll add UI for this next)
+
+    const choice1 = this.weightedRandomSelect(pool);
+    let choice2 = null;
+
+    if (pool.length > 1) {
+        // Remove choice1 from pool for choice2
+        const poolWithoutChoice1 = pool.filter(p => p.id !== choice1.id);
+        choice2 = this.weightedRandomSelect(poolWithoutChoice1);
+    }
+
     this.currentPassiveChoices = {
         tier: tier,
         choice1: choice1,
         choice2: choice2,
         rerollCost: this.getRerollCost(tier, gameState.exile.passives.rerollsUsed)
     };
-    
-    this.log(`Choose your ${tier} passive! (Reroll cost: ${this.currentPassiveChoices.rerollCost} gold)`, "legendary");
+
+    this.log(
+        pool.length === 1
+            ? `Only one passive left to choose!`
+            : `Choose your ${tier} passive! (Reroll cost: ${this.currentPassiveChoices.rerollCost} gold)`,
+        "legendary"
+    );
 },
 
 getRerollCost(tier, rerollsUsed) {

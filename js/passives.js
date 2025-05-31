@@ -14,12 +14,27 @@ const passiveTypes = {
     MORE_DAMAGE: 'moreDamage',
     MORE_LIFE: 'moreLife',
     MORE_DEFENSE: 'moreDefense',
+
+    // Resistance bonuses
+    FIRE_RESISTANCE: 'fireResistance',
+    COLD_RESISTANCE: 'coldResistance',
+    LIGHTNING_RESISTANCE: 'lightningResistance',
+    CHAOS_RESISTANCE: 'chaosResistance',
+    MAX_FIRE_RESISTANCE: 'maxFireResistance',
+    MAX_COLD_RESISTANCE: 'maxColdResistance',
+    MAX_LIGHTNING_RESISTANCE: 'maxLightningResistance',
+    MAX_CHAOS_RESISTANCE: 'maxChaosResistance',
     
     // Special mechanics (future expansion ready)
     GOLD_FIND: 'goldFindBonus',
+    MORALE_RESISTANCE: 'moraleResistance', // "Stability" Dampens morale gains and losses (or negaitive makes them more extreme)
+    MORALE_MODIFIER: 'moraleModifier', // Flat morale boost/penalty 
+
+    // Unimplemented but planned
+    MORALE_GAIN: 'moraleGain', // could be % scaling for when more morale mechanics are added
     ESCAPE_CHANCE: 'escapeChance',
-    MORALE_RESISTANCE: 'moraleResistance',
-    MORALE_GAIN: 'moraleGain'
+    LIGHT_RADIUS: 'lightRadius', // First strike effect on combat (could later affect scouting)
+
 };
 
 // Passive definitions - easily expandable during streams!
@@ -30,7 +45,42 @@ const passiveDefinitions = {
         tier: "normal",
         description: "+12% increased Life",
         effects: [{ type: passiveTypes.INCREASED_LIFE, value: 12 }],
-        tags: ["life", "defense"]
+        tags: ["life"]
+    },
+
+    endurance: { // "Rare" version of toughness, will need to implement rarity system later
+        name: "Endurance",
+        tier: "normal",
+        description: "+24% increased Life",
+        effects: [{ type: passiveTypes.INCREASED_LIFE, value: 24 }],
+        tags: ["life", "tank"]
+    },
+
+/*    torchbearer: {
+        name: "Torchbearer",
+        tier: "normal",
+        description: "+20% increased Light Radius",
+        effects: [{ type: passiveTypes.LIGHT_RADIUS, value: 20 }],
+        tags: ["utility", "light"]
+    }, */ // Not sure what to do with this yet, need more exploration mechanics before implementing
+
+    roguish: {
+        name: "Roguish",
+        tier: "normal",
+        description: "+10% increased Damage, +10% Gold Find",
+        effects: [
+            { type: passiveTypes.INCREASED_DAMAGE, value: 10 },
+            { type: passiveTypes.GOLD_FIND, value: 10 }
+        ],
+        tags: ["damage", "utility", "gold"]
+    },
+
+    beef: {
+        name: "Beef",
+        tier: "normal",
+        description: "+30 Life",
+        effects: [{ type: passiveTypes.FLAT_LIFE, value: 30 }],
+        tags: ["life", "tank"]
     },
     
     brutality: {
@@ -52,12 +102,53 @@ const passiveDefinitions = {
     fortune: { 
         name: "Fortune",
         tier: "normal",
-        description: "+25% Gold Find (not yet implemented)",
-        effects: [{ type: passiveTypes.GOLD_FIND, value: 1000 }],
+        description: "+100% Gold Find",
+        effects: [{ type: passiveTypes.GOLD_FIND, value: 100 }],
         tags: ["utility", "gold"]
     },
+
+    antidote: {
+        name: "Antidote",
+        tier: "normal",
+        description: "+15% increased Chaos Resistance",
+        effects: [{ type: passiveTypes.CHAOS_RESISTANCE, value: 15 }],
+        tags: ["chaos_resistance"]
+    },
+
+    fire_resistance: {
+        name: "Fire Resistance",
+        tier: "normal",
+        description: "+10% increased Fire Resistance",
+        effects: [{ type: passiveTypes.FIRE_RESISTANCE, value: 10 }],
+        tags: ["fire_resistance"]
+    },
+
+    cold_resistance: {
+        name: "Cold Resistance",
+        tier: "normal",
+        description: "+10% increased Cold Resistance",
+        effects: [{ type: passiveTypes.COLD_RESISTANCE, value: 10 }],
+        tags: ["cold_resistance"]
+    },
+
+    lightning_resistance: {
+        name: "Lightning Resistance",
+        tier: "normal",
+        description: "+10% increased Lightning Resistance",
+        effects: [{ type: passiveTypes.LIGHTNING_RESISTANCE, value: 10 }],
+        tags: ["lightning_resistance"]
+    },
+
+    optimist: {
+        name: "Optimist",
+        tier: "normal",
+        description: "+1 Morale Gain per Mission",
+        effects: [{ type: passiveTypes.MORALE_GAIN, value: 1 }],
+        tags: ["morale"]
+    },
+
     
-    // NOTABLE TIER PASSIVES  
+// NOTABLE TIER PASSIVES  
     berserker: {
         name: "Berserker",
         tier: "notable",
@@ -72,26 +163,100 @@ const passiveDefinitions = {
     juggernaut: {
         name: "Juggernaut", 
         tier: "notable",
-        description: "+45% increased Life, +25% increased Defense",
+        description: "+45% increased Life",
         effects: [
-            { type: passiveTypes.INCREASED_LIFE, value: 45 },
-            { type: passiveTypes.INCREASED_DEFENSE, value: 25 }
-        ],
+            { type: passiveTypes.INCREASED_LIFE, value: 45 },        ],
         tags: ["life", "defense", "tank"]
+    },
+
+    elemental_guard: {
+    name: "Elemental Guard",
+    tier: "notable",
+    description: "+12% to all Elemental Resistances",
+    effects: [
+        { type: passiveTypes.FIRE_RESISTANCE, value: 12 },
+        { type: passiveTypes.COLD_RESISTANCE, value: 12 },
+        { type: passiveTypes.LIGHTNING_RESISTANCE, value: 12 }
+    ],
+    tags: ["defense", "resistance"]
+},
+
+    purity: {
+        name: "Purity",
+        tier: "notable",
+        description: "24% increased Chaos Resistance, 10% increased Life",
+        effects: [
+            { type: passiveTypes.INCREASED_LIFE, value: 10 },
+            { type: passiveTypes.CHAOS_RESISTANCE, value: 24 },        
+        ],
+        tags: ["life", "chaos_resistance"]
+},
+
+    fireproofing: {
+        name: "Fireproofing",
+        tier: "notable",
+        description: "+10% Maximum Fire Resistance, +10% Defense",
+        effects: [
+            { type: passiveTypes.MAX_FIRE_RESISTANCE, value: 10 },
+            { type: passiveTypes.INCREASED_DEFENSE, value: 10 }
+        ],
+        tags: ["fire_resistance", "defense"]
+    },
+
+    isolation: {
+        name: "Isolation",
+        tier: "notable",
+        description: "+10% Maximum Lightning Resistance, +10% Defense",
+        effects: [
+            { type: passiveTypes.MAX_LIGHTNING_RESISTANCE, value: 10 },
+            { type: passiveTypes.INCREASED_DEFENSE, value: 10 }
+        ],
+        tags: ["lightning_resistance", "defense"]
+    },
+
+    insulation: {
+        name: "Insulation",
+        tier: "notable",
+        description: "+10% Maximum Cold Resistance, +10% Defense",
+        effects: [
+            { type: passiveTypes.MAX_COLD_RESISTANCE, value: 10 },
+            { type: passiveTypes.INCREASED_DEFENSE, value: 10 }
+        ],
+        tags: ["cold_resistance", "defense"]
+    },
+
+    resolute: {
+        name: "Resolute",
+        tier: "notable",
+        description: "30% Morale Stability, +30% Defense",
+        effects: [
+            { type: passiveTypes.MORALE_RESISTANCE, value: -30 },
+            { type: passiveTypes.INCREASED_DEFENSE, value: 30 }
+        ],
+        tags: ["morale", "defense"]
+    },
+
+    sanguine: {
+        name: "Sanguine",
+        tier: "notable",
+        description: "+2 Morale Gain per Mission",
+        effects: [{ type: passiveTypes.MORALE_GAIN, value: 2 }],
+        tags: ["morale"]
     },
     
     // KEYSTONE TIER PASSIVES
     glass_cannon: {
         name: "Glass Cannon",
         tier: "keystone", 
-        description: "+60% MORE Damage, -30% Life",
+        description: "+50% MORE Damage, -30% Life",
         effects: [
-            { type: passiveTypes.MORE_DAMAGE, value: 60 },
+            { type: passiveTypes.MORE_DAMAGE, value: 50 },
             { type: passiveTypes.INCREASED_LIFE, value: -30 }
         ],
         tags: ["damage", "high_risk"]
     },
-slow_and_steady: {
+    
+    slow_and_steady: {
         name: "Slow and Steady",
         tier: "keystone", 
         description: "+50% MORE Life, 50% decreased Damage",
@@ -100,7 +265,70 @@ slow_and_steady: {
             { type: passiveTypes.INCREASED_DAMAGE, value: -50 }
         ],
         tags: ["life", "tank"]
-    }
+    },
+
+    fireproof: {
+    name: "Fireproof",
+    tier: "keystone",
+    description: "+40% Fire Resistance, +10% Maximum Fire Resistance, -25% Maximum Cold and Lightning Resistances",
+    effects: [
+        { type: passiveTypes.FIRE_RESISTANCE, value: 40 },
+        { type: passiveTypes.MAX_FIRE_RESISTANCE, value: 10 },
+        { type: passiveTypes.MAX_COLD_RESISTANCE, value: -25 },
+        { type: passiveTypes.MAX_LIGHTNING_RESISTANCE, value: -25 }
+    ],
+    tags: ["resistance", "fire_resistance"]
+},
+
+    coldforged: {
+        name: "Coldforged",
+        tier: "keystone",
+        description: "+40% Cold Resistance, +10% Maximum Cold Resistance, -25% Maximum Fire and Lightning Resistances",
+        effects: [
+            { type: passiveTypes.COLD_RESISTANCE, value: 40 },
+            { type: passiveTypes.MAX_COLD_RESISTANCE, value: 10 },
+            { type: passiveTypes.MAX_FIRE_RESISTANCE, value: -25 },
+            { type: passiveTypes.MAX_LIGHTNING_RESISTANCE, value: -25 }
+        ],
+        tags: ["resistance", "cold_resistance"]
+    },
+
+    shockproof: {
+        name: "shockproof",
+        tier: "keystone",
+        description: "+40% Lightning Resistance, +10% Maximum Lightning Resistance, -25% Maximum Fire and Cold Resistances",
+        effects: [
+            { type: passiveTypes.LIGHTNING_RESISTANCE, value: 40 },
+            { type: passiveTypes.MAX_LIGHTNING_RESISTANCE, value: 10 },
+            { type: passiveTypes.MAX_FIRE_RESISTANCE, value: -25 },
+            { type: passiveTypes.MAX_COLD_RESISTANCE, value: -25 }
+        ],
+        tags: ["resistance", "lightning_resistance"]
+    },
+
+    iron_wall: {
+    name: "Iron Wall",
+    tier: "keystone",
+    description: "+100% Defense, -15% Maximum Fire, Cold, and Lightning Resistances",
+    effects: [
+        { type: passiveTypes.INCREASED_DEFENSE, value: 100 },
+        { type: passiveTypes.MAX_FIRE_RESISTANCE, value: -15 },
+        { type: passiveTypes.MAX_COLD_RESISTANCE, value: -15 },
+        { type: passiveTypes.MAX_LIGHTNING_RESISTANCE, value: -15 }
+    ],
+    tags: ["defense"]
+},
+
+    volatile: {
+        name: "Volatile",
+        tier: "keystone",
+        description: "+50% MORE Damage, -50% Morale Stability",
+        effects: [
+            { type: passiveTypes.MORE_DAMAGE, value: 50 },
+            { type: passiveTypes.MORALE_RESISTANCE, value: -50 }
+        ],
+        tags: ["damage", "high_risk"]
+    },
 
 };
 
