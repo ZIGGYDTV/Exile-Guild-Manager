@@ -20,111 +20,7 @@ js/
     ├── worldSystem.js    // Area/mission management, discovery logic
     ├── scoutingSystem.js // Information gathering calculations
     └── worldUI.js        // World map interface (future)
-Data Structure Design
-Area Definition Template
-javascript// In areas.js
-const areaDefinitions = {
-    beach: {
-        name: "The Beach",
-        discovered: true, // Starting area
-        
-        // Area-wide characteristics
-        theme: "coastal",
-        lootBonuses: {
-            goldMultiplier: 1.0,
-            currencyBonuses: { chaosOrbs: 0.0, exaltedOrbs: 0.0 },
-            gearBonuses: { weaponBonus: 0.1, jewelryBonus: -0.05 },
-            forcedThemes: ["coastal"]
-        },
-        
-        // Scouting information (what players can learn)
-        scoutingInfo: {
-            initial: "A windswept coastline with scattered wreckage.",
-            general: "The salt air corrodes metal quickly here.",
-            loot: "Weapons wash ashore regularly, but jewelry is claimed by the tides.",
-            dangers: "Shifting sands hide dangers beneath.",
-            secrets: "Local fishermen speak of passages through the cliffs."
-        },
-        
-        // Missions available in this area
-        missions: {
-            shorelineExploration: {
-                type: "exploration",
-                name: "Explore the Shoreline",
-                discovered: true, // Available from start
-                // Mission-specific data...
-            },
-            wreckageScavenging: {
-                type: "scavenging",
-                name: "Scavenge Ship Wreckage", 
-                discovered: false, // Must be found through scouting
-                // Mission-specific data...
-            }
-        }
-    }
-}
-Mission Type Templates
-javascript// In missionTypes.js
-const missionTypeDefinitions = {
-    exploration: {
-        name: "Exploration",
-        description: "Venture into unknown territory",
-        baseRewards: { gold: {min: 10, max: 30}, experience: {min: 20, max: 40} },
-        baseDanger: 1.0,
-        scoutingGain: { base: 15, onSuccess: 5, onFailure: -5 },
-        discoveryChance: 0.15 // Base chance to discover new missions/areas
-    },
-    scavenging: {
-        name: "Scavenging",
-        description: "Search for useful materials",
-        baseRewards: { gold: {min: 5, max: 15}, experience: {min: 15, max: 25} },
-        baseDanger: 0.8,
-        scoutingGain: { base: 10, onSuccess: 3, onFailure: -2 },
-        discoveryChance: 0.05,
-        specialMechanics: ["enhancedLoot"] // Better currency/material drops
-    },
-    boss: {
-        name: "Boss Fight", 
-        description: "Face a dangerous enemy",
-        baseRewards: { gold: {min: 50, max: 100}, experience: {min: 80, max: 120} },
-        baseDanger: 1.5,
-        scoutingGain: { base: 20, onSuccess: 10, onFailure: 0 },
-        discoveryChance: 0.25,
-        specialMechanics: ["unlockGuaranteed"] // Always unlocks something on victory
-    }
-}
-Game State Additions
-javascript// In gameState.js - add new section
-worldState: {
-    areas: {
-        beach: {
-            discovered: true,
-            explorationProgress: 0, // 0-100, increases with mission completions
-            scoutingProgress: {
-                general: { unlocked: true, progress: 0 },
-                loot: { unlocked: false, progress: 0 },
-                dangers: { unlocked: false, progress: 0 },
-                secrets: { unlocked: false, progress: 0 }
-            },
-            missions: {
-                shorelineExploration: {
-                    discovered: true,
-                    completions: 0,
-                    lastCompleted: null,
-                    onCooldown: false
-                }
-            }
-        }
-    },
-    connections: {
-        beach_to_swamp: { 
-            discovered: false, 
-            unlocked: false,
-            unlockType: "exploration", // exploration progress, boss kill, discovery chance
-            unlockRequirement: 75 // 75% exploration or boss defeated, etc.
-        }
-    }
-}
+
 Implementation Phases
 Phase 1: Foundation (First Implementation)
 Goal: Create new data structure alongside existing system
@@ -226,4 +122,168 @@ Success Metrics
  System supports future expansion (multiple exiles, cooldowns, events)
 
 
-Ready to begin with Phase 1? We'll start by creating the basic data structure and helper functions, then test with a single area before expanding.RetryClaude can make mistakes. Please double-check responses. Sonnet 4
+✅ Completed Steps:
+
+Step 1: ✅ Added World Map button and Command Center layout
+Step 2: ✅ Added world map methods to game object
+Step 3: ✅ Updated initialization
+Step 4: ✅ Basic world map interface working
+Step 5: ✅ CSS styling added
+
+🔄 Issues We Found & Fixed:
+
+✅ Mission system integration (gear drops, combat, etc.)
+✅ Scouting system implementation
+✅ Discovery system with chance-based unlocks
+✅ Mission types and areas working
+✅ Currency drops working
+✅ UI showing cooldown missions instead of hiding them
+Also: added scouting info to world map.
+
+We've actually overdelivered on Phase 2A by adding:
+
+Chance-based discovery system
+Scouting system with flexible thresholds
+Currency drops
+Cooldown UI improvements
+
+Still pending: 
+Phase 2B: Multi-Exile Assignment System
+
+Modify world state to track mission assignments 
+Add exile selection to world map
+"Process Day" button that runs all assignments
+
+Phase 2C: Enhanced World Map
+
+Area connections and unlock status display
+Scouting information display in world map
+Progress tracking and visual feedback
+Color code scouting info based on tags.
+
+
+CURRENT TASK:
+
+UIUX change thatll be important for the future: I want to assign the Exile to a mission and then click process day to have them run it. Ideally they stay assigned to that mission unless it goes on cooldown. 
+
+The idea is that you can assign exiles to missions (just our 1 for now) and then process day to have them run them. And that'll naturally cause time progression to occur. What steps would be involved in implementing this?
+
+Mission Assignment System
+This is a bigger change! Here's the implementation plan:
+Step 1: Add Assignment Tracking
+File: Update js/gameState.js
+Add to exile object:
+javascriptexile: {
+    // ... existing properties ...
+    
+    // NEW: Mission assignment
+    assignedMission: null  // { areaId: "beach", missionId: "shorelineExploration" }
+},
+Step 2: Update World Map UI
+Change "Run Mission Now" buttons to "Assign Mission"
+File: Update js/game.js in showAreaMissions method:
+javascriptbuttonText = isAssigned ? "Assigned ✓" : "Assign Mission";
+buttonClass = `assign-mission-btn ${isAssigned ? 'assigned' : ''}`;
+
+// Change onclick to assignment instead of immediate run
+onclick="game.assignMissionToExile('${areaId}', '${mission.missionId}')"
+Step 3: Add Assignment Logic
+File: Add to js/game.js:
+javascriptassignMissionToExile(areaId, missionId) {
+    // Check if mission is available
+    if (!isMissionAvailable(areaId, missionId)) {
+        this.log("Cannot assign to unavailable mission!", "failure");
+        return;
+    }
+    
+    // Assign the mission
+    gameState.exile.assignedMission = { areaId, missionId };
+    
+    const missionData = getMissionData(areaId, missionId);
+    this.log(`📋 ${gameState.exile.name} assigned to ${missionData.name}`, "info");
+    
+    // Update displays
+    this.updateCommandCenterDisplay();
+    this.updateWorldMapDisplay();
+    this.saveGame();
+},
+
+unassignExile() {
+    if (!gameState.exile.assignedMission) return;
+    
+    gameState.exile.assignedMission = null;
+    this.log(`📋 ${gameState.exile.name} unassigned from mission`, "info");
+    
+    this.updateCommandCenterDisplay();
+    this.updateWorldMapDisplay();
+    this.saveGame();
+},
+Step 4: Update Process Day
+File: Update js/game.js processDay method:
+javascriptprocessDay() {
+    // Check for assigned missions
+    if (gameState.exile.assignedMission) {
+        const { areaId, missionId } = gameState.exile.assignedMission;
+        
+        // Check if mission is still available (might have gone on cooldown)
+        if (isMissionAvailable(areaId, missionId)) {
+            this.log(`⚔️ ${gameState.exile.name} embarks on their assigned mission...`, "info");
+            
+            // Run the assigned mission
+            this.runMission(`${areaId}.${missionId}`);
+            
+            // Check if mission went on cooldown - if so, unassign
+            if (!isMissionAvailable(areaId, missionId)) {
+                this.log(`📋 Mission went on cooldown - ${gameState.exile.name} unassigned`, "info");
+                gameState.exile.assignedMission = null;
+            }
+        } else {
+            this.log(`📋 Assigned mission unavailable - ${gameState.exile.name} unassigned`, "info");
+            gameState.exile.assignedMission = null;
+        }
+    } else {
+        this.log("⏳ Time passes... No missions assigned.", "info");
+    }
+    
+    // Advance time
+    timeState.currentDay++;
+    
+    // ... rest of existing processDay logic ...
+},
+Step 5: Update Command Center Display
+File: Update js/game.js updateCommandCenterDisplay method:
+javascriptupdateCommandCenterDisplay() {
+    // ... existing code ...
+    
+    // Update assignment status
+    const assignedMissionsEl = document.getElementById('assigned-missions-count');
+    const processBtn = document.querySelector('.process-day-btn');
+    
+    if (gameState.exile.assignedMission) {
+        const { areaId, missionId } = gameState.exile.assignedMission;
+        const missionData = getMissionData(areaId, missionId);
+        assignedMissionsEl.textContent = `${gameState.exile.name} → ${missionData.name}`;
+        processBtn.classList.add('has-assignments');
+    } else {
+        assignedMissionsEl.textContent = "No missions assigned";
+        processBtn.classList.remove('has-assignments');
+    }
+},
+Step 6: Add CSS for Assignment States
+File: Add to css/worldMap.css:
+css.assign-mission-btn.assigned {
+    background-color: #4CAF50;
+    color: #000;
+}
+
+.assign-mission-btn.assigned:hover {
+    background-color: #66BB6A;
+}
+Implementation Order:
+
+Fix save/load (quick fix)
+Add assignment tracking to gameState
+Update world map UI to show assign/unassign
+Add assignment logic methods
+Update process day to run assigned missions
+Update command center to show assignment status

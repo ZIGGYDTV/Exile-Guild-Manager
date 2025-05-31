@@ -1942,7 +1942,11 @@ Final: ${final}`;
 
         if (!areaData || !areaState) return;
 
-        // Get ALL discovered missions (even on cooldown)
+        // Get scouting info
+        const unlockedScouting = getUnlockedScoutingInfo(areaId);
+        const totalScoutingProgress = areaState.totalScoutingProgress || 0;
+
+        // Get discovered missions
         const discoveredMissions = Object.entries(areaData.missions)
             .filter(([missionId, mission]) => {
                 const missionState = areaState.missions[missionId];
@@ -1960,54 +1964,88 @@ Final: ${final}`;
             missionContent.innerHTML = `
             <div style="text-align: center; color: #666; margin-top: 50px;">
                 <h3>No missions discovered in ${areaData.name}</h3>
-                <p>Complete other missions to discover new opportunities in this area.</p>
+                <p>Complete missions to discover new opportunities in this area.</p>
             </div>
         `;
             return;
         }
 
         missionContent.innerHTML = `
-        <h3 style="color: #c9aa71; margin-bottom: 20px;">${areaData.name} - Discovered Missions</h3>
-        <div class="missions-grid">
-            ${discoveredMissions.map(mission => {
-            const isAvailable = isMissionAvailable(areaId, mission.missionId);
-            const daysUntil = getDaysUntilAvailable(areaId, mission.missionId);
-
-            let buttonText = "Run Mission Now";
-            let buttonClass = "assign-mission-btn";
-            let buttonDisabled = "";
-
-            if (!isAvailable && daysUntil > 0) {
-                buttonText = `On Cooldown (${daysUntil} day${daysUntil > 1 ? 's' : ''})`;
-                buttonClass = "assign-mission-btn disabled";
-                buttonDisabled = "disabled";
-            }
-
-            return `
-                    <div class="world-mission-card ${!isAvailable ? 'mission-on-cooldown' : ''}">
-                        <div class="mission-header">
-                            <div class="mission-name">${mission.name}</div>
-                            <div class="mission-type ${mission.type}">${getMissionTypeData(mission.type).name}</div>
-                        </div>
-                        <div class="mission-description">${mission.description}</div>
-                        <div class="mission-stats">
-                            <div class="stat">
-                                <strong>Difficulty:</strong><br>${mission.difficulty}
-                            </div>
-                            <div class="stat">
-                                <strong>Item Level:</strong><br>${mission.ilvl}
-                            </div>
-                            <div class="stat">
-                                <strong>Gear Drop:</strong><br>${Math.round((mission.gearDrop?.baseChance || 0) * 100)}%
-                            </div>
-                        </div>
-                        <button class="${buttonClass}" ${buttonDisabled} 
-                                onclick="game.runMissionFromWorldMap('${areaId}', '${mission.missionId}')">
-                            ${buttonText}
-                        </button>
+        <div class="area-mission-layout">
+            <!-- Left side: Area info and scouting -->
+            <div class="area-info-panel">
+                <h3 style="color: #c9aa71; margin-bottom: 15px;">${areaData.name}</h3>
+                
+                <div class="area-progress-section">
+                    <h4>Area Progress</h4>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${areaState.explorationProgress}%"></div>
+                        <span class="progress-text">${areaState.explorationProgress}% Explored</span>
                     </div>
-                `;
-        }).join('')}
+                    <div class="scouting-progress">
+                        Scouting Knowledge: ${totalScoutingProgress}
+                    </div>
+                </div>
+
+                <div class="scouting-info-section">
+                    <h4>Area Knowledge</h4>
+                    ${unlockedScouting.length === 0 ?
+                '<div class="no-scouting">No detailed knowledge yet. Complete missions to learn more.</div>' :
+                unlockedScouting.map(info => `
+                            <div class="scouting-info-item ${info.tag}">
+                                <div class="scouting-threshold">Learned at ${info.threshold} scouting</div>
+                                <div class="scouting-text">${info.text}</div>
+                            </div>
+                        `).join('')
+            }
+                </div>
+            </div>
+
+            <!-- Right side: Missions -->
+            <div class="missions-panel">
+                <h4>Available Missions</h4>
+                <div class="missions-grid">
+                    ${discoveredMissions.map(mission => {
+                const isAvailable = isMissionAvailable(areaId, mission.missionId);
+                const daysUntil = getDaysUntilAvailable(areaId, mission.missionId);
+
+                let buttonText = "Run Mission Now";
+                let buttonClass = "assign-mission-btn";
+                let buttonDisabled = "";
+
+                if (!isAvailable && daysUntil > 0) {
+                    buttonText = `On Cooldown (${daysUntil} day${daysUntil > 1 ? 's' : ''})`;
+                    buttonClass = "assign-mission-btn disabled";
+                    buttonDisabled = "disabled";
+                }
+
+                return `
+                            <div class="world-mission-card ${!isAvailable ? 'mission-on-cooldown' : ''}">
+                                <div class="mission-header">
+                                    <div class="mission-name">${mission.name}</div>
+                                    <div class="mission-type ${mission.type}">${getMissionTypeData(mission.type).name}</div>
+                                </div>
+                                <div class="mission-description">${mission.description}</div>
+                                <div class="mission-stats">
+                                    <div class="stat">
+                                        <strong>Difficulty:</strong><br>${mission.difficulty}
+                                    </div>
+                                    <div class="stat">
+                                        <strong>Item Level:</strong><br>${mission.ilvl}
+                                    </div>
+                                    <div class="stat">
+                                        <strong>Gear Drop:</strong><br>${Math.round((mission.gearDrop?.baseChance || 0) * 100)}%
+                                    </div>
+                                </div>
+                                <button class="${buttonClass}" ${buttonDisabled} 
+                                        onclick="game.runMissionFromWorldMap('${areaId}', '${mission.missionId}')">
+                                    ${buttonText}
+                                </button>
+                            </div>
+                        `;
+            }).join('')}
+                </div>
+            </div>
         </div>
     `;
     },

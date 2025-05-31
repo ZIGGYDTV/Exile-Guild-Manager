@@ -181,7 +181,6 @@ function addScoutingProgress(areaId, amount) {
 
 
 // === DISCOVERY SYSTEM FUNCTIONS ===
-
 // Check for mission/area discoveries after completing a mission
 function checkForDiscoveries(areaId, missionId, outcome) {
     const missionData = getCompleteMissionData(areaId, missionId);
@@ -245,7 +244,6 @@ function checkForDiscoveries(areaId, missionId, outcome) {
 }
 
 // === MISSION COMPLETION TRACKING ===
-
 // Update mission state after completion
 function completeMission(areaId, missionId, outcome) {
     const missionState = gameState.worldState.areas[areaId].missions[missionId];
@@ -258,6 +256,9 @@ function completeMission(areaId, missionId, outcome) {
             missionState.firstCompleted = true;
         }
         missionState.lastCompleted = timeState.currentDay;
+
+        // ADD: Update exploration progress
+        updateExplorationProgress(areaId, missionId);
 
         // Start cooldown if applicable
         startMissionCooldown(areaId, missionId);
@@ -274,6 +275,25 @@ function completeMission(areaId, missionId, outcome) {
         discoveries: discoveries,
         scoutingGain: scoutingGain
     };
+}
+
+// New function to calculate exploration progress
+function updateExplorationProgress(areaId, missionId) {
+    const areaState = gameState.worldState.areas[areaId];
+    const areaData = getAreaData(areaId);
+    
+    if (!areaState || !areaData) return;
+
+    // Calculate progress based on discovered missions and their completions
+    const totalMissions = Object.keys(areaData.missions).length;
+    const discoveredMissions = Object.values(areaState.missions).filter(m => m.discovered);
+    const completedMissions = Object.values(areaState.missions).filter(m => m.completions > 0);
+    
+    // Progress formula: 50% for discovery + 50% for completion
+    const discoveryProgress = (discoveredMissions.length / totalMissions) * 50;
+    const completionProgress = (completedMissions.length / totalMissions) * 50;
+    
+    areaState.explorationProgress = Math.min(100, Math.round(discoveryProgress + completionProgress));
 }
 
 // === UTILITY FUNCTIONS ===

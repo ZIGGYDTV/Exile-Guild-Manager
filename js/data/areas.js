@@ -34,28 +34,33 @@ const areaDefinitions = {
         // Information players can discover through scouting
         scoutingInfo: [
             {
-                text: "A windswept coastline with scattered wreckage from ancient storms.",
+                text: "A windswept coastline with scattered wreckage from ancient storms. The carniviorous crabs are barely edible, but can keep us going.",
                 threshold: 0,    // Unlocked at start
                 tag: "initial"
             },
             {
-                text: "The creatures that prowl the wreckages crackle with energy.",
+                text: "The creatures that prowl the wreckages crackle with energy. But the risk may be worth it, signs point to a cargo ship containing a shipment of clothing and armor is amongst the other wrecks.",
                 threshold: 15,
                 tag: "danger"
             },
             {
-                text: "The cannibals seem to have looted every weapon on the coast.",
-                threshold: 25,
+                text: "The cannibals prowling the coast seem to have looted every weapon they could from the wrecks. They favor fire, trying to cook their prey alive.",
+                threshold: 30,
                 tag: "loot"
             },
             {
-                text: "Placeholder, Ziggy write this.",
+                text: "Sighted a massive crab-like creature, it was eating the smaller crabs like snacks. It left a frozen trail in it's wake.",
                 threshold: 40,
+                tag: "danger"
+            },
+            {
+                text: "Placeholder: something about the boss or next area.",
+                threshold: 75,
                 tag: "general"
             },
             {
-                text: "Placeholder, Ziggy write this.",
-                threshold: 75,
+                text: "Placeholder: something about a nuance of the loot.",
+                threshold: 100,
                 tag: "secrets"
             }
         ],
@@ -79,12 +84,11 @@ const areaDefinitions = {
 
                 // Reward modifiers specific to this mission
                 rewardModifiers: {
-                    experienceMultiplier: 1.1 // 10% bonus XP for exploration
-                },
-
-                firstCompletionOnly: {
-                    bonusGold: 22,
-                    bonusExperience: 44
+                    experienceMultiplier: 1.1, // 10% bonus XP for exploration
+                    firstCompletionOnly: {
+                        bonusGold: 22,
+                        bonusExperience: 44
+                    },
                 },
 
                 // Gear drop configuration
@@ -118,13 +122,12 @@ const areaDefinitions = {
 
                 rewardModifiers: {
                     goldMultiplier: 1.3, // Better gold from scavenging
-                    currencyMultiplier: 1.2 // Better currency drops
-                },
-
-                firstCompletionOnly: {
-                    guaranteedCurrency: { exaltedOrbs: 1 },
-                    bonusGold: 44,
-                    bonusExperience: 82
+                    currencyMultiplier: 1.2, // Better currency drops
+                    firstCompletionOnly: {
+                        guaranteedCurrency: { exaltedOrbs: 1 },
+                        bonusGold: 44,
+                        bonusExperience: 82
+                    },
                 },
 
                 // Better gear drops for scavenging
@@ -163,7 +166,10 @@ const areaDefinitions = {
 
                 rewardModifiers: {
                     goldMultiplier: 0.8, // What use have they for gold?
-                    experienceMultiplier: 1.2 // Slightly better XP for hunting
+                    experienceMultiplier: 1.2, // Slightly better XP for hunting
+                    firstCompletionOnly: {
+                        bonusExperience: 122
+                    },
                 },
 
                 gearDrop: {
@@ -195,14 +201,13 @@ const areaDefinitions = {
 
                 damage: {
                     min: 25, max: 60,
-                    types: { physical: 0.6, cold: 0.4 }
+                    types: { physical: 0.5, cold: 0.5 }
                 },
 
                 rewardModifiers: {
                     goldMultiplier: 2.0,
                     experienceMultiplier: 1.5,
                     guaranteedCurrency: { chaosOrbs: 1 },
-
                     firstCompletionOnly: {
                         guaranteedCurrency: { exaltedOrbs: 1 },
                         bonusGold: 100,
