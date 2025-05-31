@@ -204,8 +204,10 @@ const gearTypes = {
 const rarityTiers = {
     common: { 
         color: '#888', 
-        statMultiplier: 1, 
-        statCount: 1,
+        statMultiplier: 1, // Should be non functional, need to remove
+        statCount: 1,  // Need a max stat count, this only affecting how many they drop with
+        // Need max stat count
+        // need dropped stat ranges?
         dropWeight: 70 
     },
     magic: { 
@@ -222,9 +224,9 @@ const rarityTiers = {
     }
 };
 
-const rarityBonusByDifficulty = {
-    easy: { rareBonus: 0 },      // No bonus to rare chance
-    medium: { rareBonus: 2 },    // +2% rare chance (5→7%)  
-    hard: { rareBonus: 5 },      // +5% rare chance (5→10%)
-    nightmare: { rareBonus: 10 } // +10% rare chance (5→15%)
+const rarityBonusByDifficulty = {  // should cut this
+    easy: { rareBonus: 0 },      // % chance to get a rare item
+    medium: { rareBonus: 5 },      
+    hard: { rareBonus: 10 },      
+    nightmare: { rareBonus: 15 } 
 };

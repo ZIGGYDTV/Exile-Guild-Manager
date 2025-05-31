@@ -47,3 +47,6 @@ BOW https://i.imgur.com/Y81WrBY.png
 
 
 you can use css variables to use colors (ask claude about naming colors)
+
+
+HodgeBoi: you should really ask the AI to explain "variable scope", a really important thing to understand
