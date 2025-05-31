@@ -19,14 +19,14 @@ const gameState = {
         experience: 0,
         experienceNeeded: 100,
         morale: 75,
-        
+
         // Passive system
         passives: {
             allocated: [], // Starting with no passives (given a random one via game.js)
             pendingPoints: 0, // Points available to spend
             rerollsUsed: 0 // Resets each level-up choice
         },
-        
+
         stats: {
             // Current calculated stats (base + gear + passives)
             life: 105, // Will be recalculated based on class
@@ -39,27 +39,29 @@ const gameState = {
             lightningResist: 0,
             chaosResist: 0,
 
-            // Bonus stats for future expansion
-            goldFindBonus: 0,
-            escapeChance: 0,
-            moraleResistance: 0,
-            moraleGain: 0
+            // Utility stats
+            goldFindBonus: 0, // Increases gold dropped by monsters
+            escapeChance: 0, // not imtlemented yet
+            moraleResistance: 0, // morale "stability" vs "volatility"
+            moraleGain: 0, // Increases morale gain from missions
+            scoutingBonus: 1.0  // 1.0 = normal, 1.5 = 50% better discovery, etc.
+
         },
-        
+
         // Base stats from class (set during exile creation)
         baseStats: {
             life: 105, // Will match class baseStats
-            damage: 11, 
+            damage: 11,
             defense: 5
         }
     },
-    
+
     resources: {
         gold: 0,
         chaosOrbs: 0,
         exaltedOrbs: 0
     },
-    
+
     inventory: {
         equipped: {
             weapon: null,
@@ -73,18 +75,11 @@ const gameState = {
     worldState: {
         areas: {
             beach: {
-                discovered: true, // Starting area
-                explorationProgress: 0, // 0-100, increases with mission completions
-                
-                // Scouting information discovery progress
-                scoutingProgress: {
-                    general: { unlocked: true, progress: 0 },   // Always unlocked initially
-                    loot: { unlocked: false, progress: 0 },     // Unlocks at 25% total scouting
-                    dangers: { unlocked: false, progress: 0 },  // Unlocks at 50% total scouting
-                    secrets: { unlocked: false, progress: 0 }   // Unlocks at 75% total scouting
-                },
-                
-                // Individual mission progress tracking
+                discovered: true,
+                explorationProgress: 0,
+                totalScoutingProgress: 0,        // NEW: Single progress tracker
+                unlockedScoutingInfo: {},        // NEW: Tracks which info is unlocked
+
                 missions: {
                     shorelineExploration: {
                         discovered: true,
@@ -92,29 +87,15 @@ const gameState = {
                         firstCompleted: false,
                         lastCompleted: null,
                         availableAgainOnDay: null
-                    },
-                    wreckageScavenging: {
-                        discovered: false, // Must be found through exploration
-                        completions: 0,
-                        firstCompleted: false,
-                        lastCompleted: null,
-                        availableAgainOnDay: null
-                    },
-                    tidePoolBoss: {
-                        discovered: false, // Must be found through scavenging
-                        completions: 0,
-                        firstCompleted: false,
-                        lastCompleted: null,
-                        availableAgainOnDay: null
                     }
                 }
-            }
+            },
             // Future areas will be added here as they're discovered
         },
-        
+
         // Connections between areas and their unlock status
         connections: {
-            beach_to_swamp: { 
+            beach_to_swamp: {
                 discovered: false,  // Has the player learned this connection exists?
                 unlocked: false,    // Can the player actually travel there?
                 unlockType: "boss", // What type of requirement: "exploration", "boss", "discovery"
@@ -123,7 +104,7 @@ const gameState = {
             // Future connections will be discovered through gameplay
         }
     },
-    
+
     settings: {
         autoSave: true
     }

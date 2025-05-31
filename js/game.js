@@ -9,7 +9,8 @@ const game = {
 
         this.updateDisplay();
         this.updateInventoryDisplay();
-        this.log("Welcome to Exile Manager! Send your exile on missions to grow stronger.", "info");
+        this.updateCommandCenterDisplay();
+        this.log("Send exiles on missions. Make them more powerful. Each area has dangers and rewards to discover.", "info");
     },
 
     createNewExile(className) {
@@ -46,58 +47,74 @@ const game = {
         this.updateDisplay();
     },
 
-    runMission(difficulty) {
-        const mission = missions[difficulty];
-        const exile = gameState.exile; // Future: could be any exile
+    runMission(missionKey) {
+        const [areaId, missionId] = missionKey.split('.');
 
-        // Run combat simulation
-        const combatResult = this.simulateCombat(exile, mission);
+        if (!areaId || !missionId) {
+            this.log("Invalid mission format!", "failure");
+            return;
+        }
+
+        if (!isMissionAvailable(areaId, missionId)) {
+            const daysUntil = getDaysUntilAvailable(areaId, missionId);
+            if (daysUntil > 0) {
+                this.log(`Mission on cooldown for ${daysUntil} more days!`, "failure");
+            } else {
+                this.log("Mission not discovered yet!", "failure");
+            }
+            return;
+        }
+
+        const exile = gameState.exile;
+        const missionData = getCompleteMissionData(areaId, missionId);
+
+        if (!missionData) {
+            this.log("Mission data not found!", "failure");
+            return;
+        }
+
+        this.log(`🗺️ ${exile.name} embarks on ${missionData.name}...`, "info");
+
+        // Combat using new world system
+        const combatResult = this.simulateCombat(exile, missionData);
 
         let goldEarned = 0;
         let expEarned = 0;
         let moraleHtml = "";
 
-
         if (combatResult.outcome === 'victory') {
-            // Success! Award rewards
-            goldEarned = this.randomBetween(mission.rewards.gold.min, mission.rewards.gold.max);
+            // Calculate rewards using world system
+            const rewards = calculateCompleteMissionRewards(areaId, missionId, combatResult.outcome);
 
-            // Apply gold find bonus
+            goldEarned = rewards.gold;
+            expEarned = rewards.experience;
+
+            // Apply gold find bonus (preserve existing mechanic)
             const goldFindMultiplier = 1 + (exile.stats.goldFindBonus || 0) / 100;
             goldEarned = Math.floor(goldEarned * goldFindMultiplier);
 
+            // Apply rewards to game state
             gameState.resources.gold += goldEarned;
-            expEarned = typeof mission.rewards.experience === 'object'
-                ? this.randomBetween(mission.rewards.experience.min, mission.rewards.experience.max)
-                : mission.rewards.experience;
+            gameState.resources.chaosOrbs += rewards.chaosOrbs;
+            gameState.resources.exaltedOrbs += rewards.exaltedOrbs;
             gameState.exile.experience += expEarned;
 
-
-            // Calculate final life after combat
-            const finalLife = exile.stats.life - combatResult.totalDamageTaken;
-
-            let message = `✓ ${mission.name} cleared! +${goldEarned} gold, +${expEarned} exp`;
-
-
-            // Check for orb drops
-            let orbMessage = "";
-            if (Math.random() < mission.rewards.chaosOrbChance) {
-                gameState.resources.chaosOrbs++;
-                orbMessage += ", +1 Chaos Orb!";
-            }
-            if (Math.random() < mission.rewards.exaltedOrbChance) {
-                gameState.resources.exaltedOrbs++;
-                orbMessage += ", +1 Exalted Orb!";
+            // Log special currency rewards
+            if (rewards.chaosOrbs > 0 || rewards.exaltedOrbs > 0) {
+                let orbMessage = "";
+                if (rewards.chaosOrbs > 0) orbMessage += `, +${rewards.chaosOrbs} Chaos Orb(s)`;
+                if (rewards.exaltedOrbs > 0) orbMessage += `, +${rewards.exaltedOrbs} Exalted Orb(s)`;
+                this.log(`🎁 Bonus rewards${orbMessage}!`, "legendary");
             }
 
-            if (orbMessage) {
-                this.log(`🎁 Bonus rewards${orbMessage}`, "legendary");
-            }
+            // Check for gear drop using world system
+            if (Math.random() < (missionData.gearDrop?.baseChance || 0)) {
+                // Generate gear with world system ilvl
+                const ilvlRange = missionData.gearDrop.ilvlRange;
+                const gearIlvl = this.randomBetween(ilvlRange.min, ilvlRange.max);
 
-            // Check for gear drops
-            const difficultyData = getDifficultyConfig(difficulty);
-            if (Math.random() < difficultyData.gearDropChance) {
-                const newGear = this.generateGear(difficulty);
+                // Use updated generateGear method
+                const newGear = this.generateGear(areaId, missionId, gearIlvl);
                 gameState.inventory.backpack.push(newGear);
                 this.log(`⭐ Found ${newGear.name}!`, newGear.rarity === 'rare' ? 'legendary' : 'success');
                 this.updateInventoryDisplay();
@@ -105,7 +122,7 @@ const game = {
 
             this.checkLevelUp();
 
-            // Calculate and apply morale change
+            // Calculate and apply morale change (preserve existing system)
             if (combatResult.outcome !== 'death') {
                 const moraleResult = this.calculateMoraleChange(combatResult, exile);
                 if (moraleResult.change !== 0) {
@@ -117,22 +134,23 @@ const game = {
             }
         } else if (combatResult.outcome === 'death') {
             this.gameOver();
+            return;
         }
 
         let mainMessage = "";
         let breakdownHtml = "";
 
-        // Build the main message for each outcome
+        // Build the main message for each outcome (preserve existing logic)
         if (combatResult.outcome === 'victory') {
-            mainMessage = `✓ ${mission.name} cleared! +${goldEarned} gold, +${expEarned} exp`;
+            mainMessage = `✓ ${missionData.name} cleared! +${goldEarned} gold, +${expEarned} exp`;
         } else if (combatResult.outcome === 'death') {
             mainMessage = this.generateDeathMessage(combatResult);
         } else if (combatResult.outcome === 'retreat') {
             const retreatReason = combatResult.rounds >= 10 ? "after a prolonged fight" : "badly wounded";
-            mainMessage = `✗ ${exile.name} retreated from ${mission.name} ${retreatReason} (${combatResult.rounds} rounds, ${Math.floor(combatResult.heaviestHit * 10) / 10} heaviest hit).`;
+            mainMessage = `✗ ${exile.name} retreated from ${missionData.name} ${retreatReason} (${combatResult.rounds} rounds, ${Math.floor(combatResult.heaviestHit * 10) / 10} heaviest hit).`;
         }
 
-        // Build the breakdown if available
+        // Build the detailed combat breakdown (preserve existing system)
         const breakdownSource =
             combatResult.heaviestHitBreakdown ||
             (combatResult.damageLog.length > 0 ? combatResult.damageLog[combatResult.damageLog.length - 1].breakdown : null);
@@ -148,17 +166,38 @@ const game = {
 
             const logId = `combat-breakdown-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
             breakdownHtml = `
-        <span class="combat-breakdown-toggle" style="cursor:pointer;" onclick="game.toggleBreakdown('${logId}')">
-            <span class="triangle">&#x25BC;</span>
-            ⚔️ Heaviest hit breakdown: ${Math.round(totalMitigated * 10) / 10}
-        </span>
-        <div id="${logId}" class="combat-breakdown-details" style="display:none; margin-left:1.5em; color:#bbb; font-size:0.95em;">
-            &gt; ${lines} / Total: ${Math.round(totalUnmitigated * 10) / 10} → ${Math.round(totalMitigated * 10) / 10}
-        </div>
-    `;
+            <span class="combat-breakdown-toggle" style="cursor:pointer;" onclick="game.toggleBreakdown('${logId}')">
+                <span class="triangle">&#x25BC;</span>
+                ⚔️ Heaviest hit breakdown: ${Math.round(totalMitigated * 10) / 10}
+            </span>
+            <div id="${logId}" class="combat-breakdown-details" style="display:none; margin-left:1.5em; color:#bbb; font-size:0.95em;">
+                &gt; ${lines} / Total: ${Math.round(totalUnmitigated * 10) / 10} → ${Math.round(totalMitigated * 10) / 10}
+            </div>
+        `;
         }
 
-        // Combine and log as a single entry
+        // Complete mission and handle world system updates
+        const completionResult = completeMission(areaId, missionId, combatResult.outcome);
+
+        // Handle discoveries (new world system feature)
+        if (completionResult.discoveries.length > 0) {
+            completionResult.discoveries.forEach(discovery => {
+                if (discovery.type === 'mission') {
+                    const newMission = getMissionData(discovery.areaId, discovery.missionId);
+                    this.log(`🔍 Discovered: ${newMission.name}!`, "legendary");
+                } else if (discovery.type === 'connection') {
+                    this.log(`🗺️ Discovered passage to new area!`, "legendary");
+                }
+            });
+            this.updateCommandCenterDisplay(); // Update mission counts
+        }
+
+        // Log scouting progress (new world system feature)
+        if (completionResult.scoutingGain > 0) {
+            this.log(`📖 Gained ${completionResult.scoutingGain} scouting knowledge about the area`, "info");
+        }
+
+        // Combine and log as a single entry (preserve existing detailed logging)
         if (mainMessage) {
             this.log(
                 `${mainMessage}${breakdownHtml ? "<br>" + breakdownHtml : ""}${moraleHtml || ""}`,
@@ -170,6 +209,8 @@ const game = {
         this.updateDisplay();
         this.saveGame();
     },
+    // End of runMission object
+
 
     checkLevelUp() {
         while (gameState.exile.experience >= gameState.exile.experienceNeeded) {
@@ -198,11 +239,11 @@ const game = {
         }
     },
 
-
-    simulateCombat(exile, mission) {
+    // Combat Simulation For Missions
+    simulateCombat(exile, missionData) {
         const combatData = {
             exile: exile,
-            mission: mission,
+            mission: missionData,
             rounds: 0,
             damageLog: [],
             heaviestHit: 0,
@@ -211,33 +252,33 @@ const game = {
             deathType: null // 'oneshot', 'outclassed_barely', etc.
         };
 
-        // Calculate win chance per round
-        const powerAdvantage = this.calculatePowerRating(exile) / mission.difficulty;
+        // Calculate win chance per round using new format
+        const powerAdvantage = this.calculatePowerRating(exile) / missionData.difficulty;
         const winChancePerRound = Math.min(0.4, powerAdvantage * 0.15);
 
         let currentLife = exile.stats.life;
-        const maxRounds = 10; // Prevent infinite loops and give them a fail out if they aren't winning in reasonable "timeframe".
+        const maxRounds = 10;
 
         while (currentLife > 0 && combatData.rounds < maxRounds) {
             combatData.rounds++;
 
-            // Mission attacks
-            const damageRoll = this.randomBetween(mission.damage.min, mission.damage.max);
-            const damageResult = this.calculateDamageReduction(damageRoll, exile, mission);
+            // Mission attacks using new damage format
+            const damageRoll = this.randomBetween(missionData.damage.min, missionData.damage.max);
+            const damageResult = this.calculateDamageReduction(damageRoll, exile, missionData);
             const damageTaken = damageResult.damage;
 
             currentLife -= damageTaken;
             combatData.totalDamageTaken += damageTaken;
             if (damageTaken > combatData.heaviestHit) {
                 combatData.heaviestHit = damageTaken;
-                combatData.heaviestHitBreakdown = damageResult.breakdown; // Store the breakdown of heaviest hit
+                combatData.heaviestHitBreakdown = damageResult.breakdown;
             }
-            // Log this hit for detailed analysis
+
             combatData.damageLog.push({
                 round: combatData.rounds,
                 rawDamage: damageRoll,
                 actualDamage: damageTaken,
-                breakdown: damageResult.breakdown,  // NEW: Store the breakdown
+                breakdown: damageResult.breakdown,
                 lifeRemaining: Math.max(0, currentLife)
             });
 
@@ -248,7 +289,7 @@ const game = {
                 break;
             }
 
-            // Check for early retreat (20% life threshold)
+            // Check for early retreat
             if (currentLife > 0 && currentLife < exile.stats.life * 0.2 && Math.random() < 0.5) {
                 combatData.outcome = 'retreat';
                 break;
@@ -269,33 +310,29 @@ const game = {
         return combatData;
     },
 
-    // DAMAGE CALCS FOR MISSION DAMAGE - RETURNS CALCULATIONS FOR LOG
-    calculateDamageReduction(rawDamage, exile, mission) {
-        // Get damage type breakdown from mission
-        const damageTypes = mission.damage.types || { physical: 1.0 };
+    //  Damage Calcs for Mission + Log
+    calculateDamageReduction(rawDamage, exile, missionData) {
+        // New world system always has damage.types
+        const damageTypes = missionData.damage.types;
 
         let totalDamageAfterReduction = 0;
-        const breakdown = []; // NEW: Track each damage type
+        const breakdown = [];
 
-        // Process each damage type separately
         Object.entries(damageTypes).forEach(([damageType, percentage]) => {
             const typeDamage = rawDamage * percentage;
             let reducedDamage = typeDamage;
             let reductionMethod = '';
 
             if (damageType === 'physical') {
-                // Physical damage uses defense (hybrid formula)
                 reducedDamage = Math.max(1, typeDamage * (1 - exile.stats.defense / 200) - exile.stats.defense / 4);
                 const reductionPercent = Math.round((1 - reducedDamage / typeDamage) * 100);
                 reductionMethod = `${reductionPercent}% reduced`;
             } else {
-                // Elemental damage uses resistances (simple percentage)
                 const resistance = exile.stats[damageType + 'Resist'] || 0;
                 reducedDamage = typeDamage * (1 - resistance / 100);
                 reductionMethod = `${resistance}% resisted`;
             }
 
-            // Store breakdown info
             breakdown.push({
                 type: damageType,
                 raw: typeDamage,
@@ -306,7 +343,6 @@ const game = {
             totalDamageAfterReduction += reducedDamage;
         });
 
-        // Return both damage and breakdown
         return {
             damage: Math.max(1, totalDamageAfterReduction),
             breakdown: breakdown
@@ -458,16 +494,28 @@ const game = {
 
 
     // GEAR GEAR GEAR GEAR =====================>>>>>>>>>>> 
-    generateGear(missionDifficulty) {
-        // Get difficulty config from centralized location
-        const difficultyData = getDifficultyConfig(missionDifficulty);
+    generateGear(areaId, missionId, targetIlvl) {
+        const missionData = getCompleteMissionData(areaId, missionId);
 
-        // Determine item type (WILL NEED UPDATE FOR ITEM EXPANSIONS)
+        // Determine item type - check for mission-specific overrides
+        let gearTypeChances;
+        if (missionData.gearDrop?.gearTypeOverrides) {
+            gearTypeChances = missionData.gearDrop.gearTypeOverrides;
+        } else {
+            // Default chances
+            gearTypeChances = { weapon: 0.4, armor: 0.35, jewelry: 0.25 };
+        }
+
+        // Roll for gear type using the chances
         const typeRoll = Math.random();
         let gearType;
-        if (typeRoll < 0.4) gearType = gearTypes.weapon;
-        else if (typeRoll < 0.7) gearType = gearTypes.armor;
-        else gearType = gearTypes.jewelry;
+        if (typeRoll < gearTypeChances.weapon) {
+            gearType = gearTypes.weapon;
+        } else if (typeRoll < gearTypeChances.weapon + gearTypeChances.armor) {
+            gearType = gearTypes.armor;
+        } else {
+            gearType = gearTypes.jewelry;
+        }
 
         // Determine rarity based on weights
         const rarityRoll = Math.random() * 100;
@@ -485,23 +533,17 @@ const game = {
         const baseType = gearType.baseTypes[Math.floor(Math.random() * gearType.baseTypes.length)];
         const rarityData = rarityTiers[rarity];
 
-        // Generate stats using centralized multiplier
+        // Generate stats using the target ilvl
         const stats = {};
         const statTypes = getAllStatTypes();
         const selectedStats = this.shuffleArray(statTypes).slice(0, rarityData.statCount);
 
-        const mission = missions[missionDifficulty];
-
         selectedStats.forEach(stat => {
             const weight = gearType.statWeights[stat] || 1;
             const statDef = statDefinitions[stat];
-            const statRange = this.getStatRangeForIlvl(statDef, mission.ilvl);
+            const statRange = this.getStatRangeForIlvl(statDef, targetIlvl);
             const baseValue = this.randomBetween(statRange.min, statRange.max);
             stats[stat] = Math.floor(baseValue * weight);
-
-            console.log('missionDifficulty:', missionDifficulty);
-            console.log('missions object:', missions);
-            console.log('mission found:', missions[missionDifficulty]);
         });
 
         return {
@@ -509,7 +551,7 @@ const game = {
             name: `${rarity.charAt(0).toUpperCase() + rarity.slice(1)} ${baseType}`,
             slot: gearType.slot,
             rarity: rarity,
-            ilvl: mission.ilvl,
+            ilvl: targetIlvl,
             stats: stats,
             equipped: false
         };
@@ -1420,15 +1462,30 @@ Final: ${final}`;
 
     saveGame() {
         if (gameState.settings.autoSave) {
-            localStorage.setItem('exileManagerSave', JSON.stringify(gameState));
+            const saveData = {
+                gameState: gameState,
+                timeState: timeState  // ADD: Include time state in saves
+            };
+            localStorage.setItem('exileManagerSave', JSON.stringify(saveData));
         }
     },
 
     loadGame() {
         const savedGame = localStorage.getItem('exileManagerSave');
         if (savedGame) {
-            const loadedState = JSON.parse(savedGame);
-            Object.assign(gameState, loadedState);
+            const loadedData = JSON.parse(savedGame);
+
+            // Handle both old saves (just gameState) and new saves (with timeState)
+            if (loadedData.gameState) {
+                Object.assign(gameState, loadedData.gameState);
+                if (loadedData.timeState) {
+                    Object.assign(timeState, loadedData.timeState);
+                }
+            } else {
+                // Old save format - just gameState
+                Object.assign(gameState, loadedData);
+            }
+
             this.log("Game loaded!", "info");
             this.updateDisplay();
         }
@@ -1484,276 +1541,535 @@ Final: ${final}`;
     // End of Additional Helper Functions
 
 
- // PASSIVE SYSTEM METHODS
-initializeExile() {
-    // Randomize class on truly new games
-    const isNewGame = gameState.exile.level === 1 &&
-        gameState.exile.experience === 0 &&
-        gameState.exile.passives.allocated.length <= 1;
+    // PASSIVE SYSTEM METHODS
+    initializeExile() {
+        // Randomize class on truly new games
+        const isNewGame = gameState.exile.level === 1 &&
+            gameState.exile.experience === 0 &&
+            gameState.exile.passives.allocated.length <= 1;
 
-    if (isNewGame) {
-        // Create new exile with random class
+        if (isNewGame) {
+            // Create new exile with random class
+            const classes = Object.keys(classDefinitions);
+            const randomClass = classes[Math.floor(Math.random() * classes.length)];
+            this.createNewExile(randomClass);
+
+            // Randomize class if this is a new game
+            this.randomizeExileClass();
+        }
+
+        // Set base stats from class
+        const classData = classDefinitions[gameState.exile.class];
+        if (classData) {
+            gameState.exile.baseStats = { ...classData.baseStats };
+        }
+
+        // Ensure exile has a starting notable if none allocated
+        if (!gameState.exile.passives || gameState.exile.passives.allocated.length === 0) {
+            this.giveStartingNotable();
+        }
+
+        // Recalculate all stats
+        this.recalculateStats();
+    },
+
+    randomizeExileClass() {
         const classes = Object.keys(classDefinitions);
         const randomClass = classes[Math.floor(Math.random() * classes.length)];
-        this.createNewExile(randomClass);
+        gameState.exile.class = randomClass;
 
-        // Randomize class if this is a new game
-        this.randomizeExileClass();
-    }
+        this.log(`${gameState.exile.name} is a ${classDefinitions[randomClass].name}!`, "info");
+    },
 
-    // Set base stats from class
-    const classData = classDefinitions[gameState.exile.class];
-    if (classData) {
-        gameState.exile.baseStats = { ...classData.baseStats };
-    }
+    // Give a random notable as starting passive
+    giveStartingNotable() {
+        const notables = passiveHelpers.getPassivesByTier('notable');
+        const randomNotable = notables[Math.floor(Math.random() * notables.length)];
+        gameState.exile.passives.allocated.push(randomNotable.id);
 
-    // Ensure exile has a starting notable if none allocated
-    if (!gameState.exile.passives || gameState.exile.passives.allocated.length === 0) {
-        this.giveStartingNotable();
-    }
+        this.log(`${gameState.exile.name} starts with ${randomNotable.name}!`, "legendary");
+    },
 
-    // Recalculate all stats
-    this.recalculateStats();
-},
+    calculatePassiveEffects() {
+        // Calculate total passive bonuses
+        const effects = {
+            // Increased (additive)
+            increasedLife: 0,
+            increasedDamage: 0,
+            increasedDefense: 0,
 
-randomizeExileClass() {
-    const classes = Object.keys(classDefinitions);
-    const randomClass = classes[Math.floor(Math.random() * classes.length)];
-    gameState.exile.class = randomClass;
+            // More (multiplicative)
+            moreLife: 0,
+            moreDamage: 0,
+            moreDefense: 0,
 
-    this.log(`${gameState.exile.name} is a ${classDefinitions[randomClass].name}!`, "info");
-},
+            // Flat bonuses
+            flatLife: 0,
+            flatDamage: 0,
+            flatDefense: 0,
 
-// Give a random notable as starting passive
-giveStartingNotable() {
-    const notables = passiveHelpers.getPassivesByTier('notable');
-    const randomNotable = notables[Math.floor(Math.random() * notables.length)];
-    gameState.exile.passives.allocated.push(randomNotable.id);
+            // Resistances
+            fireResist: 0,
+            coldResist: 0,
+            lightningResist: 0,
+            chaosResist: 0,
+            maxFireResist: 0,
+            maxColdResist: 0,
+            maxLightningResist: 0,
+            maxChaosResist: 0,
 
-    this.log(`${gameState.exile.name} starts with ${randomNotable.name}!`, "legendary");
-},
+            // Special stats
+            goldFindBonus: 0,
+            escapeChance: 0,
+            moraleResistance: 0,
+            moraleGain: 0
+        };
 
-calculatePassiveEffects() {
-    // Calculate total passive bonuses
-    const effects = {
-        // Increased (additive)
-        increasedLife: 0,
-        increasedDamage: 0,
-        increasedDefense: 0,
+        // Apply all allocated passives
+        gameState.exile.passives.allocated.forEach(passiveId => {
+            const passive = passiveDefinitions[passiveId];
+            if (passive) {
+                passive.effects.forEach(effect => {
+                    switch (effect.type) {
+                        case passiveTypes.INCREASED_LIFE:
+                            effects.increasedLife += effect.value;
+                            break;
+                        case passiveTypes.INCREASED_DAMAGE:
+                            effects.increasedDamage += effect.value;
+                            break;
+                        case passiveTypes.INCREASED_DEFENSE:
+                            effects.increasedDefense += effect.value;
+                            break;
+                        case passiveTypes.MORE_LIFE:
+                            effects.moreLife += effect.value;
+                            break;
+                        case passiveTypes.MORE_DAMAGE:
+                            effects.moreDamage += effect.value;
+                            break;
+                        case passiveTypes.MORE_DEFENSE:
+                            effects.moreDefense += effect.value;
+                            break;
+                        case passiveTypes.FLAT_LIFE:
+                            effects.flatLife += effect.value;
+                            break;
+                        case passiveTypes.FLAT_DAMAGE:
+                            effects.flatDamage += effect.value;
+                            break;
+                        case passiveTypes.FLAT_DEFENSE:
+                            effects.flatDefense += effect.value;
+                            break;
+                        case passiveTypes.FIRE_RESISTANCE:
+                            effects.fireResist += effect.value;
+                            break;
+                        case passiveTypes.COLD_RESISTANCE:
+                            effects.coldResist += effect.value;
+                            break;
+                        case passiveTypes.LIGHTNING_RESISTANCE:
+                            effects.lightningResist += effect.value;
+                            break;
+                        case passiveTypes.CHAOS_RESISTANCE:
+                            effects.chaosResist += effect.value;
+                            break;
+                        case passiveTypes.MAX_FIRE_RESISTANCE:
+                            effects.maxFireResist += effect.value;
+                            break;
+                        case passiveTypes.MAX_COLD_RESISTANCE:
+                            effects.maxColdResist += effect.value;
+                            break;
+                        case passiveTypes.MAX_LIGHTNING_RESISTANCE:
+                            effects.maxLightningResist += effect.value;
+                            break;
+                        case passiveTypes.MAX_CHAOS_RESISTANCE:
+                            effects.maxChaosResist += effect.value;
+                            break;
+                        case passiveTypes.GOLD_FIND:
+                            effects.goldFindBonus += effect.value;
+                            break;
+                        case passiveTypes.ESCAPE_CHANCE:
+                            effects.escapeChance += effect.value;
+                            break;
+                        case passiveTypes.MORALE_RESISTANCE:
+                            effects.moraleResistance += effect.value;
+                            break;
+                        case passiveTypes.MORALE_GAIN:
+                            effects.moraleGain += effect.value;
+                            break;
+                    }
+                });
+            }
+        });
 
-        // More (multiplicative)
-        moreLife: 0,
-        moreDamage: 0,
-        moreDefense: 0,
+        return effects;
+    },
 
-        // Flat bonuses
-        flatLife: 0,
-        flatDamage: 0,
-        flatDefense: 0,
+    selectPassiveForLevelUp(tier) {
+        // Get weighted passive pool for this class and tier
+        const pool = passiveHelpers.getWeightedPassivePool(gameState.exile.class, tier);
 
-        // Resistances
-        fireResist: 0,
-        coldResist: 0,
-        lightningResist: 0,
-        chaosResist: 0,
-        maxFireResist: 0,
-        maxColdResist: 0,
-        maxLightningResist: 0,
-        maxChaosResist: 0,
+        // Filter out already allocated passives
+        const available = pool.filter(passive =>
+            !gameState.exile.passives.allocated.includes(passive.id)
+        );
 
-        // Special stats
-        goldFindBonus: 0,
-        escapeChance: 0,
-        moraleResistance: 0,
-        moraleGain: 0
-    };
+        if (available.length === 0) {
+            // Fallback to any tier if this tier is exhausted
+            const fallbackPool = Object.keys(passiveDefinitions)
+                .filter(id => !gameState.exile.passives.allocated.includes(id))
+                .map(id => ({ id, ...passiveDefinitions[id], weight: 1 }));
 
-    // Apply all allocated passives
-    gameState.exile.passives.allocated.forEach(passiveId => {
+            if (fallbackPool.length === 0) return null;
+            return this.weightedRandomSelect(fallbackPool);
+        }
+
+        return this.weightedRandomSelect(available);
+    },
+
+    weightedRandomSelect(weightedArray) {
+        const totalWeight = weightedArray.reduce((sum, item) => sum + item.weight, 0);
+        let random = Math.random() * totalWeight;
+
+        for (const item of weightedArray) {
+            random -= item.weight;
+            if (random <= 0) {
+                return item;
+            }
+        }
+
+        return weightedArray[weightedArray.length - 1]; // Fallback
+    },
+
+    getPassiveTierForLevel(level) {
+        if (level % 10 === 0) return 'keystone';  // 10, 20, 30...
+        if (level % 5 === 0) return 'notable';    // 5, 15, 25...
+        return 'normal';                          // All other levels
+    },
+
+    startPassiveSelection() {
+        if (gameState.exile.passives.pendingPoints <= 0) return;
+
+        const currentLevel = gameState.exile.level;
+        const tier = this.getPassiveTierForLevel(currentLevel);
+
+        // Get available passives for this tier
+        const pool = passiveHelpers.getWeightedPassivePool(gameState.exile.class, tier)
+            .filter(passive => !gameState.exile.passives.allocated.includes(passive.id));
+
+        if (pool.length === 0) {
+            this.log("No more passives available!", "failure");
+            return;
+        }
+
+        const choice1 = this.weightedRandomSelect(pool);
+        let choice2 = null;
+
+        if (pool.length > 1) {
+            // Remove choice1 from pool for choice2
+            const poolWithoutChoice1 = pool.filter(p => p.id !== choice1.id);
+            choice2 = this.weightedRandomSelect(poolWithoutChoice1);
+        }
+
+        this.currentPassiveChoices = {
+            tier: tier,
+            choice1: choice1,
+            choice2: choice2,
+            rerollCost: this.getRerollCost(tier, gameState.exile.passives.rerollsUsed)
+        };
+
+        this.log(
+            pool.length === 1
+                ? `Only one passive left to choose!`
+                : `Choose your ${tier} passive! (Reroll cost: ${this.currentPassiveChoices.rerollCost} gold)`,
+            "legendary"
+        );
+    },
+
+    getRerollCost(tier, rerollsUsed) {
+        const baseCosts = {
+            'normal': 50,
+            'notable': 100,
+            'keystone': 200
+        };
+
+        return baseCosts[tier] * Math.pow(2, rerollsUsed);
+    },
+
+    allocatePassive(passiveId) {
         const passive = passiveDefinitions[passiveId];
-        if (passive) {
-            passive.effects.forEach(effect => {
-                switch (effect.type) {
-                    case passiveTypes.INCREASED_LIFE:
-                        effects.increasedLife += effect.value;
-                        break;
-                    case passiveTypes.INCREASED_DAMAGE:
-                        effects.increasedDamage += effect.value;
-                        break;
-                    case passiveTypes.INCREASED_DEFENSE:
-                        effects.increasedDefense += effect.value;
-                        break;
-                    case passiveTypes.MORE_LIFE:
-                        effects.moreLife += effect.value;
-                        break;
-                    case passiveTypes.MORE_DAMAGE:
-                        effects.moreDamage += effect.value;
-                        break;
-                    case passiveTypes.MORE_DEFENSE:
-                        effects.moreDefense += effect.value;
-                        break;
-                    case passiveTypes.FLAT_LIFE:
-                        effects.flatLife += effect.value;
-                        break;
-                    case passiveTypes.FLAT_DAMAGE:
-                        effects.flatDamage += effect.value;
-                        break;
-                    case passiveTypes.FLAT_DEFENSE:
-                        effects.flatDefense += effect.value;
-                        break;
-                    case passiveTypes.FIRE_RESISTANCE:
-                        effects.fireResist += effect.value;
-                        break;
-                    case passiveTypes.COLD_RESISTANCE:
-                        effects.coldResist += effect.value;
-                        break;
-                    case passiveTypes.LIGHTNING_RESISTANCE:
-                        effects.lightningResist += effect.value;
-                        break;
-                    case passiveTypes.CHAOS_RESISTANCE:
-                        effects.chaosResist += effect.value;
-                        break;
-                    case passiveTypes.MAX_FIRE_RESISTANCE:
-                        effects.maxFireResist += effect.value;
-                        break;
-                    case passiveTypes.MAX_COLD_RESISTANCE:
-                        effects.maxColdResist += effect.value;
-                        break;
-                    case passiveTypes.MAX_LIGHTNING_RESISTANCE:
-                        effects.maxLightningResist += effect.value;
-                        break;
-                    case passiveTypes.MAX_CHAOS_RESISTANCE:
-                        effects.maxChaosResist += effect.value;
-                        break;
-                    case passiveTypes.GOLD_FIND:
-                        effects.goldFindBonus += effect.value;
-                        break;
-                    case passiveTypes.ESCAPE_CHANCE:
-                        effects.escapeChance += effect.value;
-                        break;
-                    case passiveTypes.MORALE_RESISTANCE:
-                        effects.moraleResistance += effect.value;
-                        break;
-                    case passiveTypes.MORALE_GAIN:
-                        effects.moraleGain += effect.value;
-                        break;
+        if (!passive) return false;
+
+        // Add to allocated passives
+        gameState.exile.passives.allocated.push(passiveId);
+        gameState.exile.passives.pendingPoints--;
+        gameState.exile.passives.rerollsUsed = 0; // Reset for next level
+
+        this.log(`🎯 Allocated ${passive.name}: ${passive.description}`, "legendary");
+
+        // Recalculate stats with new passive
+        this.recalculateStats();
+        this.updateDisplay();
+        this.saveGame();
+
+        return true;
+    },
+
+
+    // === WORLD MAP INTERFACE ===================================================
+    openWorldMap() {
+        // Create world map modal if it doesn't exist
+        if (!document.getElementById('world-map-modal')) {
+            this.createWorldMapModal();
+        }
+
+        // Show the modal
+        document.getElementById('world-map-modal').style.display = 'flex';
+
+        // Populate with current world state
+        this.updateWorldMapDisplay();
+
+        // Add escape key listener
+        document.addEventListener('keydown', this.handleWorldMapKeydown.bind(this));
+    },
+
+    closeWorldMap() {
+        const modal = document.getElementById('world-map-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+
+        // Remove escape key listener
+        document.removeEventListener('keydown', this.handleWorldMapKeydown.bind(this));
+
+        // Update main screen status
+        this.updateCommandCenterDisplay();
+    },
+
+    handleWorldMapKeydown(event) {
+        if (event.key === 'Escape') {
+            this.closeWorldMap();
+        }
+    },
+
+    createWorldMapModal() {
+        const modalHTML = `
+        <div id="world-map-modal" class="world-map-overlay" style="display: none;" onclick="game.handleWorldMapClick(event)">
+            <div class="world-map-content" onclick="event.stopPropagation()">
+                <div class="world-map-header">
+                    <h2>🗺️ World Map - Day <span id="world-map-day">${timeState.currentDay}</span></h2>
+                    <button class="close-btn" onclick="game.closeWorldMap()">&times;</button>
+                </div>
+                
+                <div class="world-map-body">
+                    <!-- Areas Panel -->
+                    <div class="world-areas-panel">
+                        <h3 style="color: #c9aa71; margin-bottom: 15px;">Discovered Areas</h3>
+                        <div id="world-areas-list">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Mission Panel -->
+                    <div class="world-mission-panel">
+                        <div id="world-mission-content">
+                            <div style="text-align: center; color: #666; margin-top: 50px;">
+                                <h3>Select an area to view missions</h3>
+                                <p>Choose an area from the left panel to see available missions and plan your expedition.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    },
+
+    handleWorldMapClick(event) {
+        // Close if clicking the overlay (not the content)
+        if (event.target.classList.contains('world-map-overlay')) {
+            this.closeWorldMap();
+        }
+    },
+
+    updateWorldMapDisplay() {
+        // Update day display
+        document.getElementById('world-map-day').textContent = timeState.currentDay;
+
+        // Update areas list
+        this.updateWorldAreasDisplay();
+
+        // Clear mission panel
+        document.getElementById('world-mission-content').innerHTML = `
+        <div style="text-align: center; color: #666; margin-top: 50px;">
+            <h3>Select an area to view missions</h3>
+            <p>Choose an area from the left panel to see available missions and plan your expedition.</p>
+        </div>
+    `;
+    },
+
+    updateWorldAreasDisplay() {
+        const areasContainer = document.getElementById('world-areas-list');
+        const discoveredAreas = getDiscoveredAreas();
+
+        areasContainer.innerHTML = discoveredAreas.map(area => {
+            const areaState = gameState.worldState.areas[area.id];
+            const availableMissions = getAvailableMissions(area.id);
+
+            return `
+            <div class="area-card" onclick="game.selectArea('${area.id}')">
+                <div class="area-name">${area.name}</div>
+                <div class="area-progress">Exploration: ${areaState.explorationProgress}%</div>
+                <div class="area-missions-count">${availableMissions.length} missions available</div>
+            </div>
+        `;
+        }).join('');
+    },
+
+    selectArea(areaId) {
+        // Update selected area visual state
+        document.querySelectorAll('.area-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        event.currentTarget.classList.add('selected');
+
+        // Show missions for this area
+        this.showAreaMissions(areaId);
+    },
+
+    showAreaMissions(areaId) {
+        const areaData = getAreaData(areaId);
+        const areaState = gameState.worldState.areas[areaId];
+
+        if (!areaData || !areaState) return;
+
+        // Get ALL discovered missions (even on cooldown)
+        const discoveredMissions = Object.entries(areaData.missions)
+            .filter(([missionId, mission]) => {
+                const missionState = areaState.missions[missionId];
+                return missionState && missionState.discovered;
+            })
+            .map(([missionId, mission]) => ({
+                ...mission,
+                missionId: missionId,
+                areaId: areaId
+            }));
+
+        const missionContent = document.getElementById('world-mission-content');
+
+        if (discoveredMissions.length === 0) {
+            missionContent.innerHTML = `
+            <div style="text-align: center; color: #666; margin-top: 50px;">
+                <h3>No missions discovered in ${areaData.name}</h3>
+                <p>Complete other missions to discover new opportunities in this area.</p>
+            </div>
+        `;
+            return;
+        }
+
+        missionContent.innerHTML = `
+        <h3 style="color: #c9aa71; margin-bottom: 20px;">${areaData.name} - Discovered Missions</h3>
+        <div class="missions-grid">
+            ${discoveredMissions.map(mission => {
+            const isAvailable = isMissionAvailable(areaId, mission.missionId);
+            const daysUntil = getDaysUntilAvailable(areaId, mission.missionId);
+
+            let buttonText = "Run Mission Now";
+            let buttonClass = "assign-mission-btn";
+            let buttonDisabled = "";
+
+            if (!isAvailable && daysUntil > 0) {
+                buttonText = `On Cooldown (${daysUntil} day${daysUntil > 1 ? 's' : ''})`;
+                buttonClass = "assign-mission-btn disabled";
+                buttonDisabled = "disabled";
+            }
+
+            return `
+                    <div class="world-mission-card ${!isAvailable ? 'mission-on-cooldown' : ''}">
+                        <div class="mission-header">
+                            <div class="mission-name">${mission.name}</div>
+                            <div class="mission-type ${mission.type}">${getMissionTypeData(mission.type).name}</div>
+                        </div>
+                        <div class="mission-description">${mission.description}</div>
+                        <div class="mission-stats">
+                            <div class="stat">
+                                <strong>Difficulty:</strong><br>${mission.difficulty}
+                            </div>
+                            <div class="stat">
+                                <strong>Item Level:</strong><br>${mission.ilvl}
+                            </div>
+                            <div class="stat">
+                                <strong>Gear Drop:</strong><br>${Math.round((mission.gearDrop?.baseChance || 0) * 100)}%
+                            </div>
+                        </div>
+                        <button class="${buttonClass}" ${buttonDisabled} 
+                                onclick="game.runMissionFromWorldMap('${areaId}', '${mission.missionId}')">
+                            ${buttonText}
+                        </button>
+                    </div>
+                `;
+        }).join('')}
+        </div>
+    `;
+    },
+
+    runMissionFromWorldMap(areaId, missionId) {
+        // Run the mission
+        this.runMission(`${areaId}.${missionId}`);
+
+        // Close world map
+        this.closeWorldMap();
+
+        // Update displays
+        this.updateCommandCenterDisplay();
+    },
+
+    // Update command center display on main screen
+    updateCommandCenterDisplay() {
+        // Update day displays
+        document.getElementById('current-day-display').textContent = `(Day ${timeState.currentDay})`;
+        document.getElementById('current-day-main').textContent = timeState.currentDay;
+
+        // Update discovered areas count
+        const discoveredCount = getDiscoveredAreas().length;
+        document.getElementById('areas-discovered').textContent = discoveredCount;
+
+        // Update available missions count
+        let totalMissions = 0;
+        getDiscoveredAreas().forEach(area => {
+            totalMissions += getAvailableMissions(area.id).length;
+        });
+        document.getElementById('missions-available').textContent = totalMissions;
+    },
+
+    processDay() {
+        // Advance time
+        timeState.currentDay++;
+
+        // Update all displays
+        this.updateCommandCenterDisplay();
+
+        // Log the advancement
+        this.log(`🌅 Day ${timeState.currentDay} begins...`, "info");
+
+        // Check for missions coming off cooldown
+        let missionsBackOnline = 0;
+        Object.keys(gameState.worldState.areas).forEach(areaId => {
+            const areaState = gameState.worldState.areas[areaId];
+            Object.keys(areaState.missions).forEach(missionId => {
+                const missionState = areaState.missions[missionId];
+                if (missionState.availableAgainOnDay && timeState.currentDay >= missionState.availableAgainOnDay) {
+                    missionState.availableAgainOnDay = null;
+                    missionsBackOnline++;
                 }
             });
+        });
+
+        if (missionsBackOnline > 0) {
+            this.log(`⏰ ${missionsBackOnline} mission(s) are no longer on cooldown`, "info");
         }
-    });
 
-    return effects;
-},
-
-selectPassiveForLevelUp(tier) {
-    // Get weighted passive pool for this class and tier
-    const pool = passiveHelpers.getWeightedPassivePool(gameState.exile.class, tier);
-
-    // Filter out already allocated passives
-    const available = pool.filter(passive =>
-        !gameState.exile.passives.allocated.includes(passive.id)
-    );
-
-    if (available.length === 0) {
-        // Fallback to any tier if this tier is exhausted
-        const fallbackPool = Object.keys(passiveDefinitions)
-            .filter(id => !gameState.exile.passives.allocated.includes(id))
-            .map(id => ({ id, ...passiveDefinitions[id], weight: 1 }));
-
-        if (fallbackPool.length === 0) return null;
-        return this.weightedRandomSelect(fallbackPool);
-    }
-
-    return this.weightedRandomSelect(available);
-},
-
-weightedRandomSelect(weightedArray) {
-    const totalWeight = weightedArray.reduce((sum, item) => sum + item.weight, 0);
-    let random = Math.random() * totalWeight;
-
-    for (const item of weightedArray) {
-        random -= item.weight;
-        if (random <= 0) {
-            return item;
-        }
-    }
-
-    return weightedArray[weightedArray.length - 1]; // Fallback
-},
-
-getPassiveTierForLevel(level) {
-    if (level % 10 === 0) return 'keystone';  // 10, 20, 30...
-    if (level % 5 === 0) return 'notable';    // 5, 15, 25...
-    return 'normal';                          // All other levels
-},
-
-startPassiveSelection() {
-    if (gameState.exile.passives.pendingPoints <= 0) return;
-
-    const currentLevel = gameState.exile.level;
-    const tier = this.getPassiveTierForLevel(currentLevel);
-
-    // Get available passives for this tier
-    const pool = passiveHelpers.getWeightedPassivePool(gameState.exile.class, tier)
-        .filter(passive => !gameState.exile.passives.allocated.includes(passive.id));
-
-    if (pool.length === 0) {
-        this.log("No more passives available!", "failure");
-        return;
-    }
-
-    const choice1 = this.weightedRandomSelect(pool);
-    let choice2 = null;
-
-    if (pool.length > 1) {
-        // Remove choice1 from pool for choice2
-        const poolWithoutChoice1 = pool.filter(p => p.id !== choice1.id);
-        choice2 = this.weightedRandomSelect(poolWithoutChoice1);
-    }
-
-    this.currentPassiveChoices = {
-        tier: tier,
-        choice1: choice1,
-        choice2: choice2,
-        rerollCost: this.getRerollCost(tier, gameState.exile.passives.rerollsUsed)
-    };
-
-    this.log(
-        pool.length === 1
-            ? `Only one passive left to choose!`
-            : `Choose your ${tier} passive! (Reroll cost: ${this.currentPassiveChoices.rerollCost} gold)`,
-        "legendary"
-    );
-},
-
-getRerollCost(tier, rerollsUsed) {
-    const baseCosts = {
-        'normal': 50,
-        'notable': 100,
-        'keystone': 200
-    };
-
-    return baseCosts[tier] * Math.pow(2, rerollsUsed);
-},
-
-allocatePassive(passiveId) {
-    const passive = passiveDefinitions[passiveId];
-    if (!passive) return false;
-
-    // Add to allocated passives
-    gameState.exile.passives.allocated.push(passiveId);
-    gameState.exile.passives.pendingPoints--;
-    gameState.exile.passives.rerollsUsed = 0; // Reset for next level
-
-    this.log(`🎯 Allocated ${passive.name}: ${passive.description}`, "legendary");
-
-    // Recalculate stats with new passive
-    this.recalculateStats();
-    this.updateDisplay();
-    this.saveGame();
-
-    return true;
-},
+        this.saveGame();
+    },
 
 };
 // END OF GAME OBJECT =====================

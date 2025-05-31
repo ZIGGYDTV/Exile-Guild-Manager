@@ -32,22 +32,33 @@ const areaDefinitions = {
         },
 
         // Information players can discover through scouting
-        scoutingInfo: {
-            // Always visible when area is discovered
-            initial: "A windswept coastline with scattered wreckage from ancient storms.",
-
-            // Unlocked at 25% scouting progress
-            general: "The salt air corrodes metal quickly here, but the constant wind keeps the area free of dangerous gases.",
-
-            // Unlocked at 50% scouting progress  
-            loot: "Weapons wash ashore regularly from distant battles, but jewelry is quickly claimed by the tides or buried in sand.",
-
-            // Unlocked at 75% scouting progress
-            dangers: "Shifting sands can reveal sinkholes without warning. The wreckage provides shelter for aggressive scavenger creatures.",
-
-            // Unlocked at 100% scouting progress
-            secrets: "Local fishermen speak in hushed tones of hidden passages through the cliff faces, leading to darker places inland."
-        },
+        scoutingInfo: [
+            {
+                text: "A windswept coastline with scattered wreckage from ancient storms.",
+                threshold: 0,    // Unlocked at start
+                tag: "initial"
+            },
+            {
+                text: "The creatures that prowl the wreckages crackle with energy.",
+                threshold: 15,
+                tag: "danger"
+            },
+            {
+                text: "The cannibals seem to have looted every weapon on the coast.",
+                threshold: 25,
+                tag: "loot"
+            },
+            {
+                text: "Placeholder, Ziggy write this.",
+                threshold: 40,
+                tag: "general"
+            },
+            {
+                text: "Placeholder, Ziggy write this.",
+                threshold: 75,
+                tag: "secrets"
+            }
+        ],
 
         // Missions available in this area
         missions: {
@@ -71,6 +82,11 @@ const areaDefinitions = {
                     experienceMultiplier: 1.1 // 10% bonus XP for exploration
                 },
 
+                firstCompletionOnly: {
+                    bonusGold: 22,
+                    bonusExperience: 44
+                },
+
                 // Gear drop configuration
                 gearDrop: {
                     baseChance: 0.4,           // 40% chance to drop gear
@@ -79,7 +95,11 @@ const areaDefinitions = {
                 },
 
                 // What this mission can potentially unlock
-                canUnlock: ["wreckageScavenging", "beach_to_swamp_connection"]
+                canUnlock: [
+                    { target: "wreckageScavenging", chance: 1.0 },      // 100% chance (guaranteed)
+                    { target: "cannibalHunting", chance: 0.3 },         // 30% chance
+                    { target: "theSpits", chance: 0.05 } // 5% chance
+                ]
             },
 
             wreckageScavenging: {
@@ -93,7 +113,7 @@ const areaDefinitions = {
 
                 damage: {
                     min: 5, max: 20,
-                    types: { physical: 0.7, fire: 0.3 } // Rusty metal and occasional burning debris
+                    types: { physical: 0.7, lightning: 0.3 }
                 },
 
                 rewardModifiers: {
@@ -101,14 +121,67 @@ const areaDefinitions = {
                     currencyMultiplier: 1.2 // Better currency drops
                 },
 
+                firstCompletionOnly: {
+                    guaranteedCurrency: { exaltedOrbs: 1 },
+                    bonusGold: 44,
+                    bonusExperience: 82
+                },
+
                 // Better gear drops for scavenging
                 gearDrop: {
                     baseChance: 0.5,           // 50% chance (better than exploration)
                     ilvlRange: { min: 1, max: 3 }, // Drop ilvl 1-3 gear
                     rarityBonus: 0.05          // 5% bonus to rare drop chance
+                },
+
+                gearTypeOverrides: { // These must add up to 1.0! 
+                    armor: 0.8,    // 80% chance for armor
+                    weapon: 0.15,  // 15% chance for weapons  
+                    jewelry: 0.05  // 5% chance for jewelry
+                },                 // Total = 1.0 (100%)
+
+
+                canUnlock: [
+                    { target: "tidePoolBoss", chance: 1.0 }, // 20% chance to discover the Tide Warden boss
+                ]
             },
 
-                canUnlock: ["tidePoolBoss"]
+            // In beach area's missions object, add:
+            cannibalHunting: {
+                type: "hunting",
+                name: "Cannibal Hunting",
+                description: "Hunt the hunters that hide among the rocky outcroppings",
+                discovered: false, // Must be found through exploration
+
+                difficulty: 180,
+                ilvl: 3,
+
+                damage: {
+                    min: 20, max: 45,
+                    types: { physical: 0.8, fire: 0.2 } // Cannibals want to cook their prey alive
+                },
+
+                rewardModifiers: {
+                    goldMultiplier: 0.8, // What use have they for gold?
+                    experienceMultiplier: 1.2 // Slightly better XP for hunting
+                },
+
+                gearDrop: {
+                    baseChance: 0.6,
+                    ilvlRange: { min: 2, max: 5 },
+                    rarityBonus: 0.1
+                },
+
+                // Override gear type droprates
+                gearTypeOverrides: {
+                    armor: 0.2,    // 20% chance for armor
+                    weapon: 0.7,   // 70% chance for weapons  
+                    jewelry: 0.1   // 10% chance for jewelry
+                },
+
+                canUnlock: [
+                    { target: "beach_to_swamp_connection", chance: 0.5 } // 50% chance to discover swamp passage
+                ]
             },
 
             tidePoolBoss: {
@@ -136,7 +209,7 @@ const areaDefinitions = {
                         bonusExperience: 200
                     }
                 },
-                
+
                 // Boss has guaranteed good gear
                 gearDrop: {
                     baseChance: 0.8,           // 80% chance (bosses almost always drop gear)

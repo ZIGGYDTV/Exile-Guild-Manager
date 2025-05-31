@@ -16,6 +16,26 @@ TO DO:
 https://medium.com/@EclecticCoder/manage-todo-list-in-vscode-beb53774d776
 
 
+# code cleanup
+Removing Old Format Support from checkForDiscoveries in worldSystem.js
+Remove the string format compatibility if you're converting everything to the new chance-based format:
+
+// REMOVE this entire block:
+if (typeof unlockEntry === 'string') {
+    target = unlockEntry;
+    chance = 1.0;
+} else {
+    target = unlockEntry.target;
+    chance = unlockEntry.chance;
+}
+
+// REPLACE with just:
+const target = unlockEntry.target;
+const chance = unlockEntry.chance;
+
+But make sure to convert any remaining string-format unlocks first! (I think its done but double check)
+
+
 # Improvements
 - Log entries should be combined for single map actions
 - drop rates for gear isnt based on mission type?
@@ -29,7 +49,8 @@ https://medium.com/@EclecticCoder/manage-todo-list-in-vscode-beb53774d776
     - !IMPORTANT add scouting info to log on fail, very limited atm
 - Crafting popup for items (lil craft button for window)
     - needs to show current currency not vis in exile screen
-
+- Gear type drop weightings and gear drop quant per mission
+    - can only be 1 item per mission right now? Weighting adds to 1 can't just apply multipliers (fine for 1 item max?)
 
 
 # Ideas
@@ -37,6 +58,22 @@ https://medium.com/@EclecticCoder/manage-todo-list-in-vscode-beb53774d776
 - last epoch crafting combo
     - break down items for an affix shard
     - unique modifiers via shards?
+
+
+# Systems Documentation
+## Combat Power / Mission Win Chance
+const powerAdvantage = this.calculatePowerRating(exile) / missionData.difficulty;   
+    // Exile's power ratio, pure damage. Defenses determine survival to apply that power. Kinda works?
+    // exile power much higher than mission? Big number.
+const winChancePerRound = Math.min(0.4, powerAdvantage * 0.15);
+    // Foruma for win chance %, capped at 40% per round. 
+    // if you have 3x the mission power chance of death ~0.006. Win in 10 rounds 99.4%.
+
+const maxRounds = 10;       
+    // retreat if dont win in 10 rounds 
+    // (requires being pretty tanky to survive that long, tuning lower = less attrition deaths) 
+
+
 
 TIPS FORM CHAT
 
