@@ -1,7 +1,6 @@
 TO DO:
 
 # Critical
-- Flat bonuses from passives are applying after scaling so things like beef are always just 30 flat on top.
 - Missions are not currently mapped to difficulties, but drop chance is (defaults to easy right now), rip it out and replace with zone specific reward factors for more fun control over what missions can do.
 
 # Ideas
