@@ -291,7 +291,7 @@ calculatePowerRating(exile = null) {
     // Use provided exile or default to current game exile
     const targetExile = exile || gameState.exile;
     const stats = targetExile.stats;
-    return Math.floor(stats.life + (stats.damage * 10) + (stats.defense * 5));
+    return Math.floor(stats.damage * 10);
 },
 
 classifyDeath(combatData, winChancePerRound) {
@@ -389,17 +389,21 @@ applyMoraleEffects(exile) {
     let damageBonus = 0;
     let defenseBonus = 0;
     
-    if (morale >= 85) {
+    if (morale >= 90) {
         // Confident: +10% damage, +5% defense
         damageBonus = Math.floor(exile.stats.damage * 0.1);
         defenseBonus = Math.floor(exile.stats.defense * 0.05);
-    } else if (morale <= 49) {
+    } else if (morale <= 50) {
         // Demoralized: -10% damage, -5% defense
         damageBonus = -Math.floor(exile.stats.damage * 0.1);
         defenseBonus = -Math.floor(exile.stats.defense * 0.05);
-    } else if (morale <= 69) {
+    } else if (morale <= 70) {
         // Discouraged: -5% damage
         damageBonus = -Math.floor(exile.stats.damage * 0.05);
+    } else if (morale <= 25) {
+        // Broken: -20% damage, -10% defense
+        damageBonus = -Math.floor(exile.stats.damage * 0.2);
+        defenseBonus = -Math.floor(exile.stats.defense * 0.1);
     }
     
     exile.stats.damage += damageBonus;
@@ -411,7 +415,7 @@ applyMoraleEffects(exile) {
 },
 
 getMoraleStatus(morale) {
-    if (morale >= 85) return "Confident";
+    if (morale >= 90) return "Confident";
     if (morale >= 70) return "Content"; 
     if (morale >= 50) return "Discouraged";
     if (morale >= 25) return "Demoralized";
@@ -422,7 +426,7 @@ calculatePowerRating(exile = null) {
     // Use provided exile or default to current game exile
     const targetExile = exile || gameState.exile;
     const stats = targetExile.stats;
-    return Math.floor(stats.life + (stats.damage * 10) + (stats.defense * 5));
+    return Math.floor(stats.damage * 10);
 },
 
 

@@ -1,23 +1,19 @@
-// Difficulty configuration - centralized place to modify game balance
+// Difficulty and Gear Drop Chance (Change to Zone Specific in the Future?)
 const difficultyConfig = {
     easy: {
-        gearDropChance: 0.15, // gear drop chance
-        gearMultiplier: 1, // gear stat values get changed by this
+        gearDropChance: 0.4, 
         name: 'Easy'
     },
     medium: {
-        gearDropChance: 0.3,
-        gearMultiplier: 1.5,
+        gearDropChance: 0.45,
         name: 'Medium'
     },
     hard: {
-        gearDropChance: 0.5,
-        gearMultiplier: 2,
+        gearDropChance: 0.65,
         name: 'Hard'
     },
     nightmare: {
-        gearDropChance: 0.7,
-        gearMultiplier: 3,
+        gearDropChance: 0.75,
         name: 'Nightmare'
     }
 };

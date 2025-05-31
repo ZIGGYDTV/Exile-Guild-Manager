@@ -112,7 +112,7 @@ const passiveDefinitions = {
         tier: "normal",
         description: "+15% increased Chaos Resistance",
         effects: [{ type: passiveTypes.CHAOS_RESISTANCE, value: 15 }],
-        tags: ["chaos_resistance"]
+        tags: ["chaos_resistance", "resistance"]
     },
 
     fire_resistance: {
@@ -120,7 +120,7 @@ const passiveDefinitions = {
         tier: "normal",
         description: "+10% increased Fire Resistance",
         effects: [{ type: passiveTypes.FIRE_RESISTANCE, value: 10 }],
-        tags: ["fire_resistance"]
+        tags: ["fire_resistance", "resistance"]
     },
 
     cold_resistance: {
@@ -128,7 +128,7 @@ const passiveDefinitions = {
         tier: "normal",
         description: "+10% increased Cold Resistance",
         effects: [{ type: passiveTypes.COLD_RESISTANCE, value: 10 }],
-        tags: ["cold_resistance"]
+        tags: ["cold_resistance", "resistance"]
     },
 
     lightning_resistance: {
@@ -136,7 +136,7 @@ const passiveDefinitions = {
         tier: "normal",
         description: "+10% increased Lightning Resistance",
         effects: [{ type: passiveTypes.LIGHTNING_RESISTANCE, value: 10 }],
-        tags: ["lightning_resistance"]
+        tags: ["lightning_resistance", "resistance"]
     },
 
     optimist: {
@@ -189,7 +189,7 @@ const passiveDefinitions = {
             { type: passiveTypes.INCREASED_LIFE, value: 10 },
             { type: passiveTypes.CHAOS_RESISTANCE, value: 24 },        
         ],
-        tags: ["life", "chaos_resistance"]
+        tags: ["life", "chaos_resistance", "resistance"]
 },
 
     fireproofing: {
@@ -200,7 +200,7 @@ const passiveDefinitions = {
             { type: passiveTypes.MAX_FIRE_RESISTANCE, value: 10 },
             { type: passiveTypes.INCREASED_DEFENSE, value: 10 }
         ],
-        tags: ["fire_resistance", "defense"]
+        tags: ["fire_resistance", "defense", "resistance"]
     },
 
     isolation: {
@@ -211,7 +211,7 @@ const passiveDefinitions = {
             { type: passiveTypes.MAX_LIGHTNING_RESISTANCE, value: 10 },
             { type: passiveTypes.INCREASED_DEFENSE, value: 10 }
         ],
-        tags: ["lightning_resistance", "defense"]
+        tags: ["lightning_resistance", "defense", "resistance"]
     },
 
     insulation: {
@@ -222,7 +222,7 @@ const passiveDefinitions = {
             { type: passiveTypes.MAX_COLD_RESISTANCE, value: 10 },
             { type: passiveTypes.INCREASED_DEFENSE, value: 10 }
         ],
-        tags: ["cold_resistance", "defense"]
+        tags: ["cold_resistance", "defense", "resistance"]
     },
 
     resolute: {
@@ -341,14 +341,14 @@ const classDefinitions = {
             damage: 12,  // Higher damage  
             defense: 4   // Lower defense
         },
-        passiveWeights: {
-            // Higher chance for damage and utility passives
+        passiveWeights: {  // To add any tag simply add to passives and then add here with a weight
             "damage": 2.0,
             "offense": 1.5, 
-            "utility": 2.0,
-            "gold": 3.0,
+            "utility": 1.5,
+            "gold": 2.0,
             "life": 0.8,
-            "defense": 0.5
+            "defense": 0.5,
+            "high_risk": 2.5 // passives that have a life or defense penalty
         },
         uniquePassives: ["shadow_strike", "coin_flip"] // Future: class-only passives
     },
@@ -361,11 +361,12 @@ const classDefinitions = {
             defense: 7   // Higher defense  
         },
         passiveWeights: {
-            "defense": 2.0,
-            "life": 1.5,
-            "tank": 1.5,
+            "defense": 1.5,
+            "life": 1.2,
+            "tank": 1.2,
             "damage": 0.8,
-            "utility": 1.5
+            "utility": 1.5,
+            "resistance": 2.5
         },
         uniquePassives: ["wilderness_expert", "last_stand"]
     },

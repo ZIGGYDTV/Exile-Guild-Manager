@@ -1,5 +1,9 @@
 TO DO:
 
+# Critical
+- Flat bonuses from passives are applying after scaling so things like beef are always just 30 flat on top.
+- Missions are not currently mapped to difficulties, but drop chance is (defaults to easy right now), rip it out and replace with zone specific reward factors for more fun control over what missions can do.
+
 # Ideas
 - Partial loot on fial, run out of portals
 - sim life recovery for building around attrition deaths
@@ -7,17 +11,7 @@ TO DO:
 - in addition to morale xp penalty for low level zones
 
 # Bugs
-- Capital on classname
-- supposed to be 1 decimal for damage taken (death maybe isnt doing it?)
 - "in the warden"
-- passive allocation generating two of the same passive
-- Can close out of passive alloction (want it to be commitment)
-- Allocated a keystone at level 7 (supposed to be every 10)
-    // Filter out already allocated passives
-    const available = pool.filter(passive => 
-        !gameState.exile.passives.allocated.includes(passive.id)
-    ); 
-    // running out of passives to allocate so are we allocating the remaining keystones early? We should add that Normal passives can be repeated and ensure ensure enough Notables for 50 levels? YEP CONFIRMED RUNNING OUT OF PASSIVES LOL
 - Lost remaining health report on max hit taken calc 
 
 https://medium.com/@EclecticCoder/manage-todo-list-in-vscode-beb53774d776
