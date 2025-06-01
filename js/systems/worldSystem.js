@@ -129,6 +129,7 @@ function calculateCompleteMissionRewards(areaId, missionId, outcome) {
 // === SCOUTING SYSTEM FUNCTIONS ===
 
 // Calculate scouting progress gained from a mission attempt
+// Calculate scouting progress gained from a mission attempt
 function calculateScoutingGain(areaId, missionId, outcome, exileScoutingBonus = 0) {
     const missionData = getCompleteMissionData(areaId, missionId);
     if (!missionData) return 0;
@@ -144,12 +145,14 @@ function calculateScoutingGain(areaId, missionId, outcome, exileScoutingBonus = 
         scoutingGain += missionData.scoutingGain.onFailure;
     }
 
-    // Apply exile scouting bonuses (future: exile stats could affect this)
-    scoutingGain += exileScoutingBonus;
+    // Apply scouting bonus as percentage multiplier
+    const scoutingMultiplier = gameState.exile.stats.scoutingBonus || 1.0;
+    scoutingGain = Math.floor(scoutingGain * scoutingMultiplier);
 
     // Minimum 1 scouting progress for any attempt
     return Math.max(1, scoutingGain);
 }
+
 
 // Add scouting progress to an area and check for unlocks
 function addScoutingProgress(areaId, amount) {
@@ -191,36 +194,31 @@ function checkForDiscoveries(areaId, missionId, outcome) {
     // Only successful missions can unlock things
     if (outcome === 'victory' && missionData.canUnlock) {
         missionData.canUnlock.forEach(unlockEntry => {
-            // Handle both old format (string) and new format (object with chance)
             let target, chance;
 
             if (typeof unlockEntry === 'string') {
-                // Old format: guaranteed unlock
                 target = unlockEntry;
                 chance = 1.0;
             } else {
-                // New format: chance-based unlock
                 target = unlockEntry.target;
                 chance = unlockEntry.chance;
             }
 
-            // Apply exile scouting multiplier to discovery chance
-            const exileScoutingMultiplier = gameState.exile.stats.scoutingBonus || 1.0;
-            const adjustedChance = Math.min(1.0, chance * exileScoutingMultiplier);
+            // Apply scouting bonus as percentage multiplier to discovery chance
+            const scoutingMultiplier = gameState.exile.stats.scoutingBonus || 1.0;
+            const adjustedChance = Math.min(1.0, chance * scoutingMultiplier);
 
             // Roll for discovery
             if (Math.random() < adjustedChance) {
+                // [rest of discovery logic stays the same]
                 if (target.includes('_to_')) {
-                    // This is an area connection
                     const connectionState = gameState.worldState.connections[target];
                     if (connectionState && !connectionState.discovered) {
                         connectionState.discovered = true;
                         discoveries.push({ type: 'connection', id: target });
                     }
                 } else {
-                    // This is a mission in the same area
                     if (!gameState.worldState.areas[areaId].missions[target]) {
-                        // Create default mission state if it doesn't exist
                         gameState.worldState.areas[areaId].missions[target] = {
                             discovered: false,
                             completions: 0,
@@ -281,18 +279,18 @@ function completeMission(areaId, missionId, outcome) {
 function updateExplorationProgress(areaId, missionId) {
     const areaState = gameState.worldState.areas[areaId];
     const areaData = getAreaData(areaId);
-    
+
     if (!areaState || !areaData) return;
 
     // Calculate progress based on discovered missions and their completions
     const totalMissions = Object.keys(areaData.missions).length;
     const discoveredMissions = Object.values(areaState.missions).filter(m => m.discovered);
     const completedMissions = Object.values(areaState.missions).filter(m => m.completions > 0);
-    
+
     // Progress formula: 50% for discovery + 50% for completion
     const discoveryProgress = (discoveredMissions.length / totalMissions) * 50;
     const completionProgress = (completedMissions.length / totalMissions) * 50;
-    
+
     areaState.explorationProgress = Math.min(100, Math.round(discoveryProgress + completionProgress));
 }
 

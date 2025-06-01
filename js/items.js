@@ -17,21 +17,19 @@ const statDefinitions = {
         ]
     },
     damage: {
-        name: 'Damage', 
+        name: 'Damage',
         ilvlBreakpoints: [
-            { ilvl: 1, min: 5, max: 15 },
-            { ilvl: 5, min: 6, max: 18 },
-            { ilvl: 10, min: 8, max: 24 },
-            { ilvl: 15, min: 10, max: 30 },
-            { ilvl: 20, min: 13, max: 39 },
-            { ilvl: 25, min: 16, max: 48 },
-            { ilvl: 30, min: 20, max: 60 },
-            { ilvl: 35, min: 25, max: 75 },
-            { ilvl: 40, min: 31, max: 93 },
-            { ilvl: 45, min: 38, max: 114 },
-            { ilvl: 50, min: 47, max: 141 }
+            { ilvl: 1, min: 3, max: 7 },
+            { ilvl: 3, min: 6, max: 12 },
+            { ilvl: 5, min: 11, max: 19 },
+            { ilvl: 7, min: 15, max: 24 },
+            { ilvl: 9, min: 17, max: 31 },
+            { ilvl: 11, min: 20, max: 36 },
+            { ilvl: 13, min: 23, max: 42 },
+            { ilvl: 15, min: 26, max: 48 }
         ]
     },
+    
     defense: {
         name: 'Defense',
         ilvlBreakpoints: [
@@ -48,7 +46,7 @@ const statDefinitions = {
             { ilvl: 50, min: 31, max: 124 }
         ]
     },
-lightRadius: {
+    lightRadius: {
         name: 'Light Radius',
         ilvlBreakpoints: [
             { ilvl: 1, min: 10, max: 50 },
@@ -86,7 +84,7 @@ lightRadius: {
         minIlvl: 10,
         restrictedToSlots: ['boots']  // NEW PROPERTY
     },
-        fireResist: {
+    fireResist: {
         name: 'Fire Resistance',
         ilvlBreakpoints: [
             { ilvl: 1, min: 9, max: 15 },
@@ -105,7 +103,7 @@ lightRadius: {
         requiredThemes: [],
         minIlvl: 15
     },
-       coldResist: {
+    coldResist: {
         name: 'Cold Resistance',
         ilvlBreakpoints: [
             { ilvl: 1, min: 9, max: 15 },
@@ -124,7 +122,7 @@ lightRadius: {
         requiredThemes: [],
         minIlvl: 15
     },
-       lightningResist: {
+    lightningResist: {
         name: 'Lightning Resistance',
         ilvlBreakpoints: [
             { ilvl: 1, min: 9, max: 15 },
@@ -142,8 +140,8 @@ lightRadius: {
         minDifficulty: '',
         requiredThemes: [],
         minIlvl: 15
-    },    
-       chaosResist: {
+    },
+    chaosResist: {
         name: 'Chaos Resistance',
         ilvlBreakpoints: [
             { ilvl: 1, min: 9, max: 15 },
@@ -174,59 +172,59 @@ const gearTypes = {
     weapon: {
         slot: 'weapon',
         baseTypes: ['Sword', 'Axe', 'Mace', 'Staff', 'Dagger', 'Bow'],
-        statWeights: { 
-            damage: 3, 
-            life: 1, 
-            defense: 0.5 
+        statWeights: {
+            damage: 3,
+            life: 1,
+            defense: 0.5
             // Future: Add new stats with their weights here
         }
     },
     armor: {
         slot: 'armor',
         baseTypes: ['Plate', 'Mail', 'Leather', 'Robe'],
-        statWeights: { 
-            defense: 3, 
-            life: 2, 
-            damage: 1 
+        statWeights: {
+            defense: 3,
+            life: 2,
+            damage: 1
         }
     },
     jewelry: {
         slot: 'jewelry',
         baseTypes: ['Ring', 'Amulet', 'Belt'],
-        statWeights: { 
-            life: 2, 
-            damage: 1, 
-            defense: 1 
+        statWeights: {
+            life: 2,
+            damage: 1,
+            defense: 1
         }
     }
 };
 
 const rarityTiers = {
-    common: { 
-        color: '#888', 
+    common: {
+        color: '#888',
         statMultiplier: 1, // Should be non functional, need to remove
         statCount: 1,  // Need a max stat count, this only affecting how many they drop with
         // Need max stat count
         // need dropped stat ranges?
-        dropWeight: 70 
+        dropWeight: 70
     },
-    magic: { 
-        color: '#4169E1', 
-        statMultiplier: 1.5, 
+    magic: {
+        color: '#4169E1',
+        statMultiplier: 1.5,
         statCount: 2,
-        dropWeight: 25 
+        dropWeight: 25
     },
-    rare: { 
-        color: '#FFD700', 
-        statMultiplier: 2, 
+    rare: {
+        color: '#FFD700',
+        statMultiplier: 2,
         statCount: 4,
-        dropWeight: 5 
+        dropWeight: 5
     }
 };
 
 const rarityBonusByDifficulty = {  // should cut this
     easy: { rareBonus: 0 },      // % chance to get a rare item
-    medium: { rareBonus: 5 },      
-    hard: { rareBonus: 10 },      
-    nightmare: { rareBonus: 15 } 
+    medium: { rareBonus: 5 },
+    hard: { rareBonus: 10 },
+    nightmare: { rareBonus: 15 }
 };

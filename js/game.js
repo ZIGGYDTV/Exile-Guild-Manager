@@ -683,7 +683,7 @@ const game = {
         // Get passive effects
         const passiveEffects = this.calculatePassiveEffects();
 
-        // === CHANGE: Add flat passives BEFORE scaling ===
+        // === Add flat passives BEFORE scaling ===
         const flatLife = baseLife + gearLife + (passiveEffects.flatLife || 0);
         const flatDamage = baseDamage + gearDamage + (passiveEffects.flatDamage || 0);
         const flatDefense = baseDefense + gearDefense + (passiveEffects.flatDefense || 0);
@@ -698,7 +698,7 @@ const game = {
         const finalDamage = increasedDamage * (1 + (passiveEffects.moreDamage || 0) / 100);
         const finalDefense = increasedDefense * (1 + (passiveEffects.moreDefense || 0) / 100);
 
-        // === CHANGE: Assign final values directly (no flat bonuses after scaling) ===
+        // === Assign final values directly (no flat bonuses after scaling) ===
         gameState.exile.stats.life = Math.floor(finalLife);
         gameState.exile.stats.damage = Math.floor(finalDamage);
         gameState.exile.stats.defense = Math.floor(finalDefense);
@@ -720,7 +720,7 @@ const game = {
             }
         });
 
-        // Add passives
+          // Add passives
         const totalFireResist = gearFireResist + (passiveEffects.fireResist || 0);
         const totalColdResist = gearColdResist + (passiveEffects.coldResist || 0);
         const totalLightningResist = gearLightningResist + (passiveEffects.lightningResist || 0);
@@ -737,6 +737,25 @@ const game = {
         gameState.exile.stats.coldResist = Math.min(totalColdResist, maxColdResist);
         gameState.exile.stats.lightningResist = Math.min(totalLightningResist, maxLightningResist);
         gameState.exile.stats.chaosResist = Math.min(totalChaosResist, maxChaosResist);
+
+      // Calculate light radius effects on scouting and exploration from gear + passives
+        // Get light radius from equipped gear
+        let gearLightRadius = 0;
+        Object.values(gameState.inventory.equipped).forEach(item => {
+            if (item) {
+                gearLightRadius += item.stats.lightRadius || 0;
+            }
+        });
+
+        // Get light radius bonuses from passives
+        const passiveLightRadius = passiveEffects.lightRadius || 0;
+
+        // Calculate total light radius
+        const totalLightRadius = gearLightRadius + passiveLightRadius;
+
+        // Apply light radius to scouting bonus (base 1.0 + light radius percentage)
+        gameState.exile.stats.scoutingBonus = 1.0 + (totalLightRadius / 100);
+        // End of light radius effects on scouting and exploration from gear + passives
 
         // Ensure minimum values
         gameState.exile.stats.life = Math.max(1, gameState.exile.stats.life);
@@ -1039,6 +1058,8 @@ const game = {
         document.getElementById('char-exp-needed').textContent = gameState.exile.experienceNeeded;
         document.getElementById('char-morale').textContent = gameState.exile.morale;
         document.getElementById('char-morale-status').textContent = this.getMoraleStatus(gameState.exile.morale);
+        document.getElementById('final-exploration-bonus').textContent = Math.round((gameState.exile.stats.scoutingBonus - 1.0) * 100) + "%";
+
 
         // Combined resistances display
         const resists = [

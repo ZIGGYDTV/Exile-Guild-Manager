@@ -13,10 +13,20 @@ TO DO:
 - Missions are not currently mapped to difficulties, but drop chance is (defaults to easy right now), rip it out and replace with zone specific reward factors for more fun control over what missions can do.
 
 # Ideas
+- TESTING: create a simulator to rapid fire test balance
 - Partial loot on fial, run out of portals
 - sim life recovery for building around attrition deaths
     - design content that rewards this build by being dangerous for attritiion but not one shotty
 - in addition to morale xp penalty for low level zones
+- traps / events / hazards that occur during mission on a mission specific basis to prep for
+    - can use light radius like perception to avoid / influence these
+- light radius    
+    - do something with ranged?
+    - some sort of first strike? (avoid damage from a round)
+        - 100% = first round garuant. / 200% = 2 rounds. 
+    - prevents an instance of damage for a round.
+    - exploration scouting
+    - Morale!
 
 # Bugs
 - "in the warden"
@@ -85,6 +95,8 @@ const maxRounds = 10;
 
 
 TIPS FORM CHAT
+
+CURSOR is another option like copilot but better
 
 f u want to "auto indent" u can ctrl shift P and search for format, u can use a extension called prettier. and later on u can also auto format on save 
 

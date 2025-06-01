@@ -56,13 +56,13 @@ const passiveDefinitions = {
         tags: ["life", "tank"]
     },
 
-/*    torchbearer: {
+    torchbearer: {
         name: "Torchbearer",
         tier: "normal",
         description: "+20% increased Light Radius",
         effects: [{ type: passiveTypes.LIGHT_RADIUS, value: 20 }],
         tags: ["utility", "light"]
-    }, */ // Not sure what to do with this yet, need more exploration mechanics before implementing
+    }, 
 
     roguish: {
         name: "Roguish",
@@ -330,6 +330,17 @@ const passiveDefinitions = {
         tags: ["damage", "high_risk"]
     },
 
+    beacon_of_light: {
+        name: "Beacon of Light",
+        tier: "keystone",
+        description: "+100% Light Radius, +20% Morale Gain, -50% Defense",
+        effects: [
+            { type: passiveTypes.LIGHT_RADIUS, value: 100 },
+            { type: passiveTypes.MORALE_GAIN, value: 20 },
+            { type: passiveTypes.INCREASED_DEFENSE, value: -50 }
+        ],
+        tags: ["utility", "light", "morale", "high_risk"]
+    },
 };
 
 // Class definitions - easily expandable!
