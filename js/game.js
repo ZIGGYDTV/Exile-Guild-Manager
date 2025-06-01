@@ -81,6 +81,9 @@ const game = {
         let goldEarned = 0;
         let expEarned = 0;
         let moraleHtml = "";
+        let moraleResult = null;
+        let newGear = null;
+        let rewards = null;
 
         if (combatResult.outcome === 'victory') {
             // Calculate rewards using world system
@@ -110,7 +113,7 @@ const game = {
             // Check for gear drop using world system
             if (Math.random() < (missionData.gearDrop?.baseChance || 0)) {
                 // Generate gear with world system ilvl
-                const ilvlRange = missionData.gearDrop.ilvlRange;
+                const ilvlRange = missionData.ilvl;
                 const gearIlvl = this.randomBetween(ilvlRange.min, ilvlRange.max);
 
                 // Use updated generateGear method
@@ -133,8 +136,9 @@ const game = {
                 }
             }
         } else if (combatResult.outcome === 'death') {
-            this.gameOver();
-            return;
+            // Don't call gameOver() - let the day report handle death display
+            // this.gameOver(); // DISABLED
+            // Still continue to process the death and return data
         }
 
         let mainMessage = "";
@@ -208,6 +212,68 @@ const game = {
 
         this.updateDisplay();
         this.saveGame();
+
+        // Return comprehensive combat data for day report
+        return {
+            // Core combat results
+            combatResult: combatResult,
+
+            // Exile health status
+            exileHealth: {
+                startingLife: exile.stats.life,
+                damageTotal: combatResult.totalDamageTaken,
+                remainingLife: Math.max(0, exile.stats.life - combatResult.totalDamageTaken),
+                healthPercent: Math.max(0, (exile.stats.life - combatResult.totalDamageTaken) / exile.stats.life * 100)
+            },
+
+            // Exile progression
+            exileProgression: {
+                startingLevel: exile.level,
+                startingExp: exile.experience - expEarned, // Calculate what it was before
+                expGained: expEarned,
+                leveledUp: this.checkIfLeveledUp(exile.experience - expEarned, exile.experience),
+                newLevel: exile.level
+            },
+
+            // Morale changes
+            moraleChange: moraleResult ? {
+                change: moraleResult.change,
+                message: moraleResult.message,
+                oldMorale: exile.morale - moraleResult.change,
+                newMorale: exile.morale
+            } : null,
+
+            // Rewards breakdown
+            rewards: {
+                gold: goldEarned,
+                experience: expEarned,
+                chaosOrbs: rewards ? rewards.chaosOrbs : 0,
+                exaltedOrbs: rewards ? rewards.exaltedOrbs : 0,
+                gearFound: newGear || null
+            },
+
+            // World progression
+            worldProgression: {
+                discoveries: completionResult?.discoveries || [],
+                scoutingGain: completionResult?.scoutingGain || 0
+            },
+
+            // Mission context
+            missionContext: {
+                missionName: missionData.name,
+                areaId: areaId,
+                missionId: missionId,
+                difficulty: missionData.difficulty,
+                powerRating: this.calculatePowerRating(exile)
+            },
+
+            // Detailed combat log (for expandable section)
+            combatDetails: {
+                damageLog: combatResult.damageLog,
+                heaviestHitBreakdown: combatResult.heaviestHitBreakdown,
+                winChancePerRound: Math.min(0.4, this.calculatePowerRating(exile) / missionData.difficulty * 0.15)
+            }
+        };
     },
     // End of runMission object
 
@@ -1545,6 +1611,14 @@ Final: ${final}`;
         return { min: breakpoints[0].min, max: breakpoints[0].max };
     },
 
+    // Helper Function for level ups on Mission Report Modal
+    checkIfLeveledUp(oldExp, newExp) {
+        // Simple check - did experience cross a level boundary?
+        const oldLevel = Math.floor(oldExp / 100) + 1; // Simplified level calc
+        const newLevel = Math.floor(newExp / 100) + 1;
+        return newLevel > oldLevel;
+    },
+
     // Breakdown toggle function
     toggleBreakdown(id) {
         const el = document.getElementById(id);
@@ -1870,6 +1944,501 @@ Final: ${final}`;
         }
     },
 
+    // === DAY REPORT MODAL METHODS ===
+    openDayReport() {
+        // Show the modal
+        document.getElementById('day-report-modal').style.display = 'flex';
+
+        // Update day number
+        document.getElementById('day-report-day').textContent = timeState.currentDay;
+
+        // Clear previous content
+        this.clearDayReportContent();
+
+        //DEBUG for Assignment Data
+        this.clearDayReportContent();
+        // TEMP: Debug - log collected data
+        console.log("Day Report Data:", this.dayReportData);
+        // DEBUG END
+
+        // Start the animation sequence
+        this.animateDayReport();
+
+        // Add escape key listener
+        document.addEventListener('keydown', this.handleDayReportKeydown.bind(this));
+    },
+
+    closeDayReport() {
+        const modal = document.getElementById('day-report-modal');
+        modal.style.display = 'none';
+
+        // Remove escape key listener
+        document.removeEventListener('keydown', this.handleDayReportKeydown.bind(this));
+
+        // Reset animation state
+        this.dayReportAnimationState = { skipped: false, currentStep: 0 };
+    },
+
+    handleDayReportClick(event) {
+        // Close if clicking the overlay (not the content)
+        if (event.target.classList.contains('modal-overlay')) {
+            this.closeDayReport();
+        }
+    },
+
+    handleDayReportKeydown(event) {
+        if (event.key === 'Escape') {
+            this.closeDayReport();
+        }
+    },
+
+    clearDayReportContent() {
+        // Clear all content containers
+        document.getElementById('mission-summary-container').innerHTML = '';
+        document.getElementById('exile-status-container').innerHTML = '';
+        document.getElementById('loot-container').innerHTML = '';
+        document.getElementById('discovery-content').innerHTML = '';
+        document.getElementById('detailed-content').innerHTML = '';
+
+        // Hide discovery section by default
+        document.getElementById('discovery-section').style.display = 'none';
+
+        // Reset collapsible sections
+        document.getElementById('discovery-content').style.display = 'none';
+        document.getElementById('detailed-content').style.display = 'none';
+    },
+
+    // Animation control
+    dayReportAnimationState: {
+        skipped: false,
+        currentStep: 0
+    },
+
+    skipAnimations() {
+        this.dayReportAnimationState.skipped = true;
+
+        // Immediately show all content without animations
+        this.showAllDayReportContent();
+    },
+
+    // Collapsible section toggles
+    toggleDiscoverySection() {
+        const content = document.getElementById('discovery-content');
+        const triangle = document.querySelector('#discovery-section .triangle');
+
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            triangle.innerHTML = '&#x25B2;';
+        } else {
+            content.style.display = 'none';
+            triangle.innerHTML = '&#x25BC;';
+        }
+    },
+
+    toggleDetailedSection() {
+        const content = document.getElementById('detailed-content');
+        const triangle = document.querySelector('.detailed-section .triangle');
+
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            triangle.innerHTML = '&#x25B2;';
+        } else {
+            content.style.display = 'none';
+            triangle.innerHTML = '&#x25BC;';
+        }
+    },
+
+    // === DAY REPORT ANIMATION SEQUENCE ===
+    animateDayReport() {
+        if (this.dayReportAnimationState.skipped) {
+            this.showAllDayReportContent();
+            return;
+        }
+
+        // Step 1: Mission Summary Panels (fade in one by one)
+        this.animateMissionSummaries();
+    },
+
+    animateMissionSummaries() {
+        const container = document.getElementById('mission-summary-container');
+
+        // Create mission summary panels from collected data
+        this.dayReportData.missionResults.forEach((result, index) => {
+            const panel = this.createMissionSummaryPanel(result);
+            container.appendChild(panel);
+
+            // Animate in with delay
+            setTimeout(() => {
+                if (!this.dayReportAnimationState.skipped) {
+                    panel.classList.add('animate-in');
+                }
+            }, index * 200); // 200ms delay between each panel
+        });
+
+        // Move to next step after all panels animate in
+        const totalDelay = this.dayReportData.missionResults.length * 200 + 100;
+        setTimeout(() => {
+            if (!this.dayReportAnimationState.skipped) {
+                this.animateExileStatus();
+            }
+        }, totalDelay);
+    },
+
+    // Create Exile Summary on Mission Report, Then Give it a Delayed Animation
+    animateExileStatus() {
+        const container = document.getElementById('exile-status-container');
+
+        this.dayReportData.missionResults.forEach((result, index) => {
+            const panel = this.createExileStatusPanelWithLevelUp(result);
+            container.appendChild(panel);
+
+            // Animate panel in first
+            setTimeout(() => {
+                if (!this.dayReportAnimationState.skipped) {
+                    panel.classList.add('animate-in');
+
+                    // Start EXP animation sequence after panel appears
+                    setTimeout(() => {
+                        this.animateExpSequence(panel, result);
+                    }, 50);
+                }
+            }, index * 150);
+        });
+
+        // Move to next step (longer delay for level-up animations)
+        const totalDelay = this.dayReportData.missionResults.length * 150 + 500;
+        setTimeout(() => {
+            if (!this.dayReportAnimationState.skipped) {
+                this.animateLootExplosion();
+            }
+        }, totalDelay);
+    },
+
+    createExileStatusPanelWithLevelUp(missionResult) {
+        const panel = document.createElement('div');
+        panel.className = `exile-status-panel ${missionResult.combatResult.outcome === 'death' ? 'dead' : ''}`;
+
+        const expGained = missionResult.exileProgression.expGained;
+        const startingExp = missionResult.exileProgression.startingExp;
+        const startingLevel = missionResult.exileProgression.startingLevel;
+        const startingExpNeeded = startingLevel * 100;
+
+        // Calculate starting EXP bar position
+        const startingPercent = Math.min(100, Math.round((startingExp / startingExpNeeded) * 100));
+
+        panel.innerHTML = `
+        <div class="exile-name-level">
+            <span>${gameState.exile.name}</span>
+            <span class="level-display">Level ${startingLevel}</span>
+        </div>
+        ${missionResult.combatResult.outcome !== 'death' ? `
+            <div class="exile-exp-bar-container">
+                <div class="exile-exp-bar">
+                    <div class="exile-exp-fill" style="width: ${startingPercent}%"></div>
+                    <span class="exile-exp-label">${startingExp} / ${startingExpNeeded} EXP</span>
+                </div>
+            </div>
+        ` : ''}
+    `;
+
+        return panel;
+    },
+
+    animateExpSequence(panel, missionResult) {
+        if (this.dayReportAnimationState.skipped) return;
+
+        const expFill = panel.querySelector('.exile-exp-fill');
+        const expLabel = panel.querySelector('.exile-exp-label');
+        const levelDisplay = panel.querySelector('.level-display');
+
+        if (!expFill) return;
+
+        const startingExp = missionResult.exileProgression.startingExp;
+        const expGained = missionResult.exileProgression.expGained;
+        const leveledUp = missionResult.exileProgression.leveledUp;
+        const finalLevel = missionResult.exileProgression.newLevel;
+        const startingExpNeeded = missionResult.exileProgression.startingLevel * 100;
+
+        // IMPORTANT: Start from actual starting position, not 0
+        const startingPercent = Math.min(100, Math.round((startingExp / startingExpNeeded) * 100));
+        expFill.style.width = `${startingPercent}%`;
+
+        // Only animate if EXP was actually gained
+        if (expGained > 0) {
+            setTimeout(() => {
+                if (leveledUp) {
+                    // Animate to 100% first
+                    expFill.style.width = '100%';
+                    expLabel.textContent = `${startingExpNeeded} / ${startingExpNeeded} EXP`;
+
+                    setTimeout(() => {
+                        // Level up flash
+                        panel.classList.add('levelup-animate');
+                        levelDisplay.textContent = `Level ${finalLevel}`;
+
+                        // Reset bar and continue
+                        setTimeout(() => {
+                            expFill.style.transition = 'none';
+                            expFill.style.width = '0%';
+
+                            // Use current game state for final values
+                            const currentExp = gameState.exile.experience;
+                            const currentExpNeeded = gameState.exile.experienceNeeded;
+                            const finalPercent = Math.min(100, Math.round((currentExp / currentExpNeeded) * 100));
+
+                            setTimeout(() => {
+                                expFill.style.transition = 'width 0.5s cubic-bezier(0.22, 1, 0.36, 1)';
+                                expFill.style.width = `${finalPercent}%`;
+                                expLabel.textContent = `${currentExp} / ${currentExpNeeded} EXP (+${expGained})`;
+                            }, 50);
+                        }, 300);
+                    }, 600);
+                } else {
+                    // No level up - animate from starting position to final position
+                    const finalExp = startingExp + expGained;
+                    const finalPercent = Math.min(100, Math.round((finalExp / startingExpNeeded) * 100));
+                    expFill.style.width = `${finalPercent}%`;
+                    expLabel.textContent = `${finalExp} / ${startingExpNeeded} EXP (+${expGained})`;
+                }
+            }, 200);
+        } else {
+            // No EXP gained - just show current state, no animation
+            expLabel.textContent = `${startingExp} / ${startingExpNeeded} EXP (No EXP gained)`;
+        }
+    },
+    // End of Exile Status Animation
+
+    animateLootExplosion() {
+        const container = document.getElementById('loot-container');
+
+        // DEBUG: Check what's in loot data
+        console.log("Loot Data Debug:", this.dayReportData.lootGained);
+
+        const lootData = this.dayReportData.lootGained;
+        let itemIndex = 0;
+
+        // Gold
+        if (lootData.gold > 0) {
+            const goldItem = document.createElement('div');
+            goldItem.className = 'loot-item gold';
+            goldItem.innerHTML = `<span>💰</span><span>+${lootData.gold} Gold</span>`;
+            container.appendChild(goldItem);
+            this.animateLootPop(goldItem, itemIndex * 150);
+            itemIndex++;
+        }
+
+        // Chaos Orbs
+        if (lootData.chaosOrbs > 0) {
+            const chaosItem = document.createElement('div');
+            chaosItem.className = 'loot-item chaos';
+            chaosItem.innerHTML = `<span>🌀</span><span>+${lootData.chaosOrbs} Chaos Orb${lootData.chaosOrbs > 1 ? 's' : ''}</span>`;
+            container.appendChild(chaosItem);
+            this.animateLootPop(chaosItem, itemIndex * 150);
+            itemIndex++;
+        }
+
+        // Exalted Orbs
+        if (lootData.exaltedOrbs > 0) {
+            const exaltedItem = document.createElement('div');
+            exaltedItem.className = 'loot-item exalted';
+            exaltedItem.innerHTML = `<span>⭐</span><span>+${lootData.exaltedOrbs} Exalted Orb${lootData.exaltedOrbs > 1 ? 's' : ''}</span>`;
+            container.appendChild(exaltedItem);
+            this.animateLootPop(exaltedItem, itemIndex * 150);
+            itemIndex++;
+        }
+
+        // Items
+        if (lootData.items && lootData.items.length > 0) {
+            lootData.items.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'loot-item gear';
+                itemElement.innerHTML = `<span>⚔️</span><span>${item.name}</span>`;
+                container.appendChild(itemElement);
+                this.animateLootPop(itemElement, itemIndex * 150);
+                itemIndex++;
+            });
+        }
+
+        // Show "No additional loot" if only gold
+        if (lootData.chaosOrbs === 0 && lootData.exaltedOrbs === 0 && lootData.items.length === 0) {
+            console.log("No currency or items found - only gold dropped");
+        }
+
+        // Move to discoveries after all loot animations
+        setTimeout(() => {
+            if (!this.dayReportAnimationState.skipped) {
+                this.showDiscoveries();
+            }
+        }, itemIndex * 150 + 600);
+    },
+
+    // Satisfying pop animation
+    animateLootPop(element, delay) {
+        // Start invisible and small
+        element.style.opacity = '0';
+        element.style.transform = 'scale(0.5)';
+        element.style.transition = 'none';
+
+        setTimeout(() => {
+            if (!this.dayReportAnimationState.skipped) {
+                // Phase 1: Pop in and overshoot (bounce effect)
+                element.style.transition = 'all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)'; // Bouncy easing
+                element.style.opacity = '1';
+                element.style.transform = 'scale(1.15)'; // Overshoot
+
+                // Phase 2: Settle back to normal size
+                setTimeout(() => {
+                    element.style.transition = 'transform 0.2s ease-out';
+                    element.style.transform = 'scale(1)';
+
+                    // Optional: Add a subtle float effect
+                    setTimeout(() => {
+                        element.style.transition = 'transform 2s ease-in-out infinite alternate';
+                        element.style.transform = 'translateY(-2px)';
+                    }, 200);
+                }, 300);
+            } else {
+                // Skip animation - just show immediately
+                element.style.opacity = '1';
+                element.style.transform = 'scale(1)';
+            }
+        }, delay);
+    },
+    showDiscoveries() {
+        let discoveryContent = '';
+
+        // Handle mission/area discoveries
+        if (this.dayReportData.discoveries.length > 0) {
+            discoveryContent += this.dayReportData.discoveries.map(discovery => {
+                if (discovery.type === 'mission') {
+                    const missionData = getMissionData(discovery.areaId, discovery.missionId);
+                    return `<div class="discovery-item">🔍 <strong>Mission Discovered:</strong> ${missionData.name}</div>`;
+                } else if (discovery.type === 'connection') {
+                    return `<div class="discovery-item">🗺️ <strong>Area Connection:</strong> Discovered passage to new area!</div>`;
+                }
+                return '';
+            }).join('');
+        }
+
+        // Add scouting information from mission results
+        this.dayReportData.missionResults.forEach(result => {
+            if (result.worldProgression.scoutingGain > 0) {
+                discoveryContent += `<div class="discovery-item">📖 <strong>Scouting:</strong> +${result.worldProgression.scoutingGain} knowledge from ${result.missionContext.missionName}</div>`;
+            }
+        });
+
+        // Show discoveries section if we have any content
+        if (discoveryContent || this.dayReportData.discoveries.length > 0) {
+            const section = document.getElementById('discovery-section');
+            section.style.display = 'block';
+
+            const count = document.getElementById('discovery-count');
+            const totalCount = this.dayReportData.discoveries.length +
+                this.dayReportData.missionResults.filter(r => r.worldProgression.scoutingGain > 0).length;
+            count.textContent = totalCount;
+
+            // Fill in discovery content
+            const content = document.getElementById('discovery-content');
+            content.innerHTML = discoveryContent;
+        }
+
+        // Populate combat details from mission results
+        const detailedContent = document.getElementById('detailed-content');
+        if (this.dayReportData.missionResults.length > 0) {
+            detailedContent.innerHTML = this.dayReportData.missionResults.map((result, index) => {
+                const combatDetails = result.combatDetails;
+                const combatResult = result.combatResult;
+
+                return `
+                <div class="combat-detail-section">
+                    <h5>${result.missionContext.missionName} - Combat Analysis</h5>
+                    <div class="combat-summary">
+                        <div><strong>Power vs Difficulty:</strong> ${result.missionContext.powerRating} vs ${result.missionContext.difficulty}</div>
+                        <div><strong>Win Chance per Round:</strong> ${Math.round(combatDetails.winChancePerRound * 100)}%</div>
+                        <div><strong>Combat Duration:</strong> ${combatResult.rounds} rounds</div>
+                        <div><strong>Total Damage Taken:</strong> ${Math.round(combatResult.totalDamageTaken)}</div>
+                        <div><strong>Heaviest Hit:</strong> ${Math.round(combatResult.heaviestHit * 10) / 10}</div>
+                    </div>
+                    
+                    ${combatDetails.damageLog.length > 0 ? `
+                        <div class="damage-log-section">
+                            <h6>Round-by-Round Damage:</h6>
+                            ${combatDetails.damageLog.map(log => `
+                                <div class="damage-log-entry">
+                                    Round ${log.round}: ${Math.round(log.actualDamage * 10) / 10} damage, ${Math.round(log.lifeRemaining)} life remaining
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            }).join('');
+        }
+    },
+
+    createMissionSummaryPanel(missionResult) {
+        const panel = document.createElement('div');
+        panel.className = `mission-summary-panel ${missionResult.combatResult.outcome}`;
+
+        let resultIcon = '';
+        let resultText = '';
+
+        switch (missionResult.combatResult.outcome) {
+            case 'victory':
+                resultIcon = '✓';
+                resultText = 'Success';
+                break;
+            case 'retreat':
+                resultIcon = '↩';
+                resultText = 'Retreated';
+                break;
+            case 'death':
+                resultIcon = '☠';
+                resultText = 'DIED';
+                break;
+        }
+
+        // Get exile name - for now use the main exile
+        const exileName = gameState.exile.name;
+
+        panel.innerHTML = `
+        <div class="mission-summary-title">
+            ${resultIcon} ${missionResult.missionContext.missionName}
+        </div>
+        <div class="mission-summary-result">
+            ${exileName}: ${resultText}
+        </div>
+        <div class="mission-summary-stats">
+            ${missionResult.combatResult.rounds} rounds, ${Math.round(missionResult.exileHealth.healthPercent)}% health remaining
+        </div>
+    `;
+
+        return panel;
+    },
+
+    showAllDayReportContent() {
+        // Clear containers first to prevent duplication
+        document.getElementById('mission-summary-container').innerHTML = '';
+        document.getElementById('exile-status-container').innerHTML = '';
+        document.getElementById('loot-container').innerHTML = '';
+
+        // Instantly show all content without animations
+        this.animateMissionSummaries();
+        this.animateExileStatus();
+        this.animateLootExplosion();
+        this.showDiscoveries();
+
+        // Add animate-in class to everything immediately
+        setTimeout(() => {
+            document.querySelectorAll('.mission-summary-panel, .exile-status-panel, .loot-item').forEach(el => {
+                el.classList.add('animate-in');
+            });
+        }, 100); // Small delay to ensure elements exist
+    },
+    // End of Day Report Modal Methods
+
+
+
     createWorldMapModal() {
         const modalHTML = `
         <div id="world-map-modal" class="world-map-overlay" style="display: none;" onclick="game.handleWorldMapClick(event)">
@@ -2059,7 +2628,7 @@ Final: ${final}`;
                                         <strong>Difficulty:</strong><br>${mission.difficulty}
                                     </div>
                                     <div class="stat">
-                                        <strong>Item Level:</strong><br>${mission.ilvl}
+                                        <strong>Item Level:</strong><br>${mission.ilvl.min} - ${mission.ilvl.max}
                                     </div>
                                     <div class="stat">
                                         <strong>Gear Drop:</strong><br>${Math.round((mission.gearDrop?.baseChance || 0) * 100)}%
@@ -2128,6 +2697,21 @@ Final: ${final}`;
 
     // Process Day Method: Time passing and what occurs (triggering missions, etc.)
     processDay() {
+        // Clear previous day's data and prepare for new day report (before adding this infinite data report stacking lol)
+        this.dayReportData = {
+            missionResults: [],
+            exileUpdates: [],
+            lootGained: { gold: 0, chaosOrbs: 0, exaltedOrbs: 0, items: [] },
+            discoveries: [],
+            combatDetails: []
+        };
+
+        // Check if any assignments exist
+        if (gameState.assignments.length === 0) {
+            this.log("⚠️ No assignments given! Assign exiles to missions before processing the day.", "failure");
+            return; // Stop processing
+        }
+
         // Process all assigned missions
         if (gameState.assignments.length > 0) {
             this.log(`🌅 Day ${timeState.currentDay + 1} begins...`, "info");
@@ -2141,8 +2725,46 @@ Final: ${final}`;
                     const missionData = getMissionData(areaId, missionId);
                     this.log(`⚔️ ${exileName} embarks on ${missionData.name}...`, "info");
 
+                    // CAPTURE PRE-MISSION STATE for reward tracking
+                    const preMissionResources = {
+                        gold: gameState.resources.gold,
+                        chaosOrbs: gameState.resources.chaosOrbs,
+                        exaltedOrbs: gameState.resources.exaltedOrbs
+                    };
+                    const preMissionInventoryCount = gameState.inventory.backpack.length;
+
                     // Run the assigned mission
-                    this.runMission(`${areaId}.${missionId}`);
+                    const missionResult = this.runMission(`${areaId}.${missionId}`);
+
+                    // CALCULATE ACTUAL REWARDS from game state changes
+                    const actualRewards = {
+                        gold: gameState.resources.gold - preMissionResources.gold,
+                        chaosOrbs: gameState.resources.chaosOrbs - preMissionResources.chaosOrbs,
+                        exaltedOrbs: gameState.resources.exaltedOrbs - preMissionResources.exaltedOrbs,
+                        gearFound: gameState.inventory.backpack.length > preMissionInventoryCount ?
+                            gameState.inventory.backpack[gameState.inventory.backpack.length - 1] : null
+                    };
+
+                    // DEBUG: Compare returned vs actual rewards
+                    console.log("Returned rewards:", missionResult.rewards);
+                    console.log("Actual game state rewards:", actualRewards);
+
+                    // Update mission result with ACTUAL rewards
+                    missionResult.rewards = actualRewards;
+
+                    // Collect comprehensive mission result for day report
+                    this.dayReportData.missionResults.push(missionResult);
+
+                    // Also accumulate total loot for loot explosion using ACTUAL rewards
+                    this.dayReportData.lootGained.gold += actualRewards.gold;
+                    this.dayReportData.lootGained.chaosOrbs += actualRewards.chaosOrbs;
+                    this.dayReportData.lootGained.exaltedOrbs += actualRewards.exaltedOrbs;
+                    if (actualRewards.gearFound) {
+                        this.dayReportData.lootGained.items.push(actualRewards.gearFound);
+                    }
+
+                    // Collect discoveries
+                    this.dayReportData.discoveries.push(...missionResult.worldProgression.discoveries);
 
                     // Check if mission went on cooldown - if so, unassign
                     if (!isMissionAvailable(areaId, missionId)) {
@@ -2194,7 +2816,8 @@ Final: ${final}`;
             this.log(`⏰ ${missionsBackOnline} mission(s) are no longer on cooldown`, "info");
         }
 
-        this.saveGame();
+        this.saveGame(); // saves the game state after processing the day
+        this.openDayReport();  // Open the day report after processing the day
     },
     // end of processDay method ===
 
@@ -2277,8 +2900,16 @@ Final: ${final}`;
         // Update world map display
         this.updateWorldMapDisplay();
     },
-
     // end of Assignment System Methods ===
+
+    // Day report data collection
+    dayReportData: {
+        missionResults: [],
+        exileUpdates: [],
+        lootGained: { gold: 0, chaosOrbs: 0, exaltedOrbs: 0, items: [] },
+        discoveries: [],
+        combatDetails: []
+    }
 
 
 };

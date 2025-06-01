@@ -1,5 +1,14 @@
 TO DO:
 
+# Current
+- Mission Report missing damage type breakdowns
+- currently only one color for item rarity glow make 4
+- Scouting info gains shouldnt make the scouting report be marked as havbing interesting content
+- Zone / Mission discovery shouldnt be in fold down (only scouting gains)
+- xp bar still doing fake levels
+- item level on missions is not being pulled automatically (must be hard coded somewhre?)
+- mission description hardcoded?
+
 # Critical
 - Missions are not currently mapped to difficulties, but drop chance is (defaults to easy right now), rip it out and replace with zone specific reward factors for more fun control over what missions can do.
 

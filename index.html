@@ -73,290 +73,356 @@
             </div>
         </div>
 
-<!-- World Map, Missions -->
-<div class="missions-log-container">
-    <!-- Command Center (replaces missions column) -->
-    <div class="missions-column">
-        <div class="game-panel">
-            <h2>Command Center</h2>
-            
-            <!-- World Map Access -->
-            <div class="command-section">
-                <button class="world-map-btn" onclick="game.openWorldMap()">
-                    <div class="btn-icon">🗺️</div>
-                    <div class="btn-content">
-                        <div class="btn-title">Open World Map</div>
-                        <div class="btn-subtitle">Plan missions & explore areas</div>
+        <!-- World Map, Missions -->
+        <div class="missions-log-container">
+            <!-- Command Center (replaces missions column) -->
+            <div class="missions-column">
+                <div class="game-panel">
+                    <h2>Command Center</h2>
+
+                    <!-- World Map Access -->
+                    <div class="command-section">
+                        <button class="world-map-btn" onclick="game.openWorldMap()">
+                            <div class="btn-icon">🗺️</div>
+                            <div class="btn-content">
+                                <div class="btn-title">Open World Map</div>
+                                <div class="btn-subtitle">Plan missions & explore areas</div>
+                            </div>
+                        </button>
                     </div>
-                </button>
-            </div>
-            
-            <!-- Day Management -->
-            <div class="command-section">
-                <button class="process-day-btn" onclick="game.processDay()">
-                    <div class="btn-icon">⏳</div>
-                    <div class="btn-content">
-                        <div class="btn-title">Process Day <span id="current-day-display">(Day 1)</span></div>
-                        <div class="btn-subtitle" id="assigned-missions-count">No missions assigned</div>
+
+                    <!-- Day Management -->
+                    <div class="command-section">
+                        <button class="process-day-btn" onclick="game.processDay()">
+                            <div class="btn-icon">⏳</div>
+                            <div class="btn-content">
+                                <div class="btn-title">Process Day <span id="current-day-display">(Day 1)</span></div>
+                                <div class="btn-subtitle" id="assigned-missions-count">No missions assigned</div>
+                            </div>
+                        </button>
                     </div>
-                </button>
+
+                    <!-- Quick Status -->
+                    <div class="world-status">
+                        <div class="status-item">
+                            <span class="status-label">Areas Discovered:</span>
+                            <span id="areas-discovered">1</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Missions Available:</span>
+                            <span id="missions-available">1</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Current Day:</span>
+                            <span id="current-day-main" class="status-value">1</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            
-            <!-- Quick Status -->
-            <div class="world-status">
-                <div class="status-item">
-                    <span class="status-label">Areas Discovered:</span>
-                    <span id="areas-discovered">1</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Missions Available:</span>
-                    <span id="missions-available">1</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Current Day:</span>
-                    <span id="current-day-main" class="status-value">1</span>
+
+            <!-- Activity Log (unchanged) -->
+            <div class="log-column">
+                <div class="game-panel">
+                    <h2>Activity Log</h2>
+                    <div id="log" class="log-container"></div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Activity Log (unchanged) -->
-    <div class="log-column">
-        <div class="game-panel">
-            <h2>Activity Log</h2>
-            <div id="log" class="log-container"></div>
-        </div>
-    </div>
-</div>
 
 
-    <!-- Character Screen Modal - add this before </body> -->
-    <div id="character-screen-modal" class="modal-overlay" style="display: none;"
-        onclick="game.handleModalClick(event)">
-        <div class="modal-content" onclick="event.stopPropagation()">
+        <!-- Character Screen Modal - add this before </body> -->
+        <div id="character-screen-modal" class="modal-overlay" style="display: none;"
+            onclick="game.handleModalClick(event)">
+            <div class="modal-content" onclick="event.stopPropagation()">
 
-            <button class="close-btn" onclick="game.closeCharacterScreen()">&times;</button>
+                <button class="close-btn" onclick="game.closeCharacterScreen()">&times;</button>
 
-            <div class="character-screen-layout">
-                <!-- Left Column: Character Info & Stats -->
-                <div class="character-left-column">
-                    <div class="character-info-section">
-                        <h3>Character Information</h3>
-                        <div class="character-details">
-                            <div class="detail-row">
-                                <span class="detail-label">Name:</span>
-                                <span id="char-name">-</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Class:</span>
-                                <span id="char-class">-</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Level:</span>
-                                <span id="char-level">-</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Experience:</span>
-                                <span id="char-exp">-</span> / <span id="char-exp-needed">-</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Morale:</span>
-                                <span id="char-morale">-</span> (<span id="char-morale-status">-</span>)
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Gold Find Bonus:</span>
-                                <span id="char-goldfind">0%</span>
+                <div class="character-screen-layout">
+                    <!-- Left Column: Character Info & Stats -->
+                    <div class="character-left-column">
+                        <div class="character-info-section">
+                            <h3>Character Information</h3>
+                            <div class="character-details">
+                                <div class="detail-row">
+                                    <span class="detail-label">Name:</span>
+                                    <span id="char-name">-</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Class:</span>
+                                    <span id="char-class">-</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Level:</span>
+                                    <span id="char-level">-</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Experience:</span>
+                                    <span id="char-exp">-</span> / <span id="char-exp-needed">-</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Morale:</span>
+                                    <span id="char-morale">-</span> (<span id="char-morale-status">-</span>)
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Gold Find Bonus:</span>
+                                    <span id="char-goldfind">0%</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="stats-breakdown-section">
-                        <h3>Combat Statistics</h3>
-                        <div class="stat-breakdown">
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Life:</span>
-                                <span class="stat-value-with-tooltip" data-tooltip="Base + Gear + Passives + Morale">
-                                    <span id="final-life" class="final-stat">100</span>
-                                </span>
-                            </div>
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Damage:</span>
-                                <span class="stat-value-with-tooltip" data-tooltip="Base + Gear + Passives + Morale">
-                                    <span id="final-damage" class="final-stat">10</span>
-                                </span>
-                            </div>
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Defense:</span>
-                                <span class="stat-value-with-tooltip" data-tooltip="Base + Gear + Passives + Morale">
-                                    <span id="final-defense" class="final-stat">5</span>
-                                </span>
-                            </div>
-
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Resists:</span>
-                                <span id="final-resists-line"></span>
-                            </div>
-
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Gold Find:</span>
-                                <span class="stat-value-with-tooltip" id="final-gold-find"
-                                    data-tooltip="Increases the amount of gold found from missions.">0%</span>
-                            </div>
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Morale:</span>
-                                <span class="stat-value-with-tooltip" id="final-morale-gain"
-                                    data-tooltip="Flat bonuses or penalties to all morale changes from Missions.">0</span>
-                            </div>
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Volatility:</span>
-                                <span class="stat-value-with-tooltip" id="final-morale-resist"
-                                    data-tooltip="Increased (or reduces, if negative) the impact of morale gains and losses.">0%</span>
-                            </div>
-
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Power Rating:</span>
-                                <span class="stat-value-with-tooltip"
-                                    data-tooltip="Overall offensive power, affecting the chance of success in each round of combat.">
-                                    <span id="power-rating-calc" class="final-stat">0</span>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Middle Column: Passives -->
-                <div class="character-middle-column">
-                    <div class="passives-section">
-                        <h3>Passive Skills</h3>
-                        <div id="passive-allocation-area">
-                            <button id="allocate-passive-btn" class="allocate-btn" onclick="game.openPassiveSelection()"
-                                style="display: none;">
-                                Allocate Passive Skill (1)
-                            </button>
-                        </div>
-                        <div id="allocated-passives-list" class="allocated-passives">
-                            <!-- Will be populated by JavaScript -->
-                        </div>
-                    </div>
-                </div>
-                <!-- Right Column: Equipment & Inventory -->
-                <div class="character-right-column">
-                    <div class="equipment-section">
-                        <h3>Equipment</h3>
-                        <div class="character-equipment-grid">
-                            <!-- Main equipment slots -->
-                            <div class="char-equip-slot" id="char-weapon-slot">
-                                <div class="slot-label">Weapon</div>
-                                <div class="slot-content" onclick="game.unequipItem('weapon')">
-                                    <div class="empty-slot">Empty</div>
+                        <div class="stats-breakdown-section">
+                            <h3>Combat Statistics</h3>
+                            <div class="stat-breakdown">
+                                <div class="stat-breakdown-row">
+                                    <span class="stat-name">Life:</span>
+                                    <span class="stat-value-with-tooltip"
+                                        data-tooltip="Base + Gear + Passives + Morale">
+                                        <span id="final-life" class="final-stat">100</span>
+                                    </span>
                                 </div>
-                            </div>
-                            <div class="char-equip-slot" id="char-armor-slot">
-                                <div class="slot-label">Armor</div>
-                                <div class="slot-content" onclick="game.unequipItem('armor')">
-                                    <div class="empty-slot">Empty</div>
+                                <div class="stat-breakdown-row">
+                                    <span class="stat-name">Damage:</span>
+                                    <span class="stat-value-with-tooltip"
+                                        data-tooltip="Base + Gear + Passives + Morale">
+                                        <span id="final-damage" class="final-stat">10</span>
+                                    </span>
                                 </div>
-                            </div>
-                            <div class="char-equip-slot" id="char-jewelry-slot">
-                                <div class="slot-label">Jewelry</div>
-                                <div class="slot-content" onclick="game.unequipItem('jewelry')">
-                                    <div class="empty-slot">Empty</div>
+                                <div class="stat-breakdown-row">
+                                    <span class="stat-name">Defense:</span>
+                                    <span class="stat-value-with-tooltip"
+                                        data-tooltip="Base + Gear + Passives + Morale">
+                                        <span id="final-defense" class="final-stat">5</span>
+                                    </span>
                                 </div>
-                            </div>
 
-                            <!-- Future equipment slots (placeholder) -->
-                            <div class="char-equip-slot future-slot">
-                                <div class="slot-label">Helm</div>
-                                <div class="slot-content">
-                                    <div class="empty-slot">Coming Soon</div>
+                                <div class="stat-breakdown-row">
+                                    <span class="stat-name">Resists:</span>
+                                    <span id="final-resists-line"></span>
                                 </div>
-                            </div>
-                            <div class="char-equip-slot future-slot">
-                                <div class="slot-label">Gloves</div>
-                                <div class="slot-content">
-                                    <div class="empty-slot">Coming Soon</div>
+
+                                <div class="stat-breakdown-row">
+                                    <span class="stat-name">Gold Find:</span>
+                                    <span class="stat-value-with-tooltip" id="final-gold-find"
+                                        data-tooltip="Increases the amount of gold found from missions.">0%</span>
                                 </div>
-                            </div>
-                            <div class="char-equip-slot future-slot">
-                                <div class="slot-label">Boots</div>
-                                <div class="slot-content">
-                                    <div class="empty-slot">Coming Soon</div>
+                                <div class="stat-breakdown-row">
+                                    <span class="stat-name">Morale:</span>
+                                    <span class="stat-value-with-tooltip" id="final-morale-gain"
+                                        data-tooltip="Flat bonuses or penalties to all morale changes from Missions.">0</span>
+                                </div>
+                                <div class="stat-breakdown-row">
+                                    <span class="stat-name">Volatility:</span>
+                                    <span class="stat-value-with-tooltip" id="final-morale-resist"
+                                        data-tooltip="Increased (or reduces, if negative) the impact of morale gains and losses.">0%</span>
+                                </div>
+
+                                <div class="stat-breakdown-row">
+                                    <span class="stat-name">Power Rating:</span>
+                                    <span class="stat-value-with-tooltip"
+                                        data-tooltip="Overall offensive power, affecting the chance of success in each round of combat.">
+                                        <span id="power-rating-calc" class="final-stat">0</span>
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="character-inventory-section">
-                        <h3>Inventory <span id="char-inventory-count">(0/20)</span></h3>
-                        <div id="char-inventory" class="character-inventory-grid">
-                            <!-- Will be populated by JavaScript -->
+                    <!-- Middle Column: Passives -->
+                    <div class="character-middle-column">
+                        <div class="passives-section">
+                            <h3>Passive Skills</h3>
+                            <div id="passive-allocation-area">
+                                <button id="allocate-passive-btn" class="allocate-btn"
+                                    onclick="game.openPassiveSelection()" style="display: none;">
+                                    Allocate Passive Skill (1)
+                                </button>
+                            </div>
+                            <div id="allocated-passives-list" class="allocated-passives">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Right Column: Equipment & Inventory -->
+                    <div class="character-right-column">
+                        <div class="equipment-section">
+                            <h3>Equipment</h3>
+                            <div class="character-equipment-grid">
+                                <!-- Main equipment slots -->
+                                <div class="char-equip-slot" id="char-weapon-slot">
+                                    <div class="slot-label">Weapon</div>
+                                    <div class="slot-content" onclick="game.unequipItem('weapon')">
+                                        <div class="empty-slot">Empty</div>
+                                    </div>
+                                </div>
+                                <div class="char-equip-slot" id="char-armor-slot">
+                                    <div class="slot-label">Armor</div>
+                                    <div class="slot-content" onclick="game.unequipItem('armor')">
+                                        <div class="empty-slot">Empty</div>
+                                    </div>
+                                </div>
+                                <div class="char-equip-slot" id="char-jewelry-slot">
+                                    <div class="slot-label">Jewelry</div>
+                                    <div class="slot-content" onclick="game.unequipItem('jewelry')">
+                                        <div class="empty-slot">Empty</div>
+                                    </div>
+                                </div>
+
+                                <!-- Future equipment slots (placeholder) -->
+                                <div class="char-equip-slot future-slot">
+                                    <div class="slot-label">Helm</div>
+                                    <div class="slot-content">
+                                        <div class="empty-slot">Coming Soon</div>
+                                    </div>
+                                </div>
+                                <div class="char-equip-slot future-slot">
+                                    <div class="slot-label">Gloves</div>
+                                    <div class="slot-content">
+                                        <div class="empty-slot">Coming Soon</div>
+                                    </div>
+                                </div>
+                                <div class="char-equip-slot future-slot">
+                                    <div class="slot-label">Boots</div>
+                                    <div class="slot-content">
+                                        <div class="empty-slot">Coming Soon</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="character-inventory-section">
+                            <h3>Inventory <span id="char-inventory-count">(0/20)</span></h3>
+                            <div id="char-inventory" class="character-inventory-grid">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <!-- End of Model Char Popup -->
+        <!-- End of Model Char Popup -->
 
-    <!-- Passive Selection Modal -->
-    <div id="passive-selection-modal" class="modal-overlay" style="display: none;"
-        onclick="game.handlePassiveModalClick(event)">
-        <div class="passive-modal-content" onclick="event.stopPropagation()">
-            <div class="passive-modal-header">
-                <h2 id="passive-modal-title">Choose Your Passive Skill</h2>
-                <button class="close-btn" onclick="game.closePassiveSelection()">&times;</button>
-            </div>
+        <!-- Passive Selection Modal -->
+        <div id="passive-selection-modal" class="modal-overlay" style="display: none;"
+            onclick="game.handlePassiveModalClick(event)">
+            <div class="passive-modal-content" onclick="event.stopPropagation()">
+                <div class="passive-modal-header">
+                    <h2 id="passive-modal-title">Choose Your Passive Skill</h2>
+                    <button class="close-btn" onclick="game.closePassiveSelection()">&times;</button>
+                </div>
 
-            <div class="passive-choices-container">
-                <div class="passive-choice" id="passive-choice-1" onclick="game.selectPassive(1)">
-                    <div class="passive-choice-header">
-                        <span class="passive-choice-name">Passive Name</span>
-                        <span class="passive-choice-tier">Notable</span>
+                <div class="passive-choices-container">
+                    <div class="passive-choice" id="passive-choice-1" onclick="game.selectPassive(1)">
+                        <div class="passive-choice-header">
+                            <span class="passive-choice-name">Passive Name</span>
+                            <span class="passive-choice-tier">Notable</span>
+                        </div>
+                        <div class="passive-choice-description">
+                            Passive description goes here
+                        </div>
                     </div>
-                    <div class="passive-choice-description">
-                        Passive description goes here
+
+                    <div class="passive-choice" id="passive-choice-2" onclick="game.selectPassive(2)">
+                        <div class="passive-choice-header">
+                            <span class="passive-choice-name">Passive Name</span>
+                            <span class="passive-choice-tier">Notable</span>
+                        </div>
+                        <div class="passive-choice-description">
+                            Passive description goes here
+                        </div>
                     </div>
                 </div>
 
-                <div class="passive-choice" id="passive-choice-2" onclick="game.selectPassive(2)">
-                    <div class="passive-choice-header">
-                        <span class="passive-choice-name">Passive Name</span>
-                        <span class="passive-choice-tier">Notable</span>
+                <div class="passive-modal-footer">
+                    <button id="reroll-passive-btn" class="reroll-btn" onclick="game.rerollPassiveChoices()">
+                        Reroll (50 gold)
+                    </button>
+                    <div class="passive-help-text">
+                        Click a passive to select it, or reroll for new options
                     </div>
-                    <div class="passive-choice-description">
-                        Passive description goes here
-                    </div>
-                </div>
-            </div>
-
-            <div class="passive-modal-footer">
-                <button id="reroll-passive-btn" class="reroll-btn" onclick="game.rerollPassiveChoices()">
-                    Reroll (50 gold)
-                </button>
-                <div class="passive-help-text">
-                    Click a passive to select it, or reroll for new options
                 </div>
             </div>
         </div>
-    </div>
-    <!-- Passive Screen Modal END -->
+        <!-- Passive Screen Modal END -->
 
-    <!-- SCRIPTS MUST GO LAST html elements need to be loaded for these to interact with -->
-    <script src="js/gameState.js"></script>
-    <script src="js/items.js"></script>
-    <script src="js/missions.js"></script>
-    <script src="js/passives.js"></script>
-    <script src="js/nameGenerator.js"></script>
+        <!-- Day Report Modal -->
+        <div id="day-report-modal" class="modal-overlay" style="display: none;"
+            onclick="game.handleDayReportClick(event)">
+            <div class="day-report-content" onclick="event.stopPropagation()">
+                <div class="day-report-header">
+                    <h2>📊 Day Report - Day <span id="day-report-day">1</span></h2>
+                    <button class="close-btn" onclick="game.closeDayReport()">&times;</button>
+                </div>
 
-    <!-- World system data files -->
-    <script src="js/data/missionTypes.js"></script>
-    <script src="js/data/areas.js"></script>
+                <div class="day-report-body">
+                    <!-- 1. Mission Summaries -->
+                    <div class="report-section mission-summaries-section">
+                        <div id="mission-summary-container">
+                            <!-- Mission summary panels fade in here -->
+                        </div>
+                    </div>
 
-    <!-- World system logic -->
-    <script src="js/systems/worldSystem.js"></script>
+                    <!-- 2. Exile Status -->
+                    <div class="report-section exile-status-section">
+                        <div id="exile-status-container">
+                            <!-- Exile status panels with animations -->
+                        </div>
+                    </div>
 
-    <script src="js/game.js"></script>
-    <script src="js/main.js"></script>
+                    <!-- 3. Loot Explosion -->
+                    <div class="report-section loot-section">
+                        <div id="loot-container">
+                            <!-- Animated loot appears here -->
+                        </div>
+                    </div>
+
+                    <!-- 4. Discovery Reports (Collapsible) -->
+                    <div class="report-section discovery-section" id="discovery-section" style="display: none;">
+                        <div class="section-toggle" onclick="game.toggleDiscoverySection()">
+                            <span class="triangle">&#x25BC;</span>
+                            <span>Scouting Report</span>
+                            <span class="discovery-count" id="discovery-count"></span>
+                        </div>
+                        <div id="discovery-content" class="collapsible-content">
+                            <!-- Discoveries content -->
+                        </div>
+                    </div>
+
+                    <!-- 5. Detailed Combat (Collapsed) -->
+                    <div class="report-section detailed-section">
+                        <div class="section-toggle" onclick="game.toggleDetailedSection()">
+                            <span class="triangle">&#x25BC;</span>
+                            <span>Combat Details</span>
+                        </div>
+                        <div id="detailed-content" class="collapsible-content" style="display: none;">
+                            <!-- Detailed combat logs -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="day-report-footer">
+                    <button class="continue-btn" onclick="game.closeDayReport()">Continue</button>
+                    <button class="skip-animations-btn" onclick="game.skipAnimations()">Skip Animations</button>
+                </div>
+            </div>
+        </div>
+        <!-- Day Report Modal END -->
+
+        <!-- SCRIPTS MUST GO LAST html elements need to be loaded for these to interact with -->
+        <script src="js/gameState.js"></script>
+        <script src="js/items.js"></script>
+        <script src="js/missions.js"></script>
+        <script src="js/passives.js"></script>
+        <script src="js/nameGenerator.js"></script>
+
+        <!-- World system data files -->
+        <script src="js/data/missionTypes.js"></script>
+        <script src="js/data/areas.js"></script>
+
+        <!-- World system logic -->
+        <script src="js/systems/worldSystem.js"></script>
+
+        <script src="js/game.js"></script>
+        <script src="js/main.js"></script>
 
 </body>
 

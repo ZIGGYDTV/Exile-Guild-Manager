@@ -74,12 +74,12 @@ const areaDefinitions = {
                 discovered: true, // Available immediately
 
                 // Mission-specific overrides
-                difficulty: 120,
-                ilvl: 1,
+                difficulty: 110,
+                ilvl: { min: 1, max: 2 }, // Item level range for gear drops
 
                 damage: {
-                    min: 8, max: 25,
-                    types: { physical: 0.9, cold: 0.1 } // Mostly physical with some cold from ocean spray
+                    min: 8, max: 23,
+                    types: { physical: 0.9, cold: 0.1 } 
                 },
 
                 // Reward modifiers specific to this mission
@@ -94,15 +94,14 @@ const areaDefinitions = {
                 // Gear drop configuration
                 gearDrop: {
                     baseChance: 0.4,           // 40% chance to drop gear
-                    ilvlRange: { min: 1, max: 2 }, // Drop ilvl 1-2 gear
                     rarityBonus: 0             // No bonus to rare drop chance
                 },
 
                 // What this mission can potentially unlock
                 canUnlock: [
-                    { target: "wreckageScavenging", chance: 1.0 },      // 100% chance (guaranteed)
-                    { target: "cannibalHunting", chance: 0.3 },         // 30% chance
-                    { target: "theSpits", chance: 0.05 } // 5% chance
+                    { target: "wreckageScavenging", chance: 0.8 },      // 80% chance
+                    { target: "cannibalHunting", chance: 0.25 },         // 25% chance
+                    { target: "theSpits", chance: 0.05 }                  // AREA CONNECTION
                 ]
             },
 
@@ -113,7 +112,7 @@ const areaDefinitions = {
                 discovered: false, // Must be found through exploration
 
                 difficulty: 100,
-                ilvl: 2,
+                ilvl: { min: 2, max: 4 }, // Item level range for gear drops
 
                 damage: {
                     min: 5, max: 20,
@@ -133,7 +132,6 @@ const areaDefinitions = {
                 // Better gear drops for scavenging
                 gearDrop: {
                     baseChance: 0.5,           // 50% chance (better than exploration)
-                    ilvlRange: { min: 1, max: 3 }, // Drop ilvl 1-3 gear
                     rarityBonus: 0.05          // 5% bonus to rare drop chance
                 },
 
@@ -145,7 +143,7 @@ const areaDefinitions = {
 
 
                 canUnlock: [
-                    { target: "tidePoolBoss", chance: 1.0 }, // 20% chance to discover the Tide Warden boss
+                    { target: "tidePoolBoss", chance: 0.5 }, // 20% chance to discover the Tide Warden boss
                 ]
             },
 
@@ -157,7 +155,7 @@ const areaDefinitions = {
                 discovered: false, // Must be found through exploration
 
                 difficulty: 180,
-                ilvl: 3,
+                ilvl: { min: 3, max: 5 }, // Item level range for gear drops
 
                 damage: {
                     min: 20, max: 45,
@@ -174,7 +172,6 @@ const areaDefinitions = {
 
                 gearDrop: {
                     baseChance: 0.6,
-                    ilvlRange: { min: 2, max: 5 },
                     rarityBonus: 0.1
                 },
 
@@ -197,7 +194,7 @@ const areaDefinitions = {
                 discovered: false,
 
                 difficulty: 300,
-                ilvl: 4,
+                ilvl: { min: 4, max: 6 },
 
                 damage: {
                     min: 25, max: 60,
@@ -218,7 +215,6 @@ const areaDefinitions = {
                 // Boss has guaranteed good gear
                 gearDrop: {
                     baseChance: 0.8,           // 80% chance (bosses almost always drop gear)
-                    ilvlRange: { min: 3, max: 5 }, // Drop ilvl 3-5 gear
                     rarityBonus: 0.15          // 15% bonus to rare drop chance
                 },
 
@@ -227,8 +223,6 @@ const areaDefinitions = {
                     enabled: true,
                     days: 3  // Boss respawns after 3 days
                 },
-
-                canUnlock: ["beach_to_swamp_connection"]
             }
         }
     }
