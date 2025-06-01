@@ -1284,6 +1284,27 @@ Final: ${final}`;
         } else {
             indicator.style.display = 'none';
         }
+        // Show assignment status in exile summary 
+        const assignment = this.getExileAssignment(gameState.exile.name);
+        if (assignment) {
+            const missionData = getMissionData(assignment.areaId, assignment.missionId);
+            const assignmentText = `📋 Assigned: ${missionData.name}`;
+
+            // Add to notifications area if it exists
+            const notificationsArea = document.querySelector('.exile-notifications');
+            if (notificationsArea) {
+                // Remove any existing assignment status
+                const existingAssignment = notificationsArea.querySelector('.assignment-status');
+                if (existingAssignment) existingAssignment.remove();
+
+                // Add new assignment status
+                const assignmentDiv = document.createElement('div');
+                assignmentDiv.className = 'assignment-status';
+                assignmentDiv.style.cssText = 'font-size: 0.8em; color: #c9aa71; margin-top: 5px;';
+                assignmentDiv.textContent = assignmentText;
+                notificationsArea.appendChild(assignmentDiv);
+            }
+        }
     },
 
     calculateGearBonuses() {
@@ -2009,7 +2030,11 @@ Final: ${final}`;
                 const isAvailable = isMissionAvailable(areaId, mission.missionId);
                 const daysUntil = getDaysUntilAvailable(areaId, mission.missionId);
 
-                let buttonText = "Run Mission Now";
+                // Assign Mission from World Map: Check if any exile is assigned to this mission
+                const isAssigned = gameState.assignments.some(a => a.areaId === areaId && a.missionId === mission.missionId);
+                const assignedExile = gameState.assignments.find(a => a.areaId === areaId && a.missionId === mission.missionId);
+
+                let buttonText = "Assign Mission";
                 let buttonClass = "assign-mission-btn";
                 let buttonDisabled = "";
 
@@ -2017,6 +2042,9 @@ Final: ${final}`;
                     buttonText = `On Cooldown (${daysUntil} day${daysUntil > 1 ? 's' : ''})`;
                     buttonClass = "assign-mission-btn disabled";
                     buttonDisabled = "disabled";
+                } else if (isAssigned) {
+                    buttonText = `Assigned ✓ (${assignedExile.exileName})`;
+                    buttonClass = "assign-mission-btn assigned";
                 }
 
                 return `
@@ -2038,7 +2066,7 @@ Final: ${final}`;
                                     </div>
                                 </div>
                                 <button class="${buttonClass}" ${buttonDisabled} 
-                                        onclick="game.runMissionFromWorldMap('${areaId}', '${mission.missionId}')">
+                                        onclick="game.toggleMissionAssignment('${areaId}', '${mission.missionId}')">
                                     ${buttonText}
                                 </button>
                             </div>
@@ -2077,17 +2105,77 @@ Final: ${final}`;
             totalMissions += getAvailableMissions(area.id).length;
         });
         document.getElementById('missions-available').textContent = totalMissions;
+
+        // Update assignment status
+        const assignedMissionsEl = document.getElementById('assigned-missions-count');
+        const processBtn = document.querySelector('.process-day-btn');
+
+        if (gameState.assignments.length > 0) {
+            // Show assignment summary
+            if (gameState.assignments.length === 1) {
+                const assignment = gameState.assignments[0];
+                const missionData = getMissionData(assignment.areaId, assignment.missionId);
+                assignedMissionsEl.textContent = `${assignment.exileName} → ${missionData.name}`;
+            } else {
+                assignedMissionsEl.textContent = `${gameState.assignments.length} exiles assigned`;
+            }
+            processBtn.classList.add('has-assignments');
+        } else {
+            assignedMissionsEl.textContent = "No missions assigned";
+            processBtn.classList.remove('has-assignments');
+        }
     },
 
+    // Process Day Method: Time passing and what occurs (triggering missions, etc.)
     processDay() {
+        // Process all assigned missions
+        if (gameState.assignments.length > 0) {
+            this.log(`🌅 Day ${timeState.currentDay + 1} begins...`, "info");
+
+            // Run each assigned mission
+            gameState.assignments.forEach(assignment => {
+                const { exileName, areaId, missionId } = assignment;
+
+                // Check if mission is still available (might have gone on cooldown)
+                if (isMissionAvailable(areaId, missionId)) {
+                    const missionData = getMissionData(areaId, missionId);
+                    this.log(`⚔️ ${exileName} embarks on ${missionData.name}...`, "info");
+
+                    // Run the assigned mission
+                    this.runMission(`${areaId}.${missionId}`);
+
+                    // Check if mission went on cooldown - if so, unassign
+                    if (!isMissionAvailable(areaId, missionId)) {
+                        this.log(`📋 Mission went on cooldown - ${exileName} unassigned`, "info");
+                        // Remove this assignment from the array
+                        const assignmentIndex = gameState.assignments.findIndex(a =>
+                            a.exileName === exileName && a.areaId === areaId && a.missionId === missionId
+                        );
+                        if (assignmentIndex !== -1) {
+                            gameState.assignments.splice(assignmentIndex, 1);
+                        }
+                    }
+                } else {
+                    const missionData = getMissionData(areaId, missionId);
+                    this.log(`📋 ${missionData.name} unavailable - ${exileName} unassigned`, "info");
+                    // Remove this assignment from the array
+                    const assignmentIndex = gameState.assignments.findIndex(a =>
+                        a.exileName === exileName && a.areaId === areaId && a.missionId === missionId
+                    );
+                    if (assignmentIndex !== -1) {
+                        gameState.assignments.splice(assignmentIndex, 1);
+                    }
+                }
+            });
+        } else {
+            this.log("⏳ Time passes... No missions assigned.", "info");
+        }
+
         // Advance time
         timeState.currentDay++;
 
         // Update all displays
         this.updateCommandCenterDisplay();
-
-        // Log the advancement
-        this.log(`🌅 Day ${timeState.currentDay} begins...`, "info");
 
         // Check for missions coming off cooldown
         let missionsBackOnline = 0;
@@ -2108,6 +2196,90 @@ Final: ${final}`;
 
         this.saveGame();
     },
+    // end of processDay method ===
+
+
+    // === ASSIGNMENT SYSTEM METHODS ===
+    assignMissionToExile(exileName, areaId, missionId) {
+        // Check if mission is available
+        if (!isMissionAvailable(areaId, missionId)) {
+            this.log("Cannot assign to unavailable mission!", "failure");
+            return false;
+        }
+
+        // Check if exile is already assigned to something
+        const existingAssignment = this.getExileAssignment(exileName);
+        if (existingAssignment) {
+            // Unassign from current mission first
+            this.unassignExile(exileName);
+        }
+
+        // Add new assignment
+        gameState.assignments.push({
+            exileName: exileName,
+            areaId: areaId,
+            missionId: missionId
+        });
+
+        const missionData = getMissionData(areaId, missionId);
+        this.log(`📋 ${exileName} assigned to ${missionData.name}`, "info");
+
+        // Update displays
+        this.updateCommandCenterDisplay();
+        this.updateWorldMapDisplay();
+        this.saveGame();
+
+        return true;
+    },
+
+    unassignExile(exileName) {
+        const assignmentIndex = gameState.assignments.findIndex(a => a.exileName === exileName);
+
+        if (assignmentIndex === -1) {
+            this.log(`${exileName} is not assigned to any mission`, "info");
+            return false;
+        }
+
+        // Remove assignment
+        gameState.assignments.splice(assignmentIndex, 1);
+        this.log(`📋 ${exileName} unassigned from mission`, "info");
+
+        // Update displays
+        this.updateCommandCenterDisplay();
+        this.updateWorldMapDisplay();
+        this.saveGame();
+
+        return true;
+    },
+
+    getExileAssignment(exileName) {
+        return gameState.assignments.find(a => a.exileName === exileName) || null;
+    },
+
+    isExileAssigned(exileName, areaId, missionId) {
+        const assignment = this.getExileAssignment(exileName);
+        return assignment && assignment.areaId === areaId && assignment.missionId === missionId;
+    },
+
+    // Mission Assignment Toggle
+    toggleMissionAssignment(areaId, missionId) {
+        // Check if mission is already assigned
+        const assignment = gameState.assignments.find(a => a.areaId === areaId && a.missionId === missionId);
+
+        if (assignment) {
+            // Unassign the exile
+            this.unassignExile(assignment.exileName);
+        } else {
+            // Assign our main exile (for now - later we'll add exile selection)
+            this.assignMissionToExile(gameState.exile.name, areaId, missionId);
+        }
+
+        // Update world map display
+        this.updateWorldMapDisplay();
+    },
+
+    // end of Assignment System Methods ===
+
 
 };
 // END OF GAME OBJECT =====================

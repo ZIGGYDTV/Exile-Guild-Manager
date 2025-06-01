@@ -105,6 +105,31 @@ const gameState = {
         }
     },
 
+    assignments: [
+    // Will contain: { exileName: "Grimjaw", areaId: "beach", missionId: "shorelineExploration" }
+    // Empty array means no assignments
+],
+
+// PLACEHOLDER exiles for UI testing (will be replaced with real multi-exile system later)
+placeholderExiles: [
+    {
+        name: "TestExile1",
+        level: 3,
+        experience: 150,
+        experienceNeeded: 400,
+        morale: 85,
+        stats: { life: 150, damage: 25, defense: 12 }
+    },
+    {
+        name: "TestExile2", 
+        level: 1,
+        experience: 45,
+        experienceNeeded: 100,
+        morale: 60,
+        stats: { life: 105, damage: 11, defense: 5 }
+    }
+],
+
     settings: {
         autoSave: true
     }

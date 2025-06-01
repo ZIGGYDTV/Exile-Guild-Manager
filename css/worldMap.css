@@ -523,3 +523,48 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* styles for the assignment button states. */
+/* Assignment Button States */
+.assign-mission-btn.assigned {
+    background-color: #4CAF50;
+    color: #000;
+    border-color: #4CAF50;
+}
+
+.assign-mission-btn.assigned:hover {
+    background-color: #66BB6A;
+    border-color: #66BB6A;
+    transform: translateY(-1px);
+}
+
+.assign-mission-btn.assigned:active {
+    transform: translateY(0);
+}
+
+/* Assignment status in exile summary */
+.assignment-status {
+    font-size: 0.8em;
+    color: #c9aa71;
+    margin-top: 5px;
+    padding: 2px 6px;
+    background-color: rgba(201, 170, 113, 0.1);
+    border-radius: 3px;
+    border-left: 2px solid #c9aa71;
+}
+
+/* Process day button with assignments */
+.process-day-btn.has-assignments {
+    border-color: #4CAF50;
+    background: linear-gradient(135deg, #2d4a2d 0%, #1a2a1a 100%);
+}
+
+.process-day-btn.has-assignments:hover {
+    border-color: #66BB6A;
+    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+}
+
+.process-day-btn.has-assignments .btn-subtitle {
+    color: #81C784;
+}
+/* End of Styles of Assignment Buttons */
