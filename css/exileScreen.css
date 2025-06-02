@@ -1,0 +1,128 @@
+/* Character Equipment Grid - ARPG-style layout */
+.character-equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.char-equip-slot {
+    border: 2px solid #444;
+    background: #1a1a1a;
+    padding: 10px;
+    text-align: center;
+    min-height: 80px;
+    position: relative;
+}
+
+.char-equip-slot:hover {
+    border-color: #666;
+}
+
+.char-equip-slot .slot-label {
+    font-size: 0.8em;
+    color: #888;
+    margin-bottom: 5px;
+}
+
+.char-equip-slot .empty-slot {
+    color: #555;
+    font-style: italic;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
+
+.empty-grid-slot {
+    border: none !important;
+    background: transparent !important;
+}
+
+/* Item display in slots */
+.char-equip-slot .item-equipped {
+    cursor: pointer;
+}
+
+.char-equip-slot .item-name {
+    font-size: 0.9em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.char-equip-slot .item-stats {
+    font-size: 0.75em;
+    color: #aaa;
+}
+
+
+/* Equipment Selector Modal */
+.equipment-selector-content {
+    background: #1a1a1a;
+    border: 2px solid #444;
+    border-radius: 8px;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.equipment-selector-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #333;
+}
+
+.equipment-selector-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.current-equipped-section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #333;
+}
+
+.current-equipped-section h4,
+.available-items-section h4 {
+    color: #c9aa71;
+    margin-bottom: 10px;
+}
+
+.equipment-option {
+    border: 2px solid #333;
+    background: #222;
+    padding: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.equipment-option:hover {
+    border-color: #666;
+    background: #2a2a2a;
+}
+
+.equipment-option.current {
+    border-color: #4169E1;
+    background: #1e2638;
+}
+
+.equipment-option .item-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.equipment-option .item-stats {
+    font-size: 0.9em;
+    color: #aaa;
+}
+
+.equipment-option.unequip-option {
+    border-color: #8B4513;
+    text-align: center;
+    color: #ff9800;
+}

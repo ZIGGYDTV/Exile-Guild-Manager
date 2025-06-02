@@ -65,8 +65,15 @@ const gameState = {
     inventory: {
         equipped: {
             weapon: null,
-            armor: null,
-            jewelry: null
+            helmet: null,
+            chest: null,
+            gloves: null,
+            boots: null,
+            shield: null,
+            ring1: null,
+            ring2: null,
+            amulet: null,
+            belt: null
         },
         backpack: []
     },

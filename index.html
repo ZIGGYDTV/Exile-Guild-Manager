@@ -7,6 +7,7 @@
     <title>Exile Manager</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/worldMap.css">
+    <link rel="stylesheet" href="css/exileScreen.css">
 </head>
 
 
@@ -252,43 +253,73 @@
                         <div class="equipment-section">
                             <h3>Equipment</h3>
                             <div class="character-equipment-grid">
-                                <!-- Main equipment slots -->
-                                <div class="char-equip-slot" id="char-weapon-slot">
-                                    <div class="slot-label">Weapon</div>
-                                    <div class="slot-content" onclick="game.unequipItem('weapon')">
+                                <!-- Top row -->
+                                <div class="char-equip-slot" id="char-helmet-slot">
+                                    <div class="slot-label">Helmet</div>
+                                    <div class="slot-content" onclick="game.openEquipmentSelector('helmet')">
                                         <div class="empty-slot">Empty</div>
                                     </div>
                                 </div>
-                                <div class="char-equip-slot" id="char-armor-slot">
-                                    <div class="slot-label">Armor</div>
-                                    <div class="slot-content" onclick="game.unequipItem('armor')">
+                                <div class="char-equip-slot" id="char-amulet-slot">
+                                    <div class="slot-label">Amulet</div>
+                                    <div class="slot-content" onclick="game.openEquipmentSelector('amulet')">
                                         <div class="empty-slot">Empty</div>
                                     </div>
                                 </div>
-                                <div class="char-equip-slot" id="char-jewelry-slot">
-                                    <div class="slot-label">Jewelry</div>
-                                    <div class="slot-content" onclick="game.unequipItem('jewelry')">
+                                <div class="char-equip-slot empty-grid-slot"></div>
+
+                                <!-- Middle row -->
+                                <div class="char-equip-slot" id="char-gloves-slot">
+                                    <div class="slot-label">Gloves</div>
+                                    <div class="slot-content" onclick="game.openEquipmentSelector('gloves')">
+                                        <div class="empty-slot">Empty</div>
+                                    </div>
+                                </div>
+                                <div class="char-equip-slot" id="char-chest-slot">
+                                    <div class="slot-label">Chest</div>
+                                    <div class="slot-content" onclick="game.openEquipmentSelector('chest')">
+                                        <div class="empty-slot">Empty</div>
+                                    </div>
+                                </div>
+                                <div class="char-equip-slot" id="char-belt-slot">
+                                    <div class="slot-label">Belt</div>
+                                    <div class="slot-content" onclick="game.openEquipmentSelector('belt')">
                                         <div class="empty-slot">Empty</div>
                                     </div>
                                 </div>
 
-                                <!-- Future equipment slots (placeholder) -->
-                                <div class="char-equip-slot future-slot">
-                                    <div class="slot-label">Helm</div>
-                                    <div class="slot-content">
-                                        <div class="empty-slot">Coming Soon</div>
+                                <!-- Bottom row -->
+                                <div class="char-equip-slot" id="char-ring1-slot">
+                                    <div class="slot-label">Ring</div>
+                                    <div class="slot-content" onclick="game.openEquipmentSelector('ring1')">
+                                        <div class="empty-slot">Empty</div>
                                     </div>
                                 </div>
-                                <div class="char-equip-slot future-slot">
-                                    <div class="slot-label">Gloves</div>
-                                    <div class="slot-content">
-                                        <div class="empty-slot">Coming Soon</div>
-                                    </div>
-                                </div>
-                                <div class="char-equip-slot future-slot">
+                                <div class="char-equip-slot" id="char-boots-slot">
                                     <div class="slot-label">Boots</div>
-                                    <div class="slot-content">
-                                        <div class="empty-slot">Coming Soon</div>
+                                    <div class="slot-content" onclick="game.openEquipmentSelector('boots')">
+                                        <div class="empty-slot">Empty</div>
+                                    </div>
+                                </div>
+                                <div class="char-equip-slot" id="char-ring2-slot">
+                                    <div class="slot-label">Ring</div>
+                                    <div class="slot-content" onclick="game.openEquipmentSelector('ring2')">
+                                        <div class="empty-slot">Empty</div>
+                                    </div>
+                                </div>
+
+                                <!-- Weapon row -->
+                                <div class="char-equip-slot" id="char-weapon-slot">
+                                    <div class="slot-label">Weapon</div>
+                                    <div class="slot-content" onclick="game.openEquipmentSelector('weapon')">
+                                        <div class="empty-slot">Empty</div>
+                                    </div>
+                                </div>
+                                <div class="char-equip-slot empty-grid-slot"></div>
+                                <div class="char-equip-slot" id="char-shield-slot">
+                                    <div class="slot-label">Shield</div>
+                                    <div class="slot-content" onclick="game.openEquipmentSelector('shield')">
+                                        <div class="empty-slot">Empty</div>
                                     </div>
                                 </div>
                             </div>
@@ -414,7 +445,6 @@
 
         <!-- SCRIPTS MUST GO LAST html elements need to be loaded for these to interact with -->
         <script src="js/gameState.js"></script>
-        <script src="js/items.js"></script>
         <script src="js/passives.js"></script>
         <script src="js/nameGenerator.js"></script>
 
@@ -425,8 +455,46 @@
         <!-- World system logic -->
         <script src="js/systems/worldSystem.js"></script>
 
+        <!-- New item system modules -->
+        <script type="module">
+            import { itemDB } from './js/systems/itemSystem.js';
+            import { statDB } from './js/systems/statSystem.js';
+            import { rarityDB } from './js/systems/raritySystem.js';
+
+            // Make them globally available for now (temporary)
+            window.itemDB = itemDB;
+            window.statDB = statDB;
+            window.rarityDB = rarityDB;
+        </script>
+
         <script src="js/game.js"></script>
         <script src="js/main.js"></script>
+
+<!-- Equipment Slot Selector Modal -->
+<div id="equipment-selector-modal" class="modal-overlay" style="display: none;" onclick="game.handleEquipmentSelectorClick(event)">
+    <div class="equipment-selector-content" onclick="event.stopPropagation()">
+        <div class="equipment-selector-header">
+            <h3 id="equipment-selector-title">Select Equipment</h3>
+            <button class="close-btn" onclick="game.closeEquipmentSelector()">&times;</button>
+        </div>
+        
+        <div class="equipment-selector-body">
+            <div class="current-equipped-section">
+                <h4>Currently Equipped</h4>
+                <div id="current-equipped-item">
+                    <div class="empty-slot">Nothing equipped</div>
+                </div>
+            </div>
+            
+            <div class="available-items-section">
+                <h4>Available Items</h4>
+                <div id="available-items-list">
+                    <!-- Items will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 </body>
 

@@ -563,79 +563,100 @@ const game = {
     generateGear(areaId, missionId, targetIlvl) {
         const missionData = getCompleteMissionData(areaId, missionId);
 
-        // Determine item type - check for mission-specific overrides
-        let gearTypeChances;
+        // Generate item with new system
+        const options = {
+            targetIlvl: targetIlvl,
+            missionThemes: missionData.themes || [],
+            difficultyBonus: 0, // Could calculate this based on mission difficulty later
+        };
+
+        // Check for mission-specific gear type overrides
         if (missionData.gearDrop?.gearTypeOverrides) {
-            gearTypeChances = missionData.gearDrop.gearTypeOverrides;
-        } else {
-            // Default chances
-            gearTypeChances = { weapon: 0.4, armor: 0.35, jewelry: 0.25 };
+            options.slotWeights = missionData.gearDrop.gearTypeOverrides;
         }
 
-        // Roll for gear type using the chances
-        const typeRoll = Math.random();
-        let gearType;
-        if (typeRoll < gearTypeChances.weapon) {
-            gearType = gearTypes.weapon;
-        } else if (typeRoll < gearTypeChances.weapon + gearTypeChances.armor) {
-            gearType = gearTypes.armor;
-        } else {
-            gearType = gearTypes.jewelry;
-        }
+        // Generate the item using new system
+        const newItem = itemDB.generateItem(options);
 
-        // Determine rarity based on weights
-        const rarityRoll = Math.random() * 100;
-        let rarity = 'common';
-        let cumulative = 0;
-        for (const [tier, data] of Object.entries(rarityTiers)) {
-            cumulative += data.dropWeight;
-            if (rarityRoll <= cumulative) {
-                rarity = tier;
-                break;
-            }
-        }
-
-        // Generate base item
-        const baseType = gearType.baseTypes[Math.floor(Math.random() * gearType.baseTypes.length)];
-        const rarityData = rarityTiers[rarity];
-
-        // Generate stats using the target ilvl
-        const stats = {};
-        const statTypes = getAllStatTypes();
-        const selectedStats = this.shuffleArray(statTypes).slice(0, rarityData.statCount);
-
-        selectedStats.forEach(stat => {
-            const weight = gearType.statWeights[stat] || 1;
-            const statDef = statDefinitions[stat];
-            const statRange = this.getStatRangeForIlvl(statDef, targetIlvl);
-            const baseValue = this.randomBetween(statRange.min, statRange.max);
-            stats[stat] = Math.floor(baseValue * weight);
-        });
-
-        return {
+        // The new system already rolls rarity and stats, so we just need to convert
+        // it to the format our save system expects
+        const itemForSave = {
             id: Date.now() + Math.random(),
-            name: `${rarity.charAt(0).toUpperCase() + rarity.slice(1)} ${baseType}`,
-            slot: gearType.slot,
-            rarity: rarity,
+            name: newItem.getDisplayName(),
+            slot: newItem.slot,
+            rarity: newItem.rarity ? newItem.rarity.name.toLowerCase() : 'common',
             ilvl: targetIlvl,
-            stats: stats,
+            stats: {},
             equipped: false
         };
+
+        // Convert stats Map to object
+        for (const [stat, value] of newItem.stats) {
+            itemForSave.stats[stat] = value;
+        }
+
+        // Store weapon-specific properties if they exist
+        if (newItem.slot === 'weapon' && newItem.attackSpeed) {
+            itemForSave.attackSpeed = newItem.attackSpeed;
+            itemForSave.damageMultiplier = newItem.damageMultiplier || 1.0;
+        }
+
+        return itemForSave;
     },
 
     equipItem(itemId) {
         const item = gameState.inventory.backpack.find(i => i.id === itemId);
         if (!item) return;
 
-        // Unequip current item in that slot if any
-        const currentEquipped = gameState.inventory.equipped[item.slot];
+        console.log("Equipping item:", item.name, "to slot:", item.slot);
+
+        // Map new slots to old display categories
+        let displaySlot = item.slot;
+        if (['helmet', 'chest', 'gloves', 'boots', 'shield'].includes(item.slot)) {
+            displaySlot = 'armor';
+        } else if (['ring', 'amulet', 'belt'].includes(item.slot)) {
+            displaySlot = 'jewelry';
+        }
+
+        // Unequip current item in that display slot if any
+        const currentEquipped = gameState.inventory.equipped[displaySlot];
         if (currentEquipped) {
             currentEquipped.equipped = false;
             gameState.inventory.backpack.push(currentEquipped);
         }
 
         // Equip new item
-        gameState.inventory.equipped[item.slot] = item;
+        gameState.inventory.equipped[displaySlot] = item;
+        item.equipped = true;
+
+        // Remove from backpack
+        gameState.inventory.backpack = gameState.inventory.backpack.filter(i => i.id !== itemId);
+
+        this.recalculateStats();
+        this.updateDisplay();
+        this.updateInventoryDisplay();
+        this.updateCharacterScreenIfOpen();
+        this.saveGame();
+    },
+
+    equipItemToSlot(itemId, targetSlot) {
+        console.log("Looking for item with ID:", itemId); // ADD THIS
+        const item = gameState.inventory.backpack.find(i => i.id === itemId);
+        console.log("Found item:", item); // ADD THIS
+
+        if (!item) {
+            console.error("Item not found!"); // ADD THIS
+            return;
+        }
+        // Unequip current item in that slot if any
+        const currentEquipped = gameState.inventory.equipped[targetSlot];
+        if (currentEquipped) {
+            currentEquipped.equipped = false;
+            gameState.inventory.backpack.push(currentEquipped);
+        }
+
+        // Equip new item
+        gameState.inventory.equipped[targetSlot] = item;
         item.equipped = true;
 
         // Remove from backpack
@@ -720,7 +741,7 @@ const game = {
             }
         });
 
-          // Add passives
+        // Add passives
         const totalFireResist = gearFireResist + (passiveEffects.fireResist || 0);
         const totalColdResist = gearColdResist + (passiveEffects.coldResist || 0);
         const totalLightningResist = gearLightningResist + (passiveEffects.lightningResist || 0);
@@ -738,7 +759,7 @@ const game = {
         gameState.exile.stats.lightningResist = Math.min(totalLightningResist, maxLightningResist);
         gameState.exile.stats.chaosResist = Math.min(totalChaosResist, maxChaosResist);
 
-      // Calculate light radius effects on scouting and exploration from gear + passives
+        // Calculate light radius effects on scouting and exploration from gear + passives
         // Get light radius from equipped gear
         let gearLightRadius = 0;
         Object.values(gameState.inventory.equipped).forEach(item => {
@@ -1035,6 +1056,123 @@ const game = {
         document.removeEventListener('keydown', this.handleModalKeydown.bind(this));
     },
 
+
+    // Equipment Selector Modal Methods
+    openEquipmentSelector(slot) {
+        this.currentEquipmentSlot = slot;
+
+        // Update modal title
+        const slotName = slot === 'ring1' || slot === 'ring2' ? 'Ring' :
+            slot.charAt(0).toUpperCase() + slot.slice(1);
+        document.getElementById('equipment-selector-title').textContent = `Select ${slotName}`;
+
+        // Show current equipped item
+        const currentItem = gameState.inventory.equipped[slot];
+        const currentSection = document.getElementById('current-equipped-item');
+
+        if (currentItem) {
+            const displayName = currentItem.getDisplayName ? currentItem.getDisplayName() : currentItem.name;
+            const displayColor = currentItem.getDisplayColor ? currentItem.getDisplayColor() :
+                (currentItem.rarity ? rarityDB.getRarity(currentItem.rarity)?.color : null) || '#888';
+
+            currentSection.innerHTML = `
+                <div class="equipment-option current">
+                    <div class="item-name" style="color: ${displayColor}">${displayName}</div>
+                    <div class="item-stats">
+                        ${this.formatItemStats(currentItem)}
+                    </div>
+                </div>
+            `;
+        } else {
+            currentSection.innerHTML = '<div class="empty-slot">Nothing equipped</div>';
+        }
+
+        // Show available items for this slot
+        const availableSection = document.getElementById('available-items-list');
+        const validItems = this.getItemsForSlot(slot);
+
+        if (validItems.length === 0) {
+            availableSection.innerHTML = '<div class="empty-slot">No items available for this slot</div>';
+        } else {
+            availableSection.innerHTML = validItems.map(item => {
+                const displayName = item.getDisplayName ? item.getDisplayName() : item.name;
+                // Get color from rarity system
+                const displayColor = item.getDisplayColor ? item.getDisplayColor() :
+                    (item.rarity ? rarityDB.getRarity(item.rarity)?.color : null) || '#888';
+
+                return `
+                    <div class="equipment-option" onclick="game.selectEquipment(${item.id})">
+                        <div class="item-name" style="color: ${displayColor}">${displayName}</div>
+                        <div class="item-stats">
+                            ${this.formatItemStats(item)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Add unequip option at the end if something is equipped
+        if (currentItem) {
+            availableSection.innerHTML += `
+                <div class="equipment-option unequip-option" onclick="game.selectEquipment(null)">
+                    <div>Unequip</div>
+                </div>
+            `;
+        }
+
+        // Show modal
+        document.getElementById('equipment-selector-modal').style.display = 'flex';
+    },
+
+    closeEquipmentSelector() {
+        document.getElementById('equipment-selector-modal').style.display = 'none';
+        this.currentEquipmentSlot = null;
+    },
+
+    handleEquipmentSelectorClick(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            this.closeEquipmentSelector();
+        }
+    },
+
+    getItemsForSlot(slot) {
+        // Handle ring slots
+        const itemSlot = (slot === 'ring1' || slot === 'ring2') ? 'ring' : slot;
+
+        return gameState.inventory.backpack.filter(item => {
+            return item.slot === itemSlot;
+        });
+    },
+
+    formatItemStats(item) {
+        // Get stats from either Map or object
+        const stats = item.stats instanceof Map ?
+            Array.from(item.stats.entries()) :
+            Object.entries(item.stats || {});
+
+        return stats.map(([stat, value]) => {
+            const statName = this.getStatDisplayName(stat);
+            return `+${value} ${statName}`;
+        }).join(', ');
+    },
+
+    selectEquipment(itemId) {
+        const slot = this.currentEquipmentSlot;
+
+        console.log("Selecting equipment:", itemId, "for slot:", slot); // ADD THIS
+
+        if (itemId === null) {
+            // Unequip
+            this.unequipItem(slot);
+        } else {
+            // Equip new item
+            this.equipItemToSlot(itemId, slot);
+        }
+
+        this.closeEquipmentSelector();
+        this.updateCharacterScreen();
+    },
+
     handleModalKeydown(event) {
         if (event.key === 'Escape') {
             this.closeCharacterScreen();
@@ -1195,8 +1333,33 @@ Final: ${final}`;
     },
 
     updateCharacterEquipment() {
-        // TODO: Update character screen equipment (placeholder for now)
-        console.log("Updating character equipment display");
+        // Update character screen equipment display for all slots
+        const slots = ['weapon', 'helmet', 'chest', 'gloves', 'boots', 'shield', 'ring1', 'ring2', 'amulet', 'belt'];
+
+        slots.forEach(slot => {
+            const slotElement = document.getElementById(`char-${slot}-slot`);
+            if (!slotElement) return; // Skip if element doesn't exist
+
+            const slotContent = slotElement.querySelector('.slot-content');
+            const equipped = gameState.inventory.equipped[slot];
+
+            if (equipped) {
+                const displayName = equipped.getDisplayName ? equipped.getDisplayName() : equipped.name;
+                const displayColor = equipped.getDisplayColor ? equipped.getDisplayColor() :
+                    rarityDB.getRarity(equipped.rarity)?.color || '#888';
+
+                slotContent.innerHTML = `
+                    <div class="item-equipped">
+                        <div class="item-name" style="color: ${displayColor}">${displayName}</div>
+                        <div class="item-stats">
+                            ${this.formatItemStats(equipped)}
+                        </div>
+                    </div>
+                `;
+            } else {
+                slotContent.innerHTML = '<div class="empty-slot">Empty</div>';
+            }
+        });
     },
 
     updateCharacterInventory() {
@@ -1439,24 +1602,39 @@ Final: ${final}`;
     },
 
     updateCharacterEquipment() {
-        // Update character screen equipment display
-        ['weapon', 'armor', 'jewelry'].forEach(slot => {
-            const slotElement = document.getElementById(`char-${slot}-slot`).querySelector('.slot-content');
+        // Update character screen equipment display for all slots
+        const slots = ['weapon', 'helmet', 'chest', 'gloves', 'boots', 'shield', 'ring1', 'ring2', 'amulet', 'belt'];
+
+        slots.forEach(slot => {
+            const slotElement = document.getElementById(`char-${slot}-slot`);
+            if (!slotElement) {
+                console.warn(`Slot element not found: char-${slot}-slot`);
+                return; // Skip if element doesn't exist
+            }
+
+            const slotContent = slotElement.querySelector('.slot-content');
+            if (!slotContent) {
+                console.warn(`Slot content not found for: ${slot}`);
+                return;
+            }
+
             const equipped = gameState.inventory.equipped[slot];
 
             if (equipped) {
-                slotElement.innerHTML = `
-                <div class="item-equipped">
-                    <div class="item-name ${equipped.rarity}">${equipped.name}</div>
-                    <div class="item-stats">
-                        ${Object.entries(equipped.stats).map(([stat, value]) =>
-                    `<div class="item-stat">+${value} ${this.getStatDisplayName(stat)}</div>`
-                ).join('')}
+                const displayName = equipped.getDisplayName ? equipped.getDisplayName() : equipped.name;
+                const displayColor = equipped.getDisplayColor ? equipped.getDisplayColor() :
+                    rarityDB.getRarity(equipped.rarity)?.color || '#888';
+
+                slotContent.innerHTML = `
+                    <div class="item-equipped">
+                        <div class="item-name" style="color: ${displayColor}">${displayName}</div>
+                        <div class="item-stats">
+                            ${this.formatItemStats(equipped)}
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
             } else {
-                slotElement.innerHTML = '<div class="empty-slot">Empty</div>';
+                slotContent.innerHTML = '<div class="empty-slot">Empty</div>';
             }
         });
     },
@@ -1610,7 +1788,8 @@ Final: ${final}`;
 
     // Helper function to get proper stat display name
     getStatDisplayName(statKey) {
-        return statDefinitions[statKey]?.name || statKey;
+        const stat = statDB.getStat(statKey);
+        return stat ? stat.name : statKey;
     },
 
     // Helper function to get stat range for specific ilvl
