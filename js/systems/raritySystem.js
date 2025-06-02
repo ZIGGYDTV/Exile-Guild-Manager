@@ -24,25 +24,25 @@ class RarityDatabase {
             new Rarity('Common', {
                 color: '#888',
                 minStats: 0,
-                maxStats: 1,
+                maxStats: 0,  // Changed from 1 to 0
                 dropWeight: 70
             })
         );
-
+    
         this.registerRarity(
             new Rarity('Magic', {
                 color: '#4169E1',
                 minStats: 1,
-                maxStats: 2,
+                maxStats: 2,  // Already correct
                 dropWeight: 25
             })
         );
-
+    
         this.registerRarity(
             new Rarity('Rare', {
                 color: '#FFD700',
-                minStats: 2,
-                maxStats: 4,
+                minStats: 3,  // Changed from 2 to 3
+                maxStats: 4,  // Already correct
                 dropWeight: 5
             })
         );

@@ -1,7 +1,8 @@
 // Stat definition and management system
-export class StatDefinition {
-    constructor(name) {
+class StatDefinition {
+    constructor(name, displayName = null) {
         this.name = name;
+        this.displayName = displayName || name; 
         this.ilvlBreakpoints = [];
         this.restrictedToSlots = null;
         this.requiredThemes = null;
@@ -48,94 +49,148 @@ class StatDatabase {
     initializeStats() {
         // Core Stats
         this.registerStat(
-            new StatDefinition('Life')
-                .addBreakpoint(1, 10, 20)
-                .addBreakpoint(5, 12, 25)
-                .addBreakpoint(10, 15, 30)
-                .addBreakpoint(15, 18, 36)
-                .addBreakpoint(20, 22, 44)
+            new StatDefinition('life', 'Life')
+                .addBreakpoint(1, 9, 18)
+                .addBreakpoint(3, 12, 22)
+                .addBreakpoint(5, 15, 26)
+                .addBreakpoint(7, 18, 30)
+                .addBreakpoint(9, 22, 34)
+                .addBreakpoint(11, 26, 38)
+                .addBreakpoint(13, 30, 42)
+                .addBreakpoint(15, 34, 46)
+                .addBreakpoint(17, 38, 50)
+                .addBreakpoint(19, 42, 54)
+                .addBreakpoint(21, 46, 58)
+                
         );
 
         this.registerStat(
-            new StatDefinition('Damage')
-                .addBreakpoint(1, 3, 7)
+            new StatDefinition('damage', 'Damage')
+                .addBreakpoint(1, 3, 5)
+                .addBreakpoint(3, 5, 7)
                 .addBreakpoint(5, 6, 12)
-                .addBreakpoint(10, 11, 19)
-                .addBreakpoint(15, 15, 24)
-                .addBreakpoint(20, 20, 36)
+                .addBreakpoint(7, 8, 14)
+                .addBreakpoint(9, 10, 16)
+                .addBreakpoint(11, 12, 18)
+                .addBreakpoint(13, 14, 20)
+                .addBreakpoint(15, 15, 22)
+                .addBreakpoint(17, 16, 24)
+                .addBreakpoint(19, 18, 26)
+                .addBreakpoint(21, 20, 28)
+                
         );
 
         this.registerStat(
-            new StatDefinition('Defense')
-                .addBreakpoint(1, 3, 12)
+            new StatDefinition('defense', 'Defense')
+                .addBreakpoint(1, 3, 10)
+                .addBreakpoint(3, 5, 12)
                 .addBreakpoint(5, 4, 15)
-                .addBreakpoint(10, 5, 20)
-                .addBreakpoint(15, 6, 24)
-                .addBreakpoint(20, 8, 32)
+                .addBreakpoint(7, 6, 18)
+                .addBreakpoint(9, 8, 20)
+                .addBreakpoint(11, 10, 22)
+                .addBreakpoint(13, 12, 24)
+                .addBreakpoint(15, 14, 26)
+                .addBreakpoint(17, 16, 28)
+                .addBreakpoint(19, 18, 30)
+                .addBreakpoint(21, 20, 32)
         );
 
         // Utility Stats
         this.registerStat(
-            new StatDefinition('Light Radius')
-                .addBreakpoint(1, 10, 50)
-                .addBreakpoint(5, 12, 60)
-                .addBreakpoint(10, 15, 65)
-                .addBreakpoint(15, 18, 70)
-                .addBreakpoint(20, 22, 75)
+            new StatDefinition('lightRadius', 'Light Radius')
+                .addBreakpoint(1, 20, 30)
+                .addBreakpoint(3, 22, 35)
+                .addBreakpoint(5, 24, 40)
+                .addBreakpoint(7, 26, 45)
+                .addBreakpoint(9, 28, 50)
+                .addBreakpoint(11, 30, 55)
+                .addBreakpoint(13, 32, 60)
+                .addBreakpoint(15, 34, 65)
+                .addBreakpoint(17, 36, 70)
+                .addBreakpoint(19, 38, 75)
+                .addBreakpoint(21, 40, 80)
                 .restrictToSlots('helmet')
         );
 
         this.registerStat(
-            new StatDefinition('Movement Speed')
-                .addBreakpoint(1, 10, 30)
-                .addBreakpoint(5, 12, 35)
-                .addBreakpoint(10, 15, 40)
-                .addBreakpoint(15, 18, 50)
-                .addBreakpoint(20, 22, 60)
+            new StatDefinition('moveSpeed', 'Movement Speed')
+                .addBreakpoint(1, 5, 10)
+                .addBreakpoint(3, 7, 12)
+                .addBreakpoint(5, 9, 14)
+                .addBreakpoint(7, 11, 16)
+                .addBreakpoint(9, 13, 18)
+                .addBreakpoint(11, 15, 20)
+                .addBreakpoint(13, 17, 22)
+                .addBreakpoint(15, 19, 24)
+                .addBreakpoint(17, 21, 26)
+                .addBreakpoint(19, 23, 28)
+                .addBreakpoint(21, 25, 30)
                 .restrictToSlots('boots')
 
         );
 
-        // Resistances (adjusted values)
         this.registerStat(
-            new StatDefinition('Fire Resistance')
+            new StatDefinition('fireResist', 'Fire Resistance')
                 .addBreakpoint(1, 5, 10)
-                .addBreakpoint(5, 8, 15)
-                .addBreakpoint(10, 10, 20)
-                .addBreakpoint(15, 12, 25)
-                .addBreakpoint(20, 15, 30)
+                .addBreakpoint(3, 7, 12)
+                .addBreakpoint(5, 9, 14)
+                .addBreakpoint(7, 11, 16)
+                .addBreakpoint(9, 13, 18)
+                .addBreakpoint(11, 15, 20)
+                .addBreakpoint(13, 17, 22)
+                .addBreakpoint(15, 19, 24)
+                .addBreakpoint(17, 21, 26)
+                .addBreakpoint(19, 23, 28)
+                .addBreakpoint(21, 25, 30)
         );
 
         this.registerStat(
-            new StatDefinition('Cold Resistance')
+            new StatDefinition('coldResist', 'Cold Resistance')
                 .addBreakpoint(1, 5, 10)
-                .addBreakpoint(5, 8, 15)
-                .addBreakpoint(10, 10, 20)
-                .addBreakpoint(15, 12, 25)
-                .addBreakpoint(20, 15, 30)
+                .addBreakpoint(3, 7, 12)
+                .addBreakpoint(5, 9, 14)
+                .addBreakpoint(7, 11, 16)
+                .addBreakpoint(9, 13, 18)
+                .addBreakpoint(11, 15, 20)
+                .addBreakpoint(13, 17, 22)
+                .addBreakpoint(15, 19, 24)
+                .addBreakpoint(17, 21, 26)
+                .addBreakpoint(19, 23, 28)
+                .addBreakpoint(21, 25, 30)
         );
 
         this.registerStat(
-            new StatDefinition('Lightning Resistance')
+            new StatDefinition('lightningResist', 'Lightning Resistance')
                 .addBreakpoint(1, 5, 10)
-                .addBreakpoint(5, 8, 15)
-                .addBreakpoint(10, 10, 20)
-                .addBreakpoint(15, 12, 25)
-                .addBreakpoint(20, 15, 30)
+                .addBreakpoint(3, 7, 12)
+                .addBreakpoint(5, 9, 14)
+                .addBreakpoint(7, 11, 16)
+                .addBreakpoint(9, 13, 18)
+                .addBreakpoint(11, 15, 20)
+                .addBreakpoint(13, 17, 22)
+                .addBreakpoint(15, 19, 24)
+                .addBreakpoint(17, 21, 26)
+                .addBreakpoint(19, 23, 28)
+                .addBreakpoint(21, 25, 30)
         );
 
         this.registerStat(
-            new StatDefinition('Chaos Resistance')
-                .addBreakpoint(1, 5, 10)
+            new StatDefinition('chaosResist', 'Chaos Resistance')
                 .addBreakpoint(5, 8, 15)
-                .addBreakpoint(10, 10, 20)
-                .addBreakpoint(15, 12, 25)
-                .addBreakpoint(20, 15, 30)
+                .addBreakpoint(7, 10, 17)
+                .addBreakpoint(9, 12, 19)
+                .addBreakpoint(11, 14, 21)
+                .addBreakpoint(13, 16, 23)
+                .addBreakpoint(15, 18, 25)
+                .addBreakpoint(17, 20, 27)
+                .addBreakpoint(19, 22, 29)
+                .addBreakpoint(21, 24, 31)
+                .restrictToSlots('ring', 'amulet')
         );
 
         // Theme-specific stats
         this.registerStat(
-            new StatDefinition('Crab Armor')
+            new StatDefinition('crabArmor', 'Crab Armor')
                 .addBreakpoint(5, 12, 35)
                 .addBreakpoint(10, 15, 40)
                 .addBreakpoint(15, 18, 45)
@@ -160,7 +215,7 @@ class StatDatabase {
 
     // Get stats available for a specific slot
     getStatsForSlot(slot) {
-        return this.getAllStats().filter(stat => 
+        return this.getAllStats().filter(stat =>
             !stat.restrictedToSlots || stat.restrictedToSlots.includes(slot)
         );
     }

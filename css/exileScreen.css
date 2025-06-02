@@ -1,3 +1,467 @@
+
+/* Character Screen Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: #1a1a1a;
+    border: 2px solid #c9aa71;
+    border-radius: 8px;
+    width: 95vw;
+    height: 90vh;
+    max-width: 1400px;
+    max-height: 800px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative; /* Add this if not present */
+
+}
+
+.modal-header {
+    background-color: #2a2a2a;
+    padding: 15px 20px;
+    border-bottom: 1px solid #444;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    color: #c9aa71;
+    margin: 0;
+}
+
+.close-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.close-btn:hover {
+    color: #c9aa71;
+}
+
+/* Three-column layout */
+.character-screen-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.character-left-column,
+.character-middle-column,
+.character-right-column {
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.character-left-column {
+    flex: 0 0 300px;
+    border-right: 1px solid #444;
+}
+
+.character-middle-column {
+    flex: 0 0 350px;
+    border-right: 1px solid #444;
+}
+
+.character-right-column {
+    flex: 1;
+    min-width: 300px;
+}
+
+/* Character info section */
+.character-info-section,
+.stats-breakdown-section,
+.passives-section,
+.equipment-section,
+.character-inventory-section {
+    margin-bottom: 30px;
+}
+
+.character-info-section h3,
+.stats-breakdown-section h3,
+.passives-section h3,
+.equipment-section h3,
+.character-inventory-section h3 {
+    color: #c9aa71;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+
+.character-details {
+    background-color: #2a2a2a;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.detail-row:last-child {
+    margin-bottom: 0;
+}
+
+.detail-label {
+    color: #888;
+}
+
+/* Stats breakdown */
+
+.stat-breakdown {
+    background-color: #2a2a2a;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.stat-breakdown-row {
+    display: flex;
+    align-items: baseline; /* Align items along their text baseline */
+    margin-bottom: 8px;
+    font-family: monospace;
+    font-size: 1.1em;
+}
+
+.stat-breakdown-row:last-child {
+    margin-bottom: 0;
+}
+
+.stat-name {
+    flex-shrink: 0; /* Prevents this element from shrinking */
+    font-size: 0.8em;
+    /* === CRITICAL: ADJUST THIS WIDTH === */
+    /* This width MUST be wide enough for your LONGEST stat name to prevent wrapping. */
+    /* Example: If "Power Rating:" is your longest, set width accordingly. */
+    width: 90px;  /* <<< ADJUST THIS VALUE AS NEEDED */
+    color: #888;
+    margin-right: 3px; /* This creates the gap to the stat value */
+    /* text-align: left; */ /* Default: names start at the left edge of their 'width' box */
+}
+
+.stat-value-with-tooltip {
+    /* This will contain the actual number. */
+    text-align: left; /* Ensures stat values are left-aligned in their 'column' */
+}
+
+.final-stat {
+    color: #4CAF50;
+}
+
+/* Passive allocation */
+.allocated-passives {
+    background-color: #2a2a2a;
+    padding: 15px;
+    border-radius: 5px;
+    min-height: 200px;
+    margin-bottom: 15px;
+}
+
+.passive-item {
+    background-color: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 3px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.passive-item:last-child {
+    margin-bottom: 0;
+}
+
+.passive-name {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.passive-name.normal { color: #888; }
+.passive-name.notable { color: #4169E1; }
+.passive-name.keystone { color: #FFD700; }
+
+.passive-description {
+    font-size: 0.9em;
+    color: #ccc;
+}
+
+.allocate-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #bd7a2e;
+    color: #000;
+    border: none;
+    border-radius: 5px;
+    margin-bottom: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.allocate-btn:hover {
+    background-color: #d79243;
+    transform: translateY(-1px);
+}
+
+/* Character equipment grid */
+.character-equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.char-equip-slot {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 10px;
+    text-align: center;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+}
+
+.char-equip-slot.future-slot {
+    opacity: 0.5;
+}
+
+.char-equip-slot .slot-label {
+    font-size: 0.8em;
+    color: #c9aa71;
+    margin-bottom: 5px;
+}
+
+.char-equip-slot .slot-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 0 10px #3f3527;
+}
+
+.char-equip-slot .empty-slot {
+    color: #666;
+    font-style: italic;
+    font-size: 0.8em;
+}
+
+/* Character inventory */
+.character-inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#char-inventory-count {
+    font-size: 0.9em;
+    color: #888;
+    font-weight: normal;
+}
+
+
+/* Tooltip styling for stat breakdowns */
+.stat-value-with-tooltip {
+    position: relative;
+    cursor: help;
+    border-bottom: 1px dotted #666;
+    border-bottom: 1px dotted #666;
+    position: relative; /* Add this line */
+    display: inline-block; /* Ensures correct positioning */
+}
+
+.stat-value-with-tooltip::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    padding: 12px 16px;
+    border: 1px solid #c9aa71;
+    border-radius: 4px;
+    font-size: 0.85em;
+    white-space: pre-line; /* This allows line breaks */
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+    pointer-events: none;
+    text-align: center;
+    min-width: 100px;
+}
+
+.stat-value-with-tooltip:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+/* End of Modal Popup Character Screen */
+
+
+
+/* Passive Screen Modal */
+/* Passive Selection Modal */
+.passive-modal-content {
+    background-color: #1a1a1a;
+    border: 2px solid #c9aa71;
+    border-radius: 8px;
+    width: 600px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.passive-modal-header {
+    background-color: #2a2a2a;
+    padding: 15px 20px;
+    border-bottom: 1px solid #444;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.passive-modal-header h2 {
+    color: #c9aa71;
+    margin: 0;
+}
+
+.passive-choices-container {
+    padding: 20px;
+    display: flex;
+    gap: 20px;
+    flex: 1;
+}
+
+.passive-choice {
+    flex: 1;
+    background-color: #2a2a2a;
+    border: 2px solid #444;
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.passive-choice:hover {
+    border-color: #c9aa71;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(201, 170, 113, 0.3);
+}
+
+.passive-choice-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.passive-choice-name {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #e0e0e0;
+}
+
+.passive-choice-tier {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.passive-choice-tier.normal {
+    background-color: #888;
+    color: #000;
+}
+
+.passive-choice-tier.notable {
+    background-color: #4169E1;
+    color: #fff;
+}
+
+.passive-choice-tier.keystone {
+    background-color: #FFD700;
+    color: #000;
+}
+
+.passive-choice-description {
+    color: #ccc;
+    line-height: 1.4;
+    flex: 1;
+}
+
+.passive-modal-footer {
+    background-color: #2a2a2a;
+    padding: 15px 20px;
+    border-top: 1px solid #444;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.reroll-btn {
+    background-color: #ff9800;
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.reroll-btn:hover {
+    background-color: #f57c00;
+    transform: translateY(-1px);
+}
+
+.reroll-btn:disabled {
+    background-color: #666;
+    color: #999;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.passive-help-text {
+    color: #888;
+    font-size: 0.9em;
+    font-style: italic;
+}
+/* End Passive Screen Modal */
+
+
 /* Character Equipment Grid - ARPG-style layout */
 .character-equipment-grid {
     display: grid;
@@ -30,6 +494,10 @@
     font-style: italic;
     font-size: 0.9em;
     margin-top: 10px;
+    display: flex;             
+    align-items: center;        
+    justify-content: center;    
+    gap: 5px;                  
 }
 
 .empty-grid-slot {
@@ -51,6 +519,20 @@
 .char-equip-slot .item-stats {
     font-size: 0.75em;
     color: #aaa;
+}
+
+/* Indicator for slots with available items */
+.slot-has-items {
+    color: #fade9e;
+    font-weight: bold;
+    font-size: 2em;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
 }
 
 
@@ -107,13 +589,16 @@
 }
 
 .equipment-option.current {
-    border-color: #4169E1;
-    background: #1e2638;
+    border-color: #9e947d;
+    background: #0e0d0d;
+    box-shadow: 0 0 10px #3f3527;
+
 }
 
 .equipment-option .item-name {
     font-weight: bold;
     margin-bottom: 5px;
+    font-weight: bold;
 }
 
 .equipment-option .item-stats {
@@ -125,4 +610,26 @@
     border-color: #8B4513;
     text-align: center;
     color: #ff9800;
+}
+
+
+/* Overcapped item indicator */
+.overcapped-icon {
+    color: #e4ae33;
+    font-size: 1.2em;
+    margin-left: 5px;
+    display: inline-block;
+    animation: shimmer 2s ease-in-out infinite;
+    text-shadow: 0 0 5px #e4ae33;
+}
+
+@keyframes shimmer {
+    0%, 100% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Add a special border for overcapped items */
+.inventory-item.rare:has(.overcapped-icon) {
+    border-color: #e4ae33;
+    box-shadow: inset 0 0 10px rgba(228, 174, 51, 0.2);
 }

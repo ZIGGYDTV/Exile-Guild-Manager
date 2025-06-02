@@ -586,13 +586,18 @@ const game = {
             slot: newItem.slot,
             rarity: newItem.rarity ? newItem.rarity.name.toLowerCase() : 'common',
             ilvl: targetIlvl,
+            implicitStats: {},  // store implicits separately for conflict with explicits
             stats: {},
             equipped: false
         };
 
-        // Convert stats Map to object
+        // Separate implicit stats from rolled stats
         for (const [stat, value] of newItem.stats) {
-            itemForSave.stats[stat] = value;
+            if (newItem.implicitStats.has(stat)) {
+                itemForSave.implicitStats[stat] = value;
+            } else {
+                itemForSave.stats[stat] = value;
+            }
         }
 
         // Store weapon-specific properties if they exist
@@ -691,10 +696,17 @@ const game = {
         const baseDamage = gameState.exile.baseStats.damage;
         const baseDefense = gameState.exile.baseStats.defense;
 
-        // Get gear bonuses
+        // Calculate gear bonuses including implicits
         let gearLife = 0, gearDamage = 0, gearDefense = 0;
         Object.values(gameState.inventory.equipped).forEach(item => {
             if (item) {
+                // Add implicit stats
+                if (item.implicitStats) {
+                    gearLife += item.implicitStats.life || 0;
+                    gearDamage += item.implicitStats.damage || 0;
+                    gearDefense += item.implicitStats.defense || 0;
+                }
+                // Add regular stats
                 gearLife += item.stats.life || 0;
                 gearDamage += item.stats.damage || 0;
                 gearDefense += item.stats.defense || 0;
@@ -734,12 +746,13 @@ const game = {
         let gearFireResist = 0, gearColdResist = 0, gearLightningResist = 0, gearChaosResist = 0;
         Object.values(gameState.inventory.equipped).forEach(item => {
             if (item) {
-                gearFireResist += item.stats.fireResist || 0;
-                gearColdResist += item.stats.coldResist || 0;
-                gearLightningResist += item.stats.lightningResist || 0;
-                gearChaosResist += item.stats.chaosResist || 0;
+                gearFireResist += item.stats.fireresist || 0;      // Changed from fireResist
+                gearColdResist += item.stats.coldresist || 0;      // Changed from coldResist
+                gearLightningResist += item.stats.lightningresist || 0;  // Changed from lightningResist
+                gearChaosResist += item.stats.chaosresist || 0;    // Changed from chaosResist
             }
         });
+        console.log("Total resist from gear - Fire:", gearFireResist, "Cold:", gearColdResist); // DEBUG
 
         // Add passives
         const totalFireResist = gearFireResist + (passiveEffects.fireResist || 0);
@@ -799,40 +812,68 @@ const game = {
         const item = gameState.inventory.backpack.find(i => i.id === itemId);
         if (!item || gameState.resources.chaosOrbs < 1) return false;
 
-        // Get current stats and available stats
+        // Get only non-implicit stats
         const currentStatKeys = Object.keys(item.stats);
-        const availableStats = this.getAvailableStats(item);
-
-        // Need at least one current stat and one available stat
-        if (currentStatKeys.length === 0 || availableStats.length === 0) {
-            this.log("Cannot use Chaos Orb on this item!", "failure");
+        if (currentStatKeys.length === 0) {
+            this.log("No stats to reroll!", "failure");
             return false;
         }
 
-        // Pick random current stat to remove
+        // Pick random stat to remove
         const statToRemove = currentStatKeys[Math.floor(Math.random() * currentStatKeys.length)];
         const oldValue = item.stats[statToRemove];
 
-        // Pick random new stat to add
+        // Get the item's base type from itemDB to access stat weights
+        const baseTypes = ['weapon', 'armor', 'helmet', 'chest', 'gloves', 'boots', 'shield', 'ring', 'amulet', 'belt'];
+        let itemBase = null;
+
+        for (const equipment of itemDB.equipment.values()) {
+            if (equipment.slot === item.slot && item.name.includes(equipment.name)) {
+                itemBase = equipment;
+                break;
+            }
+        }
+
+        if (!itemBase) {
+            this.log("Cannot determine item base type!", "failure");
+            return false;
+        }
+
+        // Get available stats that aren't already on the item
+        const availableStats = Array.from(itemBase.statWeights.keys())
+            .filter(stat => !currentStatKeys.includes(stat) && stat !== statToRemove);
+
+        if (availableStats.length === 0) {
+            this.log("No new stats available to roll!", "failure");
+            return false;
+        }
+
+        // Pick a new stat
         const newStat = availableStats[Math.floor(Math.random() * availableStats.length)];
 
-        // Remove old stat
-        delete item.stats[statToRemove];
+        // Roll value using stat system
+        const statDef = statDB.getStat(newStat);
+        if (!statDef) {
+            this.log("Stat definition not found!", "failure");
+            return false;
+        }
 
-        // Add new stat using our centralized system
-        const gearType = gearTypes[Object.keys(gearTypes).find(key => gearTypes[key].slot === item.slot)];
-        const weight = gearType.statWeights[newStat] || 1;
-        const statDef = statDefinitions[newStat];
-        const statRange = this.getStatRangeForIlvl(statDef, item.ilvl);
-        const baseValue = this.randomBetween(statRange.min, statRange.max);
-        item.stats[newStat] = Math.floor(baseValue * weight);
+        const range = statDef.getValueRange(item.ilvl);
+        const value = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+
+        // Apply the change
+        delete item.stats[statToRemove];
+        item.stats[newStat] = value;
 
         // Consume orb
         gameState.resources.chaosOrbs--;
 
-        this.log(`🌀 Chaos Orb used! ${statToRemove} (${oldValue}) → ${newStat} (${item.stats[newStat]})`, "legendary");
+        this.log(`🌀 Chaos Orb used! ${this.getStatDisplayName(statToRemove)} (${oldValue}) → ${this.getStatDisplayName(newStat)} (${value})`, "legendary");
 
-        // Update displays if item is equipped
+        // Update main resource display
+        this.updateResourceDisplay();
+
+        // Update displays
         if (item.equipped) {
             this.recalculateStats();
             this.updateDisplay();
@@ -845,44 +886,100 @@ const game = {
     },
     // END USE CHAOS ORB
 
-    // USE ALCHEMY
+    // USE Exalt
     useExaltedOrb(itemId) {
         const item = gameState.inventory.backpack.find(i => i.id === itemId);
         if (!item || gameState.resources.exaltedOrbs < 1) return false;
 
-        // Check if item can have more stats
+        // Get current stat count (excluding implicits)
         const currentStatCount = Object.keys(item.stats).length;
-        const maxStats = rarityTiers[item.rarity].maxStats;
 
-        if (currentStatCount >= maxStats) {
-            this.log("This item already has maximum stats!", "failure");
+        // Get current rarity info
+        const currentRarity = rarityDB.getRarity(item.rarity);
+        if (!currentRarity) {
+            this.log("Unknown item rarity!", "failure");
+            return false;
+        }
+
+        // Check if item is already overcapped
+        if (item.isOvercapped) {
+            this.log("This item has already been perfected with an Exalted Orb!", "failure");
+            return false;
+        }
+
+        // Check if we need to upgrade rarity or if it's a rare at max
+        let targetRarity = currentRarity;
+        let canAddStat = currentStatCount < currentRarity.maxStats;
+
+        if (!canAddStat) {
+            if (item.rarity === 'common') {
+                targetRarity = rarityDB.getRarity('magic');
+                item.rarity = 'magic';
+                canAddStat = true;
+                this.log(`⚡ Item upgraded to Magic rarity!`, "legendary");
+            } else if (item.rarity === 'magic') {
+                targetRarity = rarityDB.getRarity('rare');
+                item.rarity = 'rare';
+                canAddStat = true;
+                this.log(`⚡ Item upgraded to Rare rarity!`, "legendary");
+            } else if (item.rarity === 'rare') {
+                // Allow overcapping for rare items
+                canAddStat = true;
+                item.isOvercapped = true;
+                this.log(`✨ Pushing beyond normal limits!`, "legendary");
+            }
+
+            // Update item name with new rarity (except for overcapped)
+            if (!item.isOvercapped) {
+                const baseName = item.name.replace(/^(Common|Magic|Rare)\s+/, '');
+                item.name = `${targetRarity.name} ${baseName}`;
+            }
+        }
+
+        // Now add a stat
+        const baseTypes = ['weapon', 'armor', 'helmet', 'chest', 'gloves', 'boots', 'shield', 'ring', 'amulet', 'belt'];
+        let itemBase = null;
+
+        for (const equipment of itemDB.equipment.values()) {
+            if (equipment.slot === item.slot && item.name.includes(equipment.name)) {
+                itemBase = equipment;
+                break;
+            }
+        }
+
+        if (!itemBase) {
+            this.log("Cannot determine item base type!", "failure");
             return false;
         }
 
         // Get available stats
-        const availableStats = this.getAvailableStats(item);
+        const currentStats = Object.keys(item.stats);
+        const availableStats = Array.from(itemBase.statWeights.keys())
+            .filter(stat => !currentStats.includes(stat));
+
         if (availableStats.length === 0) {
             this.log("No available stats to add!", "failure");
             return false;
         }
 
-        // Pick random new stat
+        // Pick and roll new stat
         const newStat = availableStats[Math.floor(Math.random() * availableStats.length)];
+        const statDef = statDB.getStat(newStat);
+        const range = statDef.getValueRange(item.ilvl);
+        const value = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
 
         // Add the stat
-        const gearType = gearTypes[Object.keys(gearTypes).find(key => gearTypes[key].slot === item.slot)];
-        const weight = gearType.statWeights[newStat] || 1;
-        const statDef = statDefinitions[newStat];
-        const statRange = this.getStatRangeForIlvl(statDef, item.ilvl);
-        const baseValue = this.randomBetween(statRange.min, statRange.max);
-        item.stats[newStat] = Math.floor(baseValue * weight);
+        item.stats[newStat] = value;
 
         // Consume orb
         gameState.resources.exaltedOrbs--;
 
-        this.log(`⭐ Exalted Orb used! Added ${newStat} (${item.stats[newStat]}) to ${item.name}`, "legendary");
+        this.log(`⭐ Exalted Orb used! Added ${this.getStatDisplayName(newStat)} (${value})`, "legendary");
 
-        // Update displays if item is equipped
+        // Update main resource display
+        this.updateResourceDisplay();
+
+        // Update displays
         if (item.equipped) {
             this.recalculateStats();
             this.updateDisplay();
@@ -893,7 +990,7 @@ const game = {
 
         return true;
     },
-    // End of use Alchemy
+    // End of use Exalt
 
     updateInventoryDisplay() {
         // Update equipped items (only if elements exist - old main screen)
@@ -927,7 +1024,7 @@ const game = {
         const inventoryCount = document.getElementById('inventory-count');
 
         if (inventoryCount) {
-            inventoryCount.textContent = `(${gameState.inventory.backpack.length}/20)`;
+            inventoryCount.textContent = `(${gameState.inventory.backpack.length})`;
         }
 
         if (inventoryElement) {
@@ -1077,7 +1174,10 @@ const game = {
 
             currentSection.innerHTML = `
                 <div class="equipment-option current">
-                    <div class="item-name" style="color: ${displayColor}">${displayName}</div>
+                    <div class="item-name" style="color: ${displayColor}">
+                    ${displayName}
+${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected with Exalted Orb">✦</span>' : ''}
+                    </div>
                     <div class="item-stats">
                         ${this.formatItemStats(currentItem)}
                     </div>
@@ -1094,21 +1194,26 @@ const game = {
         if (validItems.length === 0) {
             availableSection.innerHTML = '<div class="empty-slot">No items available for this slot</div>';
         } else {
-            availableSection.innerHTML = validItems.map(item => {
-                const displayName = item.getDisplayName ? item.getDisplayName() : item.name;
-                // Get color from rarity system
-                const displayColor = item.getDisplayColor ? item.getDisplayColor() :
-                    (item.rarity ? rarityDB.getRarity(item.rarity)?.color : null) || '#888';
-
-                return `
-                    <div class="equipment-option" onclick="game.selectEquipment(${item.id})">
-                        <div class="item-name" style="color: ${displayColor}">${displayName}</div>
-                        <div class="item-stats">
-                            ${this.formatItemStats(item)}
+            availableSection.innerHTML = validItems
+                .filter(item => item != null)  // Remove any null/undefined items
+                .map(item => {
+                    const displayName = item.getDisplayName ? item.getDisplayName() : item.name;
+                    // Get color from rarity system
+                    const displayColor = item.getDisplayColor ? item.getDisplayColor() :
+                        (item.rarity ? rarityDB.getRarity(item.rarity)?.color : null) || '#888';
+        
+                    return `
+                        <div class="equipment-option" onclick="game.selectEquipment(${item.id})">
+                            <div class="item-name" style="color: ${displayColor}">
+                            ${displayName}
+                             ${item.isOvercapped ? '<span class="overcapped-icon" title="Perfected with Exalted Orb">✦</span>' : ''}
+                            </div>
+                            <div class="item-stats">
+                                ${this.formatItemStats(item)}
+                            </div>
                         </div>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
         }
 
         // Add unequip option at the end if something is equipped
@@ -1145,15 +1250,35 @@ const game = {
     },
 
     formatItemStats(item) {
-        // Get stats from either Map or object
+        let html = '';
+
+        // Display implicit stats first with special styling
+        if (item.implicitStats && Object.keys(item.implicitStats).length > 0) {
+            const implicitStats = Object.entries(item.implicitStats);
+            html += '<div class="implicit-stats">';
+            html += implicitStats.map(([stat, value]) => {
+                const statName = this.getStatDisplayName(stat);
+                return `+${value} ${statName}`;
+            }).join(', ');
+            html += '</div>';
+            html += '<div class="stat-divider"></div>'; // Visual separator
+        }
+
+        // Display regular stats
         const stats = item.stats instanceof Map ?
             Array.from(item.stats.entries()) :
             Object.entries(item.stats || {});
 
-        return stats.map(([stat, value]) => {
-            const statName = this.getStatDisplayName(stat);
-            return `+${value} ${statName}`;
-        }).join(', ');
+        if (stats.length > 0) {
+            html += '<div class="regular-stats">';
+            html += stats.map(([stat, value]) => {
+                const statName = this.getStatDisplayName(stat);
+                return `+${value} ${statName}`;
+            }).join(', ');
+            html += '</div>';
+        }
+
+        return html;
     },
 
     selectEquipment(itemId) {
@@ -1186,6 +1311,124 @@ const game = {
         }
     },
 
+    // Inventory Modal Methods
+    openInventoryModal() {
+        // Update inventory count
+        const count = gameState.inventory.backpack.length;
+        document.getElementById('modal-inventory-count').textContent = `${count}`;
+        document.getElementById('inventory-count-main').textContent = `${count}`;
+
+        // Update currency display
+        document.getElementById('modal-chaos-orbs').textContent = gameState.resources.chaosOrbs;
+        document.getElementById('modal-exalted-orbs').textContent = gameState.resources.exaltedOrbs;
+
+        // Populate inventory items
+        this.updateInventoryModalDisplay();
+
+        // Show modal
+        document.getElementById('inventory-modal').style.display = 'flex';
+    },
+
+    closeInventoryModal() {
+        document.getElementById('inventory-modal').style.display = 'none';
+    },
+
+    handleInventoryModalClick(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            this.closeInventoryModal();
+        }
+    },
+
+    updateInventoryModalDisplay() {
+        const container = document.getElementById('inventory-items-grid');
+
+        if (gameState.inventory.backpack.length === 0) {
+            container.innerHTML = '<div style="color: #666; text-align: center; grid-column: 1/-1;">No items in inventory</div>';
+            return;
+        }
+
+        container.innerHTML = gameState.inventory.backpack.map(item => {
+            const displayName = item.name;
+            const displayColor = rarityDB.getRarity(item.rarity)?.color || '#888';
+
+            return `
+            <div class="inventory-item ${item.rarity}">
+                <div class="item-header">
+                    <div class="item-name" style="color: ${displayColor}">
+                    ${displayName}
+${item.isOvercapped ? '<span class="overcapped-icon" title="Perfected with Exalted Orb">✦</span>' : ''}
+                     </div>
+                    <div class="item-type">${item.slot.charAt(0).toUpperCase() + item.slot.slice(1)}</div>
+                </div>
+                <div class="item-ilvl">Item Level: ${item.ilvl}</div>
+                <div class="item-stats">
+                    ${this.formatItemStats(item)}
+                </div>
+                <div class="item-actions">
+                    <button class="action-btn chaos" onclick="game.useChaosOrbModal(${item.id})" 
+                        ${gameState.resources.chaosOrbs < 1 ? 'disabled' : ''}>
+                        Chaos (${gameState.resources.chaosOrbs})
+                    </button>
+                    <button class="action-btn exalted" onclick="game.useExaltedOrbModal(${item.id})" 
+                        ${gameState.resources.exaltedOrbs < 1 ? 'disabled' : ''}>
+                        Exalted (${gameState.resources.exaltedOrbs})
+                    </button>
+                    <button class="action-btn delete" onclick="game.deleteItem(${item.id})">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        `;
+        }).join('');
+    },
+
+    // Helper methods for inventory modal actions
+    equipItemFromModal(itemId) {
+        const item = gameState.inventory.backpack.find(i => i.id === itemId);
+        if (!item) return;
+
+        // Determine the correct slot
+        let targetSlot = item.slot;
+
+        // For rings, find an empty ring slot
+        if (item.slot === 'ring') {
+            if (!gameState.inventory.equipped.ring1) {
+                targetSlot = 'ring1';
+            } else if (!gameState.inventory.equipped.ring2) {
+                targetSlot = 'ring2';
+            } else {
+                targetSlot = 'ring1'; // Default to ring1 if both equipped
+            }
+        }
+
+        this.equipItemToSlot(itemId, targetSlot);
+        this.updateInventoryModalDisplay();
+        this.updateCharacterScreenIfOpen();
+    },
+
+    useChaosOrbModal(itemId) {
+        this.useChaosOrb(itemId);
+        this.updateInventoryModalDisplay();
+    },
+
+    useExaltedOrbModal(itemId) {
+        this.useExaltedOrb(itemId);
+        this.updateInventoryModalDisplay();
+    },
+
+    deleteItem(itemId) {
+        if (confirm("Are you sure you want to delete this item?")) {
+            gameState.inventory.backpack = gameState.inventory.backpack.filter(i => i.id !== itemId);
+            this.updateInventoryModalDisplay();
+            this.saveGame();
+
+            // Update counts
+            const count = gameState.inventory.backpack.length;
+            document.getElementById('modal-inventory-count').textContent = `${count}`;
+            document.getElementById('inventory-count-main').textContent = `${count}`;
+        }
+    },
+    // End of Inventory Modal Methods
 
     updateCharacterScreen() {
         // Update character info
@@ -1265,7 +1508,6 @@ const game = {
 
         // Update equipment and inventory
         this.updateCharacterEquipment();
-        this.updateCharacterInventory();
     },
 
     createStatTooltip(base, gear, passives, morale, final) {
@@ -1338,9 +1580,17 @@ Final: ${final}`;
 
         slots.forEach(slot => {
             const slotElement = document.getElementById(`char-${slot}-slot`);
-            if (!slotElement) return; // Skip if element doesn't exist
+            if (!slotElement) {
+                console.warn(`Slot element not found: char-${slot}-slot`);
+                return;
+            }
 
             const slotContent = slotElement.querySelector('.slot-content');
+            if (!slotContent) {
+                console.warn(`Slot content not found for: ${slot}`);
+                return;
+            }
+
             const equipped = gameState.inventory.equipped[slot];
 
             if (equipped) {
@@ -1350,21 +1600,29 @@ Final: ${final}`;
 
                 slotContent.innerHTML = `
                     <div class="item-equipped">
-                        <div class="item-name" style="color: ${displayColor}">${displayName}</div>
+                        <div class="item-name" style="color: ${displayColor}">
+                        ${displayName}
+${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected with Exalted Orb">✦</span>' : ''}
+                        </div>
                         <div class="item-stats">
                             ${this.formatItemStats(equipped)}
                         </div>
                     </div>
                 `;
             } else {
-                slotContent.innerHTML = '<div class="empty-slot">Empty</div>';
+                // Check if items are available for this slot
+                const availableItems = this.getItemsForSlot(slot);
+                const hasItems = availableItems.length > 0;
+
+                console.log(`Slot ${slot}: ${availableItems.length} items available`); // DEBUG
+
+                slotContent.innerHTML = `
+                    <div class="empty-slot">
+                        Empty${hasItems ? '<span class="slot-has-items">+</span>' : ''}
+                    </div>
+                `;
             }
         });
-    },
-
-    updateCharacterInventory() {
-        // TODO: Update character screen inventory (placeholder for now)
-        console.log("Updating character inventory display");
     },
 
     openPassiveSelection() {
@@ -1627,52 +1885,28 @@ Final: ${final}`;
 
                 slotContent.innerHTML = `
                     <div class="item-equipped">
-                        <div class="item-name" style="color: ${displayColor}">${displayName}</div>
+                        <div class="item-name" style="color: ${displayColor}">
+                        ${displayName}
+                        ${equipped.isOvercapped ? '<span class="overcapped-icon" title="Perfected with Exalted Orb">✦</span>' : ''}
+                        </div>
                         <div class="item-stats">
                             ${this.formatItemStats(equipped)}
                         </div>
                     </div>
                 `;
             } else {
-                slotContent.innerHTML = '<div class="empty-slot">Empty</div>';
+                // Check if items are available for this slot
+                const checkSlot = (slot === 'ring1' || slot === 'ring2') ? 'ring' : slot;
+                const availableItems = gameState.inventory.backpack.filter(item => item.slot === checkSlot);
+                const hasItems = availableItems.length > 0;
+
+                slotContent.innerHTML = `
+                    <div class="empty-slot">
+                        Empty${hasItems ? '<span class="slot-has-items">+</span>' : ''}
+                    </div>
+                `;
             }
         });
-    },
-
-    updateCharacterInventory() {
-        // Update character screen inventory display
-        const inventoryElement = document.getElementById('char-inventory');
-        const inventoryCount = document.getElementById('char-inventory-count');
-
-        inventoryCount.textContent = `(${gameState.inventory.backpack.length}/20)`;
-
-        if (gameState.inventory.backpack.length === 0) {
-            inventoryElement.innerHTML = '<div style="color: #666; text-align: center;">No items in inventory</div>';
-        } else {
-            inventoryElement.innerHTML = gameState.inventory.backpack.map(item => `
-            <div class="inventory-item ${item.rarity}">
-                <div class="item-name ${item.rarity}">${item.name}</div>
-                <div class="item-type">${item.slot}</div>
-                <div class="item-ilvl" style="font-size: 0.7em; color: #666; font-style: italic;">ilvl ${item.ilvl}</div>
-                <div class="item-stats">
-                    ${Object.entries(item.stats).map(([stat, value]) =>
-                `<div class="item-stat">+${value} ${this.getStatDisplayName(stat)}</div>`
-            ).join('')}
-                </div>
-                <div class="item-actions">
-                    <button class="action-btn equip" onclick="game.equipItem(${item.id})">Equip</button>
-                    <button class="action-btn chaos" onclick="game.useChaosOrb(${item.id})" 
-                        ${gameState.resources.chaosOrbs < 1 ? 'disabled' : ''}>
-                        Chaos (${gameState.resources.chaosOrbs})
-                    </button>
-                    <button class="action-btn exalted" onclick="game.useExaltedOrb(${item.id})" 
-                        ${gameState.resources.exaltedOrbs < 1 ? 'disabled' : ''}>
-                        Exalted (${gameState.resources.exaltedOrbs})
-                    </button>
-                </div>
-            </div>
-        `).join('');
-        }
     },
 
     // Helpers for Exile Screen
@@ -1713,6 +1947,12 @@ Final: ${final}`;
 
     // Helper to Update Resources Display Effects
     updateResourceDisplay() {
+        // Update main screen resources
+        document.getElementById('gold').textContent = gameState.resources.gold;
+        document.getElementById('chaos-orbs').textContent = gameState.resources.chaosOrbs;
+        document.getElementById('exalted-orbs').textContent = gameState.resources.exaltedOrbs;
+
+        // Optional: Add the glow effect for currency changes
         const chaosElem = document.getElementById('chaos-orbs');
         const exaltedElem = document.getElementById('exalted-orbs');
 
@@ -1720,29 +1960,9 @@ Final: ${final}`;
         const prevChaos = parseInt(chaosElem.getAttribute('data-prev') || "0", 10);
         const prevExalted = parseInt(exaltedElem.getAttribute('data-prev') || "0", 10);
 
-        // Get new values from game state
-        const chaosVal = gameState.resources.chaosOrbs;
-        const exaltedVal = gameState.resources.exaltedOrbs;
-
-        // Update display
-        chaosElem.textContent = chaosVal;
-        exaltedElem.textContent = exaltedVal;
-
-        // Store new values for next tick
-        chaosElem.setAttribute('data-prev', chaosVal);
-        exaltedElem.setAttribute('data-prev', exaltedVal);
-
-        // Trigger pulse if value increased
-        if (chaosVal > prevChaos) {
-            chaosElem.classList.remove('resource-glow-pulse');
-            void chaosElem.offsetWidth; // Force reflow to restart animation
-            chaosElem.classList.add('resource-glow-pulse');
-        }
-        if (exaltedVal > prevExalted) {
-            exaltedElem.classList.remove('resource-glow-pulse');
-            void exaltedElem.offsetWidth;
-            exaltedElem.classList.add('resource-glow-pulse');
-        }
+        // Update stored values
+        chaosElem.setAttribute('data-prev', gameState.resources.chaosOrbs);
+        exaltedElem.setAttribute('data-prev', gameState.resources.exaltedOrbs);
     },
 
 
@@ -1789,7 +2009,7 @@ Final: ${final}`;
     // Helper function to get proper stat display name
     getStatDisplayName(statKey) {
         const stat = statDB.getStat(statKey);
-        return stat ? stat.name : statKey;
+        return stat ? stat.displayName : statKey;
     },
 
     // Helper function to get stat range for specific ilvl
@@ -2875,6 +3095,12 @@ Final: ${final}`;
         });
         document.getElementById('missions-available').textContent = totalMissions;
 
+        // Update inventory count on main screen
+        const inventoryCount = gameState.inventory.backpack.length;
+        const countElement = document.getElementById('inventory-count-main');
+        if (countElement) {
+            countElement.textContent = `${inventoryCount}`;
+        }
         // Update assignment status
         const assignedMissionsEl = document.getElementById('assigned-missions-count');
         const processBtn = document.querySelector('.process-day-btn');

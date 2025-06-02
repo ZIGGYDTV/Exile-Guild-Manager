@@ -1,0 +1,79 @@
+/* Inventory Management Button */
+.inventory-btn {
+    background: #2a2a2a;
+    border: 2px solid #444;
+    color: #ddd;
+    padding: 15px;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.inventory-btn:hover {
+    background: #333;
+    border-color: #666;
+}
+
+/* Inventory Modal */
+.inventory-modal-content {
+    background: #1a1a1a;
+    border: 2px solid #444;
+    border-radius: 8px;
+    max-width: 900px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.inventory-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #333;
+}
+
+.inventory-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.inventory-info-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #222;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    border: 2px solid #2e2e2e;
+}
+
+.currency-display {
+    display: flex;
+    gap: 20px;
+}
+
+.currency-item {
+    color: #c9aa71;
+    font-weight: bold;
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+}
+
+.inventory-grid .inventory-item {
+    background: #222;
+    border: 2px solid #333;
+    border-radius: 5px;
+    padding: 15px;
+}
