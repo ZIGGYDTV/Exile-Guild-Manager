@@ -96,48 +96,57 @@ class Equipment {
         const statCount = this.rarity.getStatCount();
         this.stats = new Map();
 
-        // Add implicit stats as-is
-        for (const [stat, value] of this.implicitStats) {
-            this.stats.set(stat, value);
+        // Get ALL possible stats for this slot type from statDB
+        const allPossibleStats = statDB.getStatsForSlot(this.slot);
+
+        // Build available stats list with weights
+        const availableStats = [];
+
+        for (const statDef of allPossibleStats) {
+            const statName = statDef.name;
+
+            // Skip if this is an implicit stat
+            if (this.implicitStats.has(statName)) {
+                continue;
+            }
+
+            // Check if stat requires specific themes
+            if (statDef.requiredThemes && statDef.requiredThemes.length > 0) {
+                if (!statDef.requiredThemes.some(theme => missionThemes.includes(theme))) {
+                    continue;
+                }
+            }
+
+            // Get weight from statWeights or default to 1
+            const weight = this.statWeights.get(statName) || 1;
+            availableStats.push([statName, weight]);
         }
 
-        // Get available stats based on themes
-        const availableStats = Array.from(this.statWeights.entries())
-            .filter(([statName, _]) => {
-                const statDef = statDB.getStat(statName);
-                if (!statDef) return false;
+        // Roll for stats based on weights
+        const rolledStats = new Set(); // Track which stats we've already rolled
 
-                // Check if stat requires specific themes
-                if (statDef.requiredThemes && statDef.requiredThemes.length > 0) {
-                    // If stat requires themes, at least one theme must match
-                    return statDef.requiredThemes.some(theme => missionThemes.includes(theme));
-                }
-                
-                // If stat doesn't require themes, it's always available
-                return true;
-            });
-
-        // Roll for additional stats based on weights
         for (let i = 0; i < statCount; i++) {
-            if (availableStats.length === 0) break;
+            // Filter out already rolled stats
+            const remainingStats = availableStats.filter(([stat, _]) => !rolledStats.has(stat));
+
+            if (remainingStats.length === 0) break;
 
             // Calculate total weight
-            const totalWeight = availableStats.reduce((sum, [_, weight]) => sum + weight, 0);
+            const totalWeight = remainingStats.reduce((sum, [_, weight]) => sum + weight, 0);
             let roll = Math.random() * totalWeight;
 
             // Select a stat based on weights
-            for (let j = 0; j < availableStats.length; j++) {
-                const [stat, weight] = availableStats[j];
-                if (roll <= weight) {
+            for (const [stat, weight] of remainingStats) {
+                roll -= weight;
+                if (roll <= 0) {
                     const range = this.getStatRange(stat, ilvl);
                     if (range) {
                         const value = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
                         this.stats.set(stat, value);
+                        rolledStats.add(stat);
                     }
-                    availableStats.splice(j, 1); // Remove used stat
                     break;
                 }
-                roll -= weight;
             }
         }
 
@@ -183,10 +192,10 @@ class Equipment {
     calculateDPS() {
         // Get base damage from stats
         const damage = this.stats.get('damage') || 0;
-        
+
         // Default attack speed is 1.0 if not specified
         const attackSpeed = this.stats.get('attackSpeed') || 1.0;
-        
+
         // Calculate DPS
         return damage * attackSpeed;
     }
@@ -224,7 +233,7 @@ class Weapon extends Equipment {
     calculateDPS() {
         // Get base damage from stats
         const damage = (this.stats.get('damage') || 0) * this.damageMultiplier;
-        
+
         // Use weapon's attack speed
         return damage * this.attackSpeed;
     }
@@ -251,7 +260,7 @@ class Armor extends Equipment {
 
     getEffectiveStats() {
         const stats = super.getEffectiveStats();
-        
+
         // Apply defense multiplier only to this item's defense
         const localDefense = stats.get('defense') || 0;
         if (localDefense > 0) {
@@ -602,11 +611,11 @@ class ItemDatabase {
 
         // Step 3: Select random base
         const baseItem = possibleBases[Math.floor(Math.random() * possibleBases.length)];
-        
+
         // Step 4: Create new instance of the base
         const newItem = Object.create(baseItem);
         Object.assign(newItem, baseItem);
-        
+
         // Step 5: Roll stats based on item level and difficulty
         newItem.rollStats(targetIlvl, difficultyBonus, missionThemes);
 

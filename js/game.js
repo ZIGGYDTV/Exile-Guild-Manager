@@ -597,16 +597,20 @@ const game = {
             slot: newItem.slot,
             rarity: newItem.rarity ? newItem.rarity.name.toLowerCase() : 'common',
             ilvl: targetIlvl,
-            implicitStats: {},  // store implicits separately for conflict with explicits
-            stats: {},
+            implicitStats: {},  // store implicits separately
+            stats: {},          // store only rolled stats
             equipped: false
         };
 
-        // Separate implicit stats from rolled stats
+        // IMPORTANT: First, copy all implicit stats from the base item
+        for (const [stat, value] of newItem.implicitStats) {
+            itemForSave.implicitStats[stat] = value;
+        }
+
+        // Then, copy all rolled stats (these are in newItem.stats but NOT in implicitStats)
         for (const [stat, value] of newItem.stats) {
-            if (newItem.implicitStats.has(stat)) {
-                itemForSave.implicitStats[stat] = value;
-            } else {
+            // Only add to stats if it's NOT an implicit stat
+            if (!newItem.implicitStats.has(stat)) {
                 itemForSave.stats[stat] = value;
             }
         }
@@ -757,13 +761,21 @@ const game = {
         let gearFireResist = 0, gearColdResist = 0, gearLightningResist = 0, gearChaosResist = 0;
         Object.values(gameState.inventory.equipped).forEach(item => {
             if (item) {
-                gearFireResist += item.stats.fireresist || 0;      // Changed from fireResist
-                gearColdResist += item.stats.coldresist || 0;      // Changed from coldResist
-                gearLightningResist += item.stats.lightningresist || 0;  // Changed from lightningResist
-                gearChaosResist += item.stats.chaosresist || 0;    // Changed from chaosResist
+                // Check IMPLICIT stats for resistances
+                if (item.implicitStats) {
+                    gearFireResist += item.implicitStats.fireResist || 0;
+                    gearColdResist += item.implicitStats.coldResist || 0;
+                    gearLightningResist += item.implicitStats.lightningResist || 0;
+                    gearChaosResist += item.implicitStats.chaosResist || 0;
+                }
+
+                // Check REGULAR stats for resistances
+                gearFireResist += item.stats.fireResist || 0;
+                gearColdResist += item.stats.coldResist || 0;
+                gearLightningResist += item.stats.lightningResist || 0;
+                gearChaosResist += item.stats.chaosResist || 0;
             }
         });
-        console.log("Total resist from gear - Fire:", gearFireResist, "Cold:", gearColdResist); // DEBUG
 
         // Add passives
         const totalFireResist = gearFireResist + (passiveEffects.fireResist || 0);
@@ -933,8 +945,8 @@ const game = {
                 item.rarity = 'rare';
                 canAddStat = true;
                 this.log(`⚡ Item upgraded to Rare rarity!`, "legendary");
-            } else if (item.rarity === 'rare') {
-                // Allow overcapping for rare items
+            } else if (item.rarity === 'rare' && currentStatCount >= currentRarity.maxStats) {
+                // Only allow overcapping if the rare item is ALREADY at max stats (4)
                 canAddStat = true;
                 item.isOvercapped = true;
                 this.log(`✨ Pushing beyond normal limits!`, "legendary");
@@ -963,17 +975,31 @@ const game = {
             return false;
         }
 
-        // Get available stats
+        // Get all possible stats for this slot from statDB
+        const allPossibleStats = statDB.getStatsForSlot(item.slot);
+
+        // Build list of stats that aren't already on the item
         const currentStats = Object.keys(item.stats);
-        const availableStats = Array.from(itemBase.statWeights.keys())
-            .filter(stat => !currentStats.includes(stat));
+        const availableStats = [];
+
+        for (const statDef of allPossibleStats) {
+            const statName = statDef.name;
+
+            // Skip if already on the item (either as implicit or regular stat)
+            if (currentStats.includes(statName) || (item.implicitStats && item.implicitStats[statName])) {
+                continue;
+            }
+
+            // Add to available stats (we don't need weights for exalts, just possibilities)
+            availableStats.push(statName);
+        }
 
         if (availableStats.length === 0) {
             this.log("No available stats to add!", "failure");
             return false;
         }
 
-        // Pick and roll new stat
+        // Pick a random stat from available stats
         const newStat = availableStats[Math.floor(Math.random() * availableStats.length)];
         const statDef = statDB.getStat(newStat);
         const range = statDef.getValueRange(item.ilvl);
