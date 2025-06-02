@@ -6,7 +6,7 @@ const game = {
 
         // Initialize exile with class system and passives
         this.initializeExile();
-
+        this.initializeItemTooltips();
         this.updateDisplay();
         this.updateInventoryDisplay();
         this.updateCommandCenterDisplay();
@@ -55,6 +55,8 @@ const game = {
             return;
         }
 
+        let moraleResult = null;
+
         if (!isMissionAvailable(areaId, missionId)) {
             const daysUntil = getDaysUntilAvailable(areaId, missionId);
             if (daysUntil > 0) {
@@ -67,6 +69,10 @@ const game = {
 
         const exile = gameState.exile;
         const missionData = getCompleteMissionData(areaId, missionId);
+
+        // capture level before any changes
+        const levelBeforeMission = exile.level;
+
 
         if (!missionData) {
             this.log("Mission data not found!", "failure");
@@ -81,7 +87,6 @@ const game = {
         let goldEarned = 0;
         let expEarned = 0;
         let moraleHtml = "";
-        let moraleResult = null;
         let newGear = null;
         let rewards = null;
 
@@ -127,7 +132,9 @@ const game = {
 
             // Calculate and apply morale change (preserve existing system)
             if (combatResult.outcome !== 'death') {
-                const moraleResult = this.calculateMoraleChange(combatResult, exile);
+                moraleResult = this.calculateMoraleChange(combatResult, exile);
+
+
                 if (moraleResult.change !== 0) {
                     gameState.exile.morale = Math.max(0, Math.min(100, gameState.exile.morale + moraleResult.change));
                     const moraleIcon = moraleResult.change > 0 ? "🔥" : "😴";
@@ -188,7 +195,11 @@ const game = {
             completionResult.discoveries.forEach(discovery => {
                 if (discovery.type === 'mission') {
                     const newMission = getMissionData(discovery.areaId, discovery.missionId);
-                    this.log(`🔍 Discovered: ${newMission.name}!`, "legendary");
+                    if (newMission) {
+                        this.log(`🔍 Discovered: ${newMission.name}!`, "legendary");
+                    } else {
+                        this.log(`🔍 Discovered: New mission in ${discovery.areaId}!`, "legendary");
+                    }
                 } else if (discovery.type === 'connection') {
                     this.log(`🗺️ Discovered passage to new area!`, "legendary");
                 }
@@ -226,12 +237,12 @@ const game = {
                 healthPercent: Math.max(0, (exile.stats.life - combatResult.totalDamageTaken) / exile.stats.life * 100)
             },
 
-            // Exile progression
+            // Exile progression - simple level tracking
             exileProgression: {
-                startingLevel: exile.level,
-                startingExp: exile.experience - expEarned, // Calculate what it was before
+                startingLevel: levelBeforeMission,
+                startingExp: exile.experience - expEarned,
                 expGained: expEarned,
-                leveledUp: this.checkIfLeveledUp(exile.experience - expEarned, exile.experience),
+                leveledUp: exile.level > levelBeforeMission, // Did level actually increase?
                 newLevel: exile.level
             },
 
@@ -1201,7 +1212,7 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
                     // Get color from rarity system
                     const displayColor = item.getDisplayColor ? item.getDisplayColor() :
                         (item.rarity ? rarityDB.getRarity(item.rarity)?.color : null) || '#888';
-        
+
                     return `
                         <div class="equipment-option" onclick="game.selectEquipment(${item.id})">
                             <div class="item-name" style="color: ${displayColor}">
@@ -1925,6 +1936,22 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
     // End of Exile Summary Button to Exile Screen ========    
 
     // Additional Helper Functions
+    // Helper to check if a mission caused a level up
+    didThisMissionCauseLevelUp(startingExp, expGained, currentLevel) {
+        if (expGained <= 0) return false;
+
+        // Calculate what level we started at
+        const startingLevel = Math.floor(startingExp / 100) + 1;
+
+        // Calculate what level we should be at after gaining EXP
+        const finalExp = startingExp + expGained;
+        const finalLevel = Math.floor(finalExp / 100) + 1;
+
+        // Did we actually level up from this mission?
+        return finalLevel > startingLevel;
+    },
+
+
     log(message, type = "info", isHtml = false) {
         const logContainer = document.getElementById('log');
         const entry = document.createElement('div');
@@ -2415,7 +2442,6 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
     clearDayReportContent() {
         // Clear all content containers
         document.getElementById('mission-summary-container').innerHTML = '';
-        document.getElementById('exile-status-container').innerHTML = '';
         document.getElementById('loot-container').innerHTML = '';
         document.getElementById('discovery-content').innerHTML = '';
         document.getElementById('detailed-content').innerHTML = '';
@@ -2506,26 +2532,27 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
 
     // Create Exile Summary on Mission Report, Then Give it a Delayed Animation
     animateExileStatus() {
-        const container = document.getElementById('exile-status-container');
+        // Just animate the panels in - EXP bars are already there
+        const missionPairs = document.querySelectorAll('.mission-exile-pair');
 
         this.dayReportData.missionResults.forEach((result, index) => {
-            const panel = this.createExileStatusPanelWithLevelUp(result);
-            container.appendChild(panel);
+            const pair = missionPairs[index];
+            if (!pair) return;
 
-            // Animate panel in first
+            // Animate panel in
             setTimeout(() => {
                 if (!this.dayReportAnimationState.skipped) {
-                    panel.classList.add('animate-in');
+                    pair.classList.add('animate-in');
 
-                    // Start EXP animation sequence after panel appears
+                    // Start EXP animation after panel appears
                     setTimeout(() => {
-                        this.animateExpSequence(panel, result);
-                    }, 50);
+                        this.animateExpSequence(pair, result);
+                    }, 100);
                 }
             }, index * 150);
         });
 
-        // Move to next step (longer delay for level-up animations)
+        // Move to next step
         const totalDelay = this.dayReportData.missionResults.length * 150 + 500;
         setTimeout(() => {
             if (!this.dayReportAnimationState.skipped) {
@@ -2534,42 +2561,15 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
         }, totalDelay);
     },
 
-    createExileStatusPanelWithLevelUp(missionResult) {
-        const panel = document.createElement('div');
-        panel.className = `exile-status-panel ${missionResult.combatResult.outcome === 'death' ? 'dead' : ''}`;
 
-        const expGained = missionResult.exileProgression.expGained;
-        const startingExp = missionResult.exileProgression.startingExp;
-        const startingLevel = missionResult.exileProgression.startingLevel;
-        const startingExpNeeded = startingLevel * 100;
 
-        // Calculate starting EXP bar position
-        const startingPercent = Math.min(100, Math.round((startingExp / startingExpNeeded) * 100));
-
-        panel.innerHTML = `
-        <div class="exile-name-level">
-            <span>${gameState.exile.name}</span>
-            <span class="level-display">Level ${startingLevel}</span>
-        </div>
-        ${missionResult.combatResult.outcome !== 'death' ? `
-            <div class="exile-exp-bar-container">
-                <div class="exile-exp-bar">
-                    <div class="exile-exp-fill" style="width: ${startingPercent}%"></div>
-                    <span class="exile-exp-label">${startingExp} / ${startingExpNeeded} EXP</span>
-                </div>
-            </div>
-        ` : ''}
-    `;
-
-        return panel;
-    },
-
-    animateExpSequence(panel, missionResult) {
+    animateExpSequence(missionPair, missionResult) {
         if (this.dayReportAnimationState.skipped) return;
 
-        const expFill = panel.querySelector('.exile-exp-fill');
-        const expLabel = panel.querySelector('.exile-exp-label');
-        const levelDisplay = panel.querySelector('.level-display');
+        const expFill = missionPair.querySelector('.exile-exp-fill');
+        const expLabel = missionPair.querySelector('.exile-exp-label');
+        const levelDisplay = missionPair.querySelector('.exile-level');
+        const exilePanel = missionPair.querySelector('.exile-info-side');
 
         if (!expFill) return;
 
@@ -2577,53 +2577,33 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
         const expGained = missionResult.exileProgression.expGained;
         const leveledUp = missionResult.exileProgression.leveledUp;
         const finalLevel = missionResult.exileProgression.newLevel;
-        const startingExpNeeded = missionResult.exileProgression.startingLevel * 100;
-
-        // IMPORTANT: Start from actual starting position, not 0
-        const startingPercent = Math.min(100, Math.round((startingExp / startingExpNeeded) * 100));
-        expFill.style.width = `${startingPercent}%`;
+        const startingLevel = missionResult.exileProgression.startingLevel;
 
         // Only animate if EXP was actually gained
         if (expGained > 0) {
             setTimeout(() => {
                 if (leveledUp) {
-                    // Animate to 100% first
-                    expFill.style.width = '100%';
-                    expLabel.textContent = `${startingExpNeeded} / ${startingExpNeeded} EXP`;
+                    // Show level up immediately - no complex animation
+                    exilePanel.classList.add('levelup-animate');
+                    levelDisplay.textContent = `Level ${finalLevel}`;
 
-                    setTimeout(() => {
-                        // Level up flash
-                        panel.classList.add('levelup-animate');
-                        levelDisplay.textContent = `Level ${finalLevel}`;
+                    // Show final EXP state after level up
+                    const newExpNeeded = finalLevel * 100;
+                    const remainingExp = (startingExp + expGained) % 100; // EXP left after leveling
+                    const finalPercent = Math.min(100, Math.round((remainingExp / newExpNeeded) * 100));
 
-                        // Reset bar and continue
-                        setTimeout(() => {
-                            expFill.style.transition = 'none';
-                            expFill.style.width = '0%';
-
-                            // Use current game state for final values
-                            const currentExp = gameState.exile.experience;
-                            const currentExpNeeded = gameState.exile.experienceNeeded;
-                            const finalPercent = Math.min(100, Math.round((currentExp / currentExpNeeded) * 100));
-
-                            setTimeout(() => {
-                                expFill.style.transition = 'width 0.5s cubic-bezier(0.22, 1, 0.36, 1)';
-                                expFill.style.width = `${finalPercent}%`;
-                                expLabel.textContent = `${currentExp} / ${currentExpNeeded} EXP (+${expGained})`;
-                            }, 50);
-                        }, 300);
-                    }, 600);
-                } else {
-                    // No level up - animate from starting position to final position
-                    const finalExp = startingExp + expGained;
-                    const finalPercent = Math.min(100, Math.round((finalExp / startingExpNeeded) * 100));
                     expFill.style.width = `${finalPercent}%`;
-                    expLabel.textContent = `${finalExp} / ${startingExpNeeded} EXP (+${expGained})`;
+                    expLabel.textContent = `${remainingExp} / ${newExpNeeded} EXP (+${expGained})`;
+                } else {
+                    // No level up - simple animation to final state
+                    const finalExp = startingExp + expGained;
+                    const expNeeded = startingLevel * 100;
+                    const finalPercent = Math.min(100, Math.round((finalExp / expNeeded) * 100));
+
+                    expFill.style.width = `${finalPercent}%`;
+                    expLabel.textContent = `${finalExp} / ${expNeeded} EXP (+${expGained})`;
                 }
             }, 200);
-        } else {
-            // No EXP gained - just show current state, no animation
-            expLabel.textContent = `${startingExp} / ${startingExpNeeded} EXP (No EXP gained)`;
         }
     },
     // End of Exile Status Animation
@@ -2672,7 +2652,20 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
             lootData.items.forEach(item => {
                 const itemElement = document.createElement('div');
                 itemElement.className = 'loot-item gear';
-                itemElement.innerHTML = `<span>⚔️</span><span>${item.name}</span>`;
+
+                // Get item rarity color
+                const itemColor = rarityDB.getRarity(item.rarity)?.color || '#888';
+
+                itemElement.innerHTML = `
+            <span>⚔️</span>
+            <span class="item-name-hover" 
+                  style="color: ${itemColor}" 
+                  data-item-tooltip='${JSON.stringify(item)}'>
+                ${item.name}
+                ${item.isOvercapped ? '<span class="overcapped-icon" title="Perfected with Exalted Orb">✦</span>' : ''}
+            </span>
+        `;
+
                 container.appendChild(itemElement);
                 this.animateLootPop(itemElement, itemIndex * 150);
                 itemIndex++;
@@ -2732,34 +2725,47 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
             discoveryContent += this.dayReportData.discoveries.map(discovery => {
                 if (discovery.type === 'mission') {
                     const missionData = getMissionData(discovery.areaId, discovery.missionId);
-                    return `<div class="discovery-item">🔍 <strong>Mission Discovered:</strong> ${missionData.name}</div>`;
+                    return `<div class="discovery-item mission-discovery">🔍 <strong>Mission Discovered:</strong> ${missionData.name}</div>`;
                 } else if (discovery.type === 'connection') {
-                    return `<div class="discovery-item">🗺️ <strong>Area Connection:</strong> Discovered passage to new area!</div>`;
+                    return `<div class="discovery-item connection-discovery">🗺️ <strong>Area Connection:</strong> Discovered passage to new area!</div>`;
                 }
                 return '';
             }).join('');
         }
 
-        // Add scouting information from mission results
-        this.dayReportData.missionResults.forEach(result => {
-            if (result.worldProgression.scoutingGain > 0) {
-                discoveryContent += `<div class="discovery-item">📖 <strong>Scouting:</strong> +${result.worldProgression.scoutingGain} knowledge from ${result.missionContext.missionName}</div>`;
-            }
-        });
+        // Add scouting knowledge that was unlocked this day
+        const newScoutingKnowledge = this.getNewScoutingKnowledgeUnlocked();
+        if (newScoutingKnowledge.length > 0) {
+            discoveryContent += newScoutingKnowledge.map(knowledge => `
+                <div class="discovery-item scouting-knowledge ${knowledge.tag}">
+                    <div class="scouting-threshold">Knowledge Unlocked (${knowledge.threshold} scouting)</div>
+                    <div class="scouting-text">${knowledge.text}</div>
+                </div>
+            `).join('');
+        }
 
-        // Show discoveries section if we have any content
-        if (discoveryContent || this.dayReportData.discoveries.length > 0) {
+        // Show discoveries section only if we have actual discoveries or new knowledge
+        if (this.dayReportData.discoveries.length > 0 || newScoutingKnowledge.length > 0) {
             const section = document.getElementById('discovery-section');
             section.style.display = 'block';
 
+            // Update section title and count
+            section.querySelector('.section-toggle span:nth-child(2)').textContent = 'New Discoveries';
+
             const count = document.getElementById('discovery-count');
-            const totalCount = this.dayReportData.discoveries.length +
-                this.dayReportData.missionResults.filter(r => r.worldProgression.scoutingGain > 0).length;
+            const totalCount = this.dayReportData.discoveries.length + newScoutingKnowledge.length;
             count.textContent = totalCount;
 
             // Fill in discovery content
             const content = document.getElementById('discovery-content');
             content.innerHTML = discoveryContent;
+
+            // Show content by default (not collapsed)
+            content.style.display = 'block';
+        } else {
+            // Hide the section if there are no actual discoveries
+            const section = document.getElementById('discovery-section');
+            section.style.display = 'none';
         }
 
         // Populate combat details from mission results
@@ -2797,12 +2803,15 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
     },
 
     createMissionSummaryPanel(missionResult) {
-        const panel = document.createElement('div');
-        panel.className = `mission-summary-panel ${missionResult.combatResult.outcome}`;
+        const container = document.createElement('div');
+        container.className = `mission-exile-pair ${missionResult.combatResult.outcome}`;
+
+        // Left side - Mission Info
+        const missionPanel = document.createElement('div');
+        missionPanel.className = 'mission-info-side';
 
         let resultIcon = '';
         let resultText = '';
-
         switch (missionResult.combatResult.outcome) {
             case 'victory':
                 resultIcon = '✓';
@@ -2818,42 +2827,67 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
                 break;
         }
 
-        // Get exile name - for now use the main exile
+        missionPanel.innerHTML = `
+            <div class="mission-name">${missionResult.missionContext.missionName}</div>
+            <div class="mission-outcome">
+                <span class="outcome-icon">${resultIcon}</span>
+                <span class="outcome-text">${resultText}</span>
+            </div>
+            <div class="scouting-gained">+${missionResult.worldProgression.scoutingGain} scouting</div>
+        `;
+
+        // Right side - Exile Info
+        const exilePanel = document.createElement('div');
+        exilePanel.className = `exile-info-side ${missionResult.combatResult.outcome === 'death' ? 'dead' : ''}`;
+
         const exileName = gameState.exile.name;
+        const startingLevel = missionResult.exileProgression.startingLevel;
+        const healthPercent = missionResult.exileHealth.healthPercent;
+        const remainingLife = missionResult.exileHealth.remainingLife;
+        const totalLife = missionResult.exileHealth.startingLife;
 
-        panel.innerHTML = `
-        <div class="mission-summary-title">
-            ${resultIcon} ${missionResult.missionContext.missionName}
-        </div>
-        <div class="mission-summary-result">
-            ${exileName}: ${resultText}
-        </div>
-        <div class="mission-summary-stats">
-            ${missionResult.combatResult.rounds} rounds, ${Math.round(missionResult.exileHealth.healthPercent)}% health remaining
-        </div>
-    `;
+        // Add these after the EXP variables:
+        const startingExp = missionResult.exileProgression.startingExp;
+        const startingExpNeeded = startingLevel * 100;
+        const startingExpPercent = Math.min(100, Math.round((startingExp / startingExpNeeded) * 100));
 
-        return panel;
-    },
+        // Add morale variables:
+        const moraleChange = missionResult.moraleChange;
 
-    showAllDayReportContent() {
-        // Clear containers first to prevent duplication
-        document.getElementById('mission-summary-container').innerHTML = '';
-        document.getElementById('exile-status-container').innerHTML = '';
-        document.getElementById('loot-container').innerHTML = '';
+        exilePanel.innerHTML = `
+            <div class="exile-name-level">
+                <span class="exile-name">${exileName}</span>
+                <span class="exile-level">Level ${startingLevel}</span>
+            </div>
+            <div class="exile-health-container">
+                <div class="health-bar">
+                    <div class="health-fill" style="width: ${healthPercent}%"></div>
+                    <span class="health-text">${Math.round(remainingLife)} / ${Math.round(totalLife)} Life</span>
+                </div>
+            </div>
+            <div class="exile-exp-container">
+                <div class="exile-exp-bar">
+                    <div class="exile-exp-fill" style="width: ${startingExpPercent}%"></div>
+                    <span class="exile-exp-label">${startingExp} / ${startingExpNeeded} EXP</span>
+                </div>
+            </div>
+            <div class="morale-change-container">
+            </div>
+            <div class="morale-change-container">
+                ${moraleChange ? `
+                    <div class="morale-change ${moraleChange.change >= 0 ? 'positive' : 'negative'}">
+                        <span class="morale-icon">${moraleChange.change >= 0 ? '🔥' : '😴'}</span>
+                        <span class="morale-text">"${moraleChange.message}"</span>
+                        <span class="morale-value">(${moraleChange.change >= 0 ? '+' : ''}${moraleChange.change} morale)</span>
+                    </div>
+                ` : '<div class="no-morale-change">No morale change</div>'}
+            </div>
+        `;
 
-        // Instantly show all content without animations
-        this.animateMissionSummaries();
-        this.animateExileStatus();
-        this.animateLootExplosion();
-        this.showDiscoveries();
+        container.appendChild(missionPanel);
+        container.appendChild(exilePanel);
 
-        // Add animate-in class to everything immediately
-        setTimeout(() => {
-            document.querySelectorAll('.mission-summary-panel, .exile-status-panel, .loot-item').forEach(el => {
-                el.classList.add('animate-in');
-            });
-        }, 100); // Small delay to ensure elements exist
+        return container;
     },
     // End of Day Report Modal Methods
 
@@ -3335,6 +3369,145 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
         lootGained: { gold: 0, chaosOrbs: 0, exaltedOrbs: 0, items: [] },
         discoveries: [],
         combatDetails: []
+    },
+
+
+    // Detect New Scouting Knowledge Unlocks
+    getNewScoutingKnowledgeUnlocked() {
+        const newKnowledge = [];
+
+        // Check each mission result for scouting gains
+        this.dayReportData.missionResults.forEach(result => {
+            const areaId = result.missionContext.areaId;
+            const scoutingGained = result.worldProgression.scoutingGain;
+
+            if (scoutingGained > 0) {
+                const areaData = getAreaData(areaId);
+                const areaState = gameState.worldState.areas[areaId];
+
+                if (areaData && areaState) {
+                    const currentScouting = areaState.totalScoutingProgress || 0;
+                    const previousScouting = currentScouting - scoutingGained;
+
+                    // Check which scouting info thresholds we crossed today
+                    areaData.scoutingInfo.forEach((info, index) => {
+                        if (previousScouting < info.threshold && currentScouting >= info.threshold) {
+                            newKnowledge.push({
+                                text: info.text,
+                                tag: info.tag,
+                                threshold: info.threshold,
+                                areaId: areaId
+                            });
+                        }
+                    });
+                }
+            }
+        });
+
+        return newKnowledge;
+    },
+
+
+    // Item Tooltips Method
+    initializeItemTooltips() {
+        // Add event listeners for item tooltips
+        document.addEventListener('mouseover', (event) => {
+            if (event.target.hasAttribute('data-item-tooltip')) {
+                this.showItemTooltip(event.target, event);
+            }
+        });
+
+        document.addEventListener('mouseout', (event) => {
+            if (event.target.hasAttribute('data-item-tooltip')) {
+                this.hideItemTooltip();
+            }
+        });
+
+        document.addEventListener('mousemove', (event) => {
+            if (event.target.hasAttribute('data-item-tooltip')) {
+                this.updateTooltipPosition(event);
+            }
+        });
+    },
+
+    showItemTooltip(element, event) {
+        // Remove any existing tooltip
+        this.hideItemTooltip();
+
+        try {
+            const item = JSON.parse(element.getAttribute('data-item-tooltip'));
+
+            const tooltip = document.createElement('div');
+            tooltip.id = 'item-tooltip';
+            tooltip.className = 'item-tooltip';
+
+            // Get item color
+            const itemColor = rarityDB.getRarity(item.rarity)?.color || '#888';
+
+            tooltip.innerHTML = `
+            <div class="tooltip-item-name" style="color: ${itemColor}">
+                ${item.name}
+                ${item.isOvercapped ? '<span class="overcapped-icon">✦</span>' : ''}
+            </div>
+            <div class="tooltip-item-type">${item.slot.charAt(0).toUpperCase() + item.slot.slice(1)}</div>
+            <div class="tooltip-item-ilvl">Item Level: ${item.ilvl}</div>
+            <div class="tooltip-item-stats">
+                ${this.formatItemStatsForTooltip(item)}
+            </div>
+        `;
+
+            document.body.appendChild(tooltip);
+            this.updateTooltipPosition(event);
+        } catch (e) {
+            console.error('Error showing item tooltip:', e);
+        }
+    },
+
+    hideItemTooltip() {
+        const existingTooltip = document.getElementById('item-tooltip');
+        if (existingTooltip) {
+            existingTooltip.remove();
+        }
+    },
+
+    updateTooltipPosition(event) {
+        const tooltip = document.getElementById('item-tooltip');
+        if (!tooltip) return;
+
+        const x = event.clientX + 10;
+        const y = event.clientY + 10;
+
+        tooltip.style.left = x + 'px';
+        tooltip.style.top = y + 'px';
+    },
+
+    formatItemStatsForTooltip(item) {
+        let html = '';
+
+        // Display implicit stats first with special styling
+        if (item.implicitStats && Object.keys(item.implicitStats).length > 0) {
+            const implicitStats = Object.entries(item.implicitStats);
+            html += '<div class="tooltip-implicit-stats">';
+            html += implicitStats.map(([stat, value]) => {
+                const statName = this.getStatDisplayName(stat);
+                return `+${value} ${statName}`;
+            }).join('<br>');
+            html += '</div>';
+            html += '<div class="tooltip-stat-divider"></div>';
+        }
+
+        // Display regular stats
+        const stats = Object.entries(item.stats || {});
+        if (stats.length > 0) {
+            html += '<div class="tooltip-regular-stats">';
+            html += stats.map(([stat, value]) => {
+                const statName = this.getStatDisplayName(stat);
+                return `+${value} ${statName}`;
+            }).join('<br>');
+            html += '</div>';
+        }
+
+        return html;
     }
 
 

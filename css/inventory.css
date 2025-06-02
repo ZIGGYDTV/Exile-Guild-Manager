@@ -77,3 +77,67 @@
     border-radius: 5px;
     padding: 15px;
 }
+
+
+/* Item Tooltips on Hover */
+/* Item Tooltip Styles */
+.item-tooltip {
+    position: absolute;
+    background: #1a1a1a;
+    border: 2px solid #444;
+    border-radius: 5px;
+    padding: 10px;
+    min-width: 200px;
+    max-width: 300px;
+    z-index: 10000;
+    pointer-events: none;
+    font-size: 0.9em;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.8);
+}
+
+.tooltip-item-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 1.1em;
+}
+
+.tooltip-item-type {
+    font-size: 0.8em;
+    color: #666;
+    margin-bottom: 3px;
+}
+
+.tooltip-item-ilvl {
+    font-size: 0.8em;
+    color: #888;
+    margin-bottom: 8px;
+    font-style: italic;
+}
+
+.tooltip-implicit-stats {
+    color: #8888aa;
+    font-size: 0.9em;
+    font-style: italic;
+    margin-bottom: 5px;
+}
+
+.tooltip-stat-divider {
+    height: 1px;
+    background: #444;
+    margin: 5px 0;
+    opacity: 0.5;
+}
+
+.tooltip-regular-stats {
+    color: #aaa;
+    font-size: 0.9em;
+}
+
+.item-name-hover {
+    cursor: help;
+    position: relative;
+}
+
+.item-name-hover:hover {
+    text-decoration: underline;
+}
