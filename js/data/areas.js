@@ -391,7 +391,7 @@ const areaDefinitions = {
             threshold: 50,
             tag: "secrets"
         },
-    ],
+    ],  
 
         
 
