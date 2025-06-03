@@ -16,6 +16,7 @@ const game = {
     createNewExile(className) {
         const classData = classDefinitions[className];
         gameState.exile = {
+            id: gameState.nextExileId++,
             name: nameGenerator.generateName(),
             class: className,
             level: 1,
@@ -38,7 +39,7 @@ const game = {
             },
             passives: {
                 allocated: [],
-                pendingPoints: 0,
+                pendingPoints: 1,
                 rerollsUsed: 0
             }
         };
@@ -363,6 +364,7 @@ const game = {
             if (currentLife <= 0) {
                 combatData.outcome = 'death';
                 combatData.deathType = this.classifyDeath(combatData, winChancePerRound);
+                this.lastDeathMission = missionData.name;
                 break;
             }
 
@@ -1183,6 +1185,49 @@ const game = {
             }
         }, 1000);
     },
+
+    // Current exile is logged, "deleted" and new exile is created
+    handleExileDeath() {
+        const fallenExile = gameState.exile;
+        const deathDay = timeState.currentDay;
+
+        // Create a complete snapshot of the fallen exile
+        const fallenRecord = {
+            ...fallenExile,  // Copy all exile properties
+            deathDay: deathDay,
+            deathMission: this.lastDeathMission || "Unknown Mission",
+            totalDaysAlive: deathDay - (fallenExile.birthDay || 1),
+            equipped: { ...gameState.inventory.equipped }  // Snapshot of what they died wearing
+        };
+
+        // Add to fallen exiles array
+        gameState.fallenExiles.push(fallenRecord);
+
+        // Delete equipped gear (hardcore death penalty)
+        Object.keys(gameState.inventory.equipped).forEach(slot => {
+            gameState.inventory.equipped[slot] = null;
+        });
+
+        // Generate new exile using existing system
+        const classes = Object.keys(classDefinitions);
+        const randomClass = classes[Math.floor(Math.random() * classes.length)];
+        this.createNewExile(randomClass);
+
+        // Give starting notable (same as original exile)
+        this.giveStartingNotable();
+
+        // Recalculate stats for new exile
+        this.recalculateStats();
+        this.updateDisplay();
+
+        // Log the transition
+        this.log(`⚰️ ${fallenRecord.name} has fallen. May they rest in peace.`, "failure");
+        this.log(`🌟 ${gameState.exile.name} the ${classDefinitions[gameState.exile.class].name} has joined the guild!`, "legendary");
+
+        // Save immediately
+        this.saveGame();
+    },
+    // END OF EXILE DEATH
 
     resetGame() {
         localStorage.removeItem('exileManagerSave');
@@ -2345,6 +2390,9 @@ Final: ${final}`;
             this.randomizeExileClass();
         }
 
+        if (!gameState.exile.id) {
+            gameState.exile.id = gameState.nextExileId++;
+        }
         // Set base stats from class
         const classData = classDefinitions[gameState.exile.class];
         if (classData) {

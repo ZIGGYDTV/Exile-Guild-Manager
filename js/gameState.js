@@ -78,6 +78,10 @@ const gameState = {
         backpack: []
     },
 
+    // Exile Death new exile init
+    fallenExiles: [],  // Array to store dead exiles with all their data
+    nextExileId: 1,    // Counter for unique exile IDs
+
     // NEW: World state tracking for areas, missions, and discoveries
     worldState: {
         areas: {
