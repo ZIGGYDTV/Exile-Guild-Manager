@@ -171,6 +171,51 @@ const passiveDefinitions = {
         tags: ["morale"]
     },
 
+    dexterity: {
+        name: "Dexterity",
+        tier: "normal",
+        description: "+10% increased Attack Speed, +5% increased Movement Speed",
+        effects: [
+            { type: passiveTypes.INCREASED_ATTACK_SPEED, value: 10 },
+            { type: passiveTypes.INCREASED_MOVE_SPEED, value: 5 }
+        ],
+        tags: ["attack_speed", "movement_speed"]
+    },
+
+    strength: {
+        name: "Strength",
+        tier: "normal",
+        description: "+10% increased Damage, +5% increased Defense",
+        effects: [
+            { type: passiveTypes.INCREASED_DAMAGE, value: 10 },
+            { type: passiveTypes.INCREASED_DEFENSE, value: 5 }
+        ],
+        tags: ["damage", "defense"]
+    },
+
+    intelligence: {
+        name: "Intelligence",
+        tier: "normal",
+        description: "+8% increased Lightning, Cold, and Fire Resistances",
+        effects: [
+            { type: passiveTypes.LIGHTNING_RESISTANCE, value: 8 },
+            { type: passiveTypes.COLD_RESISTANCE, value: 8 },
+            { type: passiveTypes.FIRE_RESISTANCE, value: 8 }
+        ],
+        tags: ["resistance"]
+    },
+
+    vitality: {
+        name: "Vitality",
+        tier: "normal",
+        description: "+10% increased Life, +5% increased Defense",
+        effects: [
+            { type: passiveTypes.INCREASED_LIFE, value: 10 },   
+            { type: passiveTypes.INCREASED_DEFENSE, value: 5 }
+        ],
+        tags: ["life", "defense"]
+    },
+
     
 // NOTABLE TIER PASSIVES  
     berserker: {

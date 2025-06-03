@@ -210,28 +210,69 @@ function checkForDiscoveries(areaId, missionId, outcome) {
 
             // Roll for discovery
             if (Math.random() < adjustedChance) {
-                // [rest of discovery logic stays the same]
                 if (target.includes('_to_')) {
+                    // Handle area connections
                     const connectionState = gameState.worldState.connections[target];
                     if (connectionState && !connectionState.discovered) {
                         connectionState.discovered = true;
                         discoveries.push({ type: 'connection', id: target });
                     }
                 } else {
-                    if (!gameState.worldState.areas[areaId].missions[target]) {
-                        gameState.worldState.areas[areaId].missions[target] = {
-                            discovered: false,
-                            completions: 0,
-                            firstCompleted: false,
-                            lastCompleted: null,
-                            availableAgainOnDay: null
-                        };
-                    }
+                    // Check if target is an area name (for area unlocks)
+                    const targetAreaData = getAreaData(target);
 
-                    const missionState = gameState.worldState.areas[areaId].missions[target];
-                    if (!missionState.discovered) {
-                        missionState.discovered = true;
-                        discoveries.push({ type: 'mission', areaId: areaId, missionId: target });
+                    if (targetAreaData) {
+                        // Handle area discovery
+                        if (!gameState.worldState.areas[target]) {
+                            // Initialize the area in game state if it doesn't exist
+                            gameState.worldState.areas[target] = {
+                                discovered: true,
+                                explorationProgress: 0,
+                                totalScoutingProgress: 0,
+                                unlockedScoutingInfo: {},
+                                missions: {}
+                            };
+
+                            // Initialize starting missions if any
+                            if (targetAreaData.missions) {
+                                Object.entries(targetAreaData.missions).forEach(([missionId, missionDef]) => {
+                                    // Check if this mission should start discovered
+                                    const startDiscovered = missionDef.discovered ||
+                                        (targetAreaData.startingMissions && targetAreaData.startingMissions.includes(missionId));
+
+                                    gameState.worldState.areas[target].missions[missionId] = {
+                                        discovered: startDiscovered,
+                                        completions: 0,
+                                        firstCompleted: false,
+                                        lastCompleted: null,
+                                        availableAgainOnDay: null
+                                    };
+                                });
+                            }
+
+                            discoveries.push({ type: 'area', areaId: target });
+                        }
+                    } else {
+                        // Handle mission discovery within current area
+                        const areaData = getAreaData(areaId);
+                        if (areaData && areaData.missions && areaData.missions[target]) {
+                            if (!gameState.worldState.areas[areaId].missions[target]) {
+                                gameState.worldState.areas[areaId].missions[target] = {
+                                    discovered: false,
+                                    completions: 0,
+                                    firstCompleted: false,
+                                    lastCompleted: null,
+                                    availableAgainOnDay: null
+                                };
+                            }
+                            const missionState = gameState.worldState.areas[areaId].missions[target];
+                            if (!missionState.discovered) {
+                                missionState.discovered = true;
+                                discoveries.push({ type: 'mission', areaId: areaId, missionId: target });
+                            }
+                        } else {
+                            console.warn(`Invalid mission reference in canUnlock: "${target}" does not exist in area "${areaId}"`);
+                        }
                     }
                 }
             }

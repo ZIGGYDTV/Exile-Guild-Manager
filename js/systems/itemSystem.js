@@ -341,7 +341,7 @@ class ItemDatabase {
 
         this.registerEquipment(
             new Weapon('Iron Bar', 'mace')
-                .setAttackSpeed(0.7)
+                .setAttackSpeed(0.75)
                 .setDamageMultiplier(1.1)
                 .addImplicitStat('damage', 10)
                 .addImplicitStat('defense', 4)
@@ -353,7 +353,7 @@ class ItemDatabase {
             new Weapon('Femur Club', 'mace')
                 .setRequirements(5)
                 .setAttackSpeed(0.7)
-                .setDamageMultiplier(1.1)
+                .setDamageMultiplier(1.2)
                 .addImplicitStat('damage', 14)
                 .addImplicitStat('defense', 3)
                 .addStatWeight('damage', 4)
@@ -361,7 +361,7 @@ class ItemDatabase {
 
         this.registerEquipment(
             new Weapon('Quarterstaff', 'staff')
-                .setAttackSpeed(1.2)
+                .setAttackSpeed(1)
                 .setDamageMultiplier(1.0)
                 .addImplicitStat('damage', 8)
                 .addImplicitStat('defense', 8)
@@ -434,7 +434,7 @@ class ItemDatabase {
         );
 
         this.registerEquipment(
-            new Armor('A Leather Glove', 'gloves')
+            new Armor('Single Leather Glove', 'gloves')
                 .setDefenseMultiplier(0.7)
                 .addImplicitStat('defense', 2)
                 .addStatWeight('attackSpeed', 2.5)

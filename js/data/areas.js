@@ -54,7 +54,7 @@ const areaDefinitions = {
                 tag: "danger"
             },
             {
-                text: "The source of the Cannibals looks to be a large camp blocking the pass through the coastal cliffs. I smell cooking meat, .",
+                text: "Looks to be a large camp blocking the pass through the coastal cliffs. The smell cooking meat... barely covers the stink of rot.",
                 threshold: 75,
                 tag: "general"
             },
@@ -72,7 +72,7 @@ const areaDefinitions = {
                 name: "Corpsecrab Hunting",
                 description: "Corpsecrabs scuttle about those lucky enough to wash ashore dead. No-one but the most 'scraping-the-bottom-of-the-barrel' recruits hunt them, but that's who we've got here.",
                 discovered: true, 
-                difficulty: 5,
+                difficulty: 1,
                 ilvl: { min: 1, max: 1 },
 
                 damage: {
@@ -102,7 +102,7 @@ const areaDefinitions = {
                 discovered: true, // Available immediately
 
                 // Mission-specific overrides
-                difficulty: 10,
+                difficulty: 7,
                 ilvl: { min: 1, max: 2 }, // Item level range for gear drops
 
                 damage: {
@@ -293,7 +293,7 @@ const areaDefinitions = {
                     days: 5  // Boss respawns after 3 days
                 },
                 canUnlock: [
-                    { target: "the_midden", chance: 1 },
+                    { target: "the_midden", chance: 1  },
                     { target: "rot", chance: 1 }
                 ]
             },
@@ -398,7 +398,7 @@ const areaDefinitions = {
     rot: {
         name: "The Rot",
         discovered: false,
-
+        startingMissions: ["the_midden"], 
         // Visual/thematic information
         theme: "swamp",
         description: "Beyond the Coast is not salvation but a new hell, thick with rot and pestilence.",
@@ -443,6 +443,7 @@ const areaDefinitions = {
             },
         ],
 
+        missions: {
         the_midden: {
             type: "exploration",
             name: "The Midden",
@@ -497,7 +498,8 @@ const areaDefinitions = {
             },
         }
     }
-};
+}
+}
 
 // Helper function to get area data
 function getAreaData(areaId) {
@@ -506,8 +508,14 @@ function getAreaData(areaId) {
 
 // Helper function to get all discovered areas
 function getDiscoveredAreas() {
+    // Check both the area definitions AND the gameState for discovered areas
     return Object.entries(areaDefinitions)
-        .filter(([id, area]) => area.discovered)
+        .filter(([id, area]) => {
+            // Check if discovered in definition OR in gameState
+            const isDiscoveredInDefinition = area.discovered === true;
+            const isDiscoveredInGameState = gameState.worldState.areas[id]?.discovered === true;
+            return isDiscoveredInDefinition || isDiscoveredInGameState;
+        })
         .map(([id, area]) => ({ id, ...area }));
 }
 

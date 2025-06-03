@@ -22,7 +22,7 @@ const game = {
             level: 1,
             experience: 0,
             experienceNeeded: 100,
-            morale: 75,
+            morale: 65,
             baseStats: { ...classData.baseStats },
             stats: {
                 life: classData.baseStats.life,
@@ -283,7 +283,7 @@ const game = {
             combatDetails: {
                 damageLog: combatResult.damageLog,
                 heaviestHitBreakdown: combatResult.heaviestHitBreakdown,
-                winChancePerRound: Math.min(0.4, this.calculatePowerRating(exile) / missionData.difficulty * 0.15)
+                winChancePerRound: combatResult.winChancePerRound // Changed from the incorrect calculation
             }
         };
     },
@@ -333,18 +333,23 @@ const game = {
         // Calculate win chance per round using new format
         const powerAdvantage = this.calculatePowerRating(exile) / missionData.difficulty;
 
-        // Logarithmic diminishing returns system
+        // New formula with gentler curve and 5% floor
         let winChancePerRound;
         if (powerAdvantage <= 0) {
-            winChancePerRound = 0;
+            winChancePerRound = 0.05; // 5% floor
+        } else if (powerAdvantage < 1) {
+            // For underpowered: linear scale from 5% to 15%
+            // At 0.5x power = 10%, at 0.667x power = 11.7%, at 1x power = 15%
+            winChancePerRound = 0.05 + (powerAdvantage * 0.10);
         } else {
-            // Natural log curve: at 3x power = 40% win rate
-            // Formula: winChance = min(0.9, 0.4 * ln(powerAdvantage) / ln(3))
-            winChancePerRound = Math.min(0.9, 0.4 * Math.log(powerAdvantage) / Math.log(3));
+            // For overpowered: logarithmic curve from 15% to 90% cap
+            // This maintains the feeling of diminishing returns when overpowered
+            const scaledAdvantage = Math.log(powerAdvantage) / Math.log(3); // 0 at 1x, 1 at 3x
+            winChancePerRound = Math.min(0.9, 0.15 + (scaledAdvantage * 0.75));
         }
 
-        // Ensure it's never negative
-        winChancePerRound = Math.max(0, winChancePerRound);
+        // Ensure minimum 5% chance
+        winChancePerRound = Math.max(0.05, winChancePerRound);
 
         let currentLife = exile.stats.life;
         const maxRounds = 10;
@@ -399,6 +404,8 @@ const game = {
             combatData.outcome = 'retreat';
         }
 
+        // Add winChancePerRound to the combatData object before returning
+        combatData.winChancePerRound = winChancePerRound;
         return combatData;
     },
 
@@ -503,11 +510,13 @@ const game = {
         let result;
         if (combatResult.outcome === 'victory') {
             const lifePercent = (exile.stats.life - combatResult.totalDamageTaken) / exile.stats.life;
-            if (lifePercent <= 0.15) {
-                result = { change: +8, message: "I just barely survived, my heart races, I feel... ALIVE!" };
+            if (lifePercent <= 0.05) {
+                result = { change: -4, message: "Nah... that was too bloody close it aint fun no more." };
+            } else if (lifePercent <= 0.15) {
+                result = { change: +6, message: "My heart races, I feel... ALIVE!" };
             } else if (lifePercent <= 0.3) {
                 result = { change: +4, message: "Hah! A good challenge!" };
-            } else if (lifePercent >= 0.95) {
+            } else if (lifePercent >= 0.95 && combatResult.winChancePerRound >= 0.30) {
                 result = { change: -4, message: "This is beneath me..." };
             } else if (lifePercent >= 0.90) {
                 result = { change: -2, message: "This is too easy, I need a real challenge!" };
@@ -517,8 +526,10 @@ const game = {
         } else if (combatResult.outcome === 'retreat') {
             if (combatResult.rounds >= 8) {
                 result = { change: +3, message: "Phew that was a close one, but I did it!" };
+            } else if (combatResult.rounds >= 5) {
+                result = { change: -2, message: "Ah, I'm not on my game today..." };
             } else {
-                result = { change: -2, message: "This is embarrassing..." };
+                result = { change: -4, message: "This is just embarrassing..." };
             }
         } else {
             // Death - no morale change since exile is dead
@@ -550,20 +561,28 @@ const game = {
         let defenseBonus = 0;
 
         if (morale >= 90) {
-            // Confident: +10% damage, +5% defense
-            damageBonus = Math.floor(exile.stats.damage * 0.1);
-            defenseBonus = Math.floor(exile.stats.defense * 0.05);
-        } else if (morale <= 50) {
+            // Confident: +20% damage, +10% defense
+            damageBonus = Math.floor(exile.stats.damage * 0.2);
+            defenseBonus = Math.floor(exile.stats.defense * 0.1);
+        } else if (morale >= 70) {
+            // Content: No bonuses or penalties
+            damageBonus = 0;
+            defenseBonus = 0;
+        } else if (morale >= 50) {
+            // Discouraged: -5% damage
+            damageBonus = -Math.floor(exile.stats.damage * 0.05);
+        } else if (morale >= 25) {
             // Demoralized: -10% damage, -5% defense
             damageBonus = -Math.floor(exile.stats.damage * 0.1);
             defenseBonus = -Math.floor(exile.stats.defense * 0.05);
-        } else if (morale <= 70) {
-            // Discouraged: -5% damage
-            damageBonus = -Math.floor(exile.stats.damage * 0.05);
-        } else if (morale <= 25) {
-            // Broken: -20% damage, -10% defense
+        } else if (morale >= 10) {
+            // Wavering: -20% damage, -10% defense
             damageBonus = -Math.floor(exile.stats.damage * 0.2);
             defenseBonus = -Math.floor(exile.stats.defense * 0.1);
+        } else {
+            // Broken: -30% damage, -30% defense
+            damageBonus = -Math.floor(exile.stats.damage * 0.3);
+            defenseBonus = -Math.floor(exile.stats.defense * 0.3);
         }
 
         exile.stats.damage += damageBonus;
@@ -579,6 +598,7 @@ const game = {
         if (morale >= 70) return "Content";
         if (morale >= 50) return "Discouraged";
         if (morale >= 25) return "Demoralized";
+        if (morale >= 10) return "Wavering";
         return "Broken";
     },
 
@@ -927,23 +947,27 @@ const game = {
         gameState.exile.stats.lightningResist = Math.min(totalLightningResist, maxLightningResist);
         gameState.exile.stats.chaosResist = Math.min(totalChaosResist, maxChaosResist);
 
-        // Calculate light radius effects on scouting and exploration from gear + passives
+        // Calculate light radius effects AND movement speed on scouting and exploration from gear + passives
         // Get light radius from equipped gear
         let gearLightRadius = 0;
+        let gearMoveSpeed = 0;
         Object.values(gameState.inventory.equipped).forEach(item => {
             if (item) {
                 gearLightRadius += item.stats.lightRadius || 0;
+                gearMoveSpeed += item.stats.moveSpeed || 0;
             }
         });
 
-        // Get light radius bonuses from passives
+        // Get bonuses from passives
         const passiveLightRadius = passiveEffects.lightRadius || 0;
+        const passiveMoveSpeed = passiveEffects.moveSpeed || 0;
 
-        // Calculate total light radius
+        // Calculate totals
         const totalLightRadius = gearLightRadius + passiveLightRadius;
+        const totalMoveSpeed = gearMoveSpeed + passiveMoveSpeed;
 
-        // Apply light radius to scouting bonus (base 1.0 + light radius percentage)
-        gameState.exile.stats.scoutingBonus = 1.0 + (totalLightRadius / 100);
+        // Apply to scouting bonus (base 1.0 + bonuses)
+        gameState.exile.stats.scoutingBonus = 1.0 + (totalLightRadius / 100) + (totalMoveSpeed / 200);
         // End of light radius effects on scouting and exploration from gear + passives
 
         // Ensure minimum values
@@ -1848,6 +1872,9 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
         document.getElementById('final-gold-find').textContent = gameState.exile.stats.goldFindBonus + "%";
         document.getElementById('final-morale-gain').textContent = gameState.exile.stats.moraleGain;
         document.getElementById('final-morale-resist').textContent = gameState.exile.stats.moraleResistance + "%";
+        // Convert scoutingBonus (1.0 = 100%) to percentage display
+        const explorationBonusPercent = Math.round((gameState.exile.stats.scoutingBonus - 1.0) * 100);
+        document.getElementById('final-exploration-bonus').textContent = explorationBonusPercent + "%";
 
         // Calculate all the breakdown components
         const gearBonuses = this.calculateGearBonuses();
@@ -3174,9 +3201,18 @@ Final: ${final}`;
             discoveryContent += this.dayReportData.discoveries.map(discovery => {
                 if (discovery.type === 'mission') {
                     const missionData = getMissionData(discovery.areaId, discovery.missionId);
-                    return `<div class="discovery-item mission-discovery">🔍 <strong>Mission Discovered:</strong> ${missionData.name}</div>`;
+                    if (missionData) {
+                        return `<div class="discovery-item mission-discovery">🔍 <strong>Mission Discovered:</strong> ${missionData.name}</div>`;
+                    } else {
+                        console.warn(`Mission data not found for ${discovery.areaId}.${discovery.missionId}`);
+                        return `<div class="discovery-item mission-discovery">🔍 <strong>Mission Discovered:</strong> New mission in ${discovery.areaId}</div>`;
+                    }
                 } else if (discovery.type === 'connection') {
                     return `<div class="discovery-item connection-discovery">🗺️ <strong>Area Connection:</strong> Discovered passage to new area!</div>`;
+                } else if (discovery.type === 'area') {
+                    const areaData = getAreaData(discovery.areaId);
+                    const areaName = areaData ? areaData.name : discovery.areaId;
+                    return `<div class="discovery-item area-discovery">🌍 <strong>New Area Discovered:</strong> ${areaName}!</div>`;
                 }
                 return '';
             }).join('');
@@ -3484,7 +3520,7 @@ Final: ${final}`;
         document.querySelectorAll('.area-card').forEach(card => {
             card.classList.remove('selected');
         });
-        
+
         // Find and select the correct area card by areaId
         // This works for both click events and programmatic calls
         const areaCards = document.querySelectorAll('.area-card');
@@ -3495,7 +3531,7 @@ Final: ${final}`;
                 card.classList.add('selected');
             }
         });
-    
+
         // Show missions for this area
         this.showAreaMissions(areaId);
     },

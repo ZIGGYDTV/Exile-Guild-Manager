@@ -968,6 +968,11 @@ h2 {
     border-left-color: #4CAF50;
 }
 
+.discovery-item.area-discovery {
+    border-left-color: #9c27b0;
+    background-color: rgba(156, 39, 176, 0.05);
+}
+
 .discovery-item.connection-discovery {
     border-left-color: #ff9800;
 }
