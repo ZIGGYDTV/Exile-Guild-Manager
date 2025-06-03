@@ -31,6 +31,7 @@ const gameState = {
             // Current calculated stats (base + gear + passives)
             life: 105, // Will be recalculated based on class
             damage: 11,
+            attackSpeed: 1.0,
             defense: 5,
 
             // Resistance values
@@ -40,6 +41,7 @@ const gameState = {
             chaosResist: 0,
 
             // Utility stats
+            moveSpeed: 1.0,
             goldFindBonus: 0, // Increases gold dropped by monsters
             escapeChance: 0, // not imtlemented yet
             moraleResistance: 0, // morale "stability" vs "volatility"

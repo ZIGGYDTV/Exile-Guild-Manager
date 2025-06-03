@@ -54,7 +54,7 @@ const areaDefinitions = {
                 tag: "danger"
             },
             {
-                text: "Placeholder: something about the boss or next area.",
+                text: "The source of the Cannibals looks to be a large camp blocking the pass through the coastal cliffs. I smell cooking meat, .",
                 threshold: 75,
                 tag: "general"
             },
@@ -74,7 +74,7 @@ const areaDefinitions = {
                 discovered: true, // Available immediately
 
                 // Mission-specific overrides
-                difficulty: 110,
+                difficulty: 10,
                 ilvl: { min: 1, max: 2 }, // Item level range for gear drops
 
                 damage: {
@@ -111,7 +111,7 @@ const areaDefinitions = {
                 description: "Search through the remains of wrecked vessels for salvageable materials",
                 discovered: false, // Must be found through exploration
 
-                difficulty: 100,
+                difficulty: 15,
                 ilvl: { min: 2, max: 4 }, // Item level range for gear drops
 
                 damage: {
@@ -129,6 +129,12 @@ const areaDefinitions = {
                     },
                 },
 
+                scoutingGain: {
+                    base: 1,
+                    onSuccess: 1,
+                    onFailure: -1
+                },
+
                 // Better gear drops for scavenging
                 gearDrop: {
                     baseChance: 0.5,           // 50% chance (better than exploration)
@@ -136,10 +142,8 @@ const areaDefinitions = {
                 },
 
                 gearTypeOverrides: { // These must add up to 1.0! 
-                    armor: 0.8,    // 80% chance for armor
-                    weapon: 0.15,  // 15% chance for weapons  
-                    jewelry: 0.05  // 5% chance for jewelry
-                },                 // Total = 1.0 (100%)
+                    armor: 1,   
+                },     
 
 
                 canUnlock: [
@@ -154,7 +158,7 @@ const areaDefinitions = {
                 description: "Hunt the hunters that hide among the rocky outcroppings",
                 discovered: false, // Must be found through exploration
 
-                difficulty: 180,
+                difficulty: 18,
                 ilvl: { min: 3, max: 5 }, // Item level range for gear drops
 
                 damage: {
@@ -183,9 +187,49 @@ const areaDefinitions = {
                 },
 
                 canUnlock: [
-                    { target: "beach_to_swamp_connection", chance: 0.5 } // 50% chance to discover swamp passage
+                    { target: "cannibal_camps", chance: 0.2 } 
                 ]
             },
+
+            cannibal_camps: {
+                type: "raid",
+                name: "Cannibal Camp Raid",
+                description: "A collection of campsites where the cannibals live.",
+                discovered: false,
+                difficulty: 25,
+
+                ilvl: { min: 4, max: 6 }, // Item level range for gear drops
+
+                damage: {
+                    min: 25, max: 55,
+                    types: { physical: 0.8, fire: 0.2 } // Cannibals want to cook their prey alive
+                },
+
+                rewardModifiers: {
+                    goldMultiplier: 0.8, // What use have they for gold?
+                    experienceMultiplier: 1.2, // Slightly better XP for hunting
+                    firstCompletionOnly: {
+                        bonusExperience: 122
+                    },
+                },
+
+                gearDrop: {
+                    baseChance: 0.6,
+                    rarityBonus: 0.1
+                },
+
+                // Override gear type droprates
+                gearTypeOverrides: {
+                    armor: 0.2,    // 20% chance for armor
+                    weapon: 0.7,   // 70% chance for weapons  
+                    jewelry: 0.1   // 10% chance for jewelry
+                },
+
+                canUnlock: [
+                    { target: "cannibal_camps", chance: 0.2 } 
+                ]
+            },
+            
 
             tidePoolBoss: {
                 type: "boss",
@@ -193,12 +237,12 @@ const areaDefinitions = {
                 description: "A massive crustacean that has made its home in the largest tidal pool",
                 discovered: false,
 
-                difficulty: 300,
+                difficulty: 30,
                 ilvl: { min: 4, max: 6 },
 
                 damage: {
                     min: 25, max: 60,
-                    types: { physical: 0.5, cold: 0.5 }
+                    types: { physical: 0.4, cold: 0.6 }
                 },
 
                 rewardModifiers: {

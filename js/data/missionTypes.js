@@ -22,8 +22,8 @@ const missionTypeDefinitions = {
         // How much scouting information this mission type provides
         scoutingGain: {
             base: 10,        // Always get this much
-            onSuccess: 5,    // Bonus for completing successfully  
-            onFailure: -3    // Penalty for failing/retreating
+            onSuccess: 3,    // Bonus for complseting successfully  
+            onFailure: -5    // Penalty for failing/retreating
         },
 
         // Special behaviors this mission type has
@@ -47,7 +47,7 @@ const missionTypeDefinitions = {
         baseDanger: 0.9, // Slightly safer than exploration
 
         scoutingGain: {
-            base: 5,
+            base: 3,
             onSuccess: 3,
             onFailure: -2
         },
@@ -68,7 +68,7 @@ const missionTypeDefinitions = {
         baseDanger: 1.2,  // Slightly more dangerous than exploration
 
         scoutingGain: {
-            base: 8,
+            base: 5,
             onSuccess: 2,
             onFailure: -3
         },
@@ -80,6 +80,31 @@ const missionTypeDefinitions = {
 
         specialMechanics: ["huntingFocus", "specializedGear"]
     },
+
+    raid: {
+        name: "Raid",
+        description: "Take the fight to the enemy.",
+
+        baseRewards: {
+            gold: { min: 50, max: 80 },
+            experience: { min: 50, max: 90 },
+            baseDanger: 1.2,  
+        },
+
+        scoutingGain: {
+            base: 5,
+            onSuccess: 2,
+            onFailure: -3
+        },
+
+        randomCurrency: {
+            chaosOrbChance: 0.1,
+            exaltedOrbChance: 0.05
+        },
+
+        specialMechanics: ["raid", "enhancedLoot"]
+    },
+
 
     boss: {
         name: "Boss Fight",
@@ -98,9 +123,9 @@ const missionTypeDefinitions = {
         baseDanger: 1.5, // Much more dangerous
 
         scoutingGain: {
-            base: 20,
+            base: 10,
             onSuccess: 10,
-            onFailure: 0 // No penalty for failing bosses
+            onFailure: -10
         },
 
         specialMechanics: ["unlockGuaranteed", "uniqueRewards"]

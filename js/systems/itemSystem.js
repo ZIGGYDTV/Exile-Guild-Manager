@@ -591,17 +591,35 @@ class ItemDatabase {
         }
 
         // Step 2: Get all equipment of that slot type
+        // Step 2: Get all equipment of that slot type
         let possibleBases;
+
+        // Define armor slots for easy checking
+        const armorSlots = ['helmet', 'chest', 'gloves', 'boots', 'shield'];
+        const jewelrySlots = ['ring', 'amulet', 'belt'];
+
         if (selectedSlot === 'weapon') {
             possibleBases = Array.from(this.equipment.values())
                 .filter(eq => eq instanceof Weapon);
         } else if (selectedSlot === 'jewelry') {
             possibleBases = Array.from(this.equipment.values())
                 .filter(eq => eq instanceof Ring || eq instanceof Amulet || eq instanceof Belt);
-        } else {
-            // Armor slots (helmet, chest, gloves, boots, shield)
+        } else if (selectedSlot === 'armor') {
+            // When "armor" category is selected, get ALL armor pieces
             possibleBases = Array.from(this.equipment.values())
-                .filter(eq => eq instanceof Armor && eq.slot === selectedSlot);
+                .filter(eq => eq instanceof Armor);
+        } else if (armorSlots.includes(selectedSlot)) {
+            // Specific armor slot requested (helmet, chest, etc.)
+            possibleBases = Array.from(this.equipment.values())
+                .filter(eq => eq.slot === selectedSlot);
+        } else if (jewelrySlots.includes(selectedSlot)) {
+            // Specific jewelry slot requested
+            possibleBases = Array.from(this.equipment.values())
+                .filter(eq => eq.slot === selectedSlot);
+        } else {
+            // Fallback for any other specific slot
+            possibleBases = Array.from(this.equipment.values())
+                .filter(eq => eq.slot === selectedSlot);
         }
 
         // If no bases found for slot, fallback to any equipment

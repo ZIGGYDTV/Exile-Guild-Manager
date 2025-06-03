@@ -274,6 +274,11 @@
     color: #fff;
 }
 
+.mission-type.raid {
+    background-color: #fe7932;
+    color: #fff;
+}
+
 .mission-type.hunting {
     background-color: #d8d341;
     color: #000;

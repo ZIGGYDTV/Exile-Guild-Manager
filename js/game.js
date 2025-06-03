@@ -332,7 +332,19 @@ const game = {
 
         // Calculate win chance per round using new format
         const powerAdvantage = this.calculatePowerRating(exile) / missionData.difficulty;
-        const winChancePerRound = Math.min(0.4, powerAdvantage * 0.15);
+
+        // Logarithmic diminishing returns system
+        let winChancePerRound;
+        if (powerAdvantage <= 0) {
+            winChancePerRound = 0;
+        } else {
+            // Natural log curve: at 3x power = 40% win rate
+            // Formula: winChance = min(0.9, 0.4 * ln(powerAdvantage) / ln(3))
+            winChancePerRound = Math.min(0.9, 0.4 * Math.log(powerAdvantage) / Math.log(3));
+        }
+
+        // Ensure it's never negative
+        winChancePerRound = Math.max(0, winChancePerRound);
 
         let currentLife = exile.stats.life;
         const maxRounds = 10;
@@ -370,7 +382,7 @@ const game = {
             }
 
             // Check for early retreat
-            if (currentLife > 0 && currentLife < exile.stats.life * 0.2 && Math.random() < 0.5) {
+            if (currentLife > 0 && currentLife < exile.stats.life * 0.2 && Math.random() < 0.65) {
                 combatData.outcome = 'retreat';
                 break;
             }
@@ -434,7 +446,12 @@ const game = {
         // Use provided exile or default to current game exile
         const targetExile = exile || gameState.exile;
         const stats = targetExile.stats;
-        return Math.floor(stats.damage * 10);
+
+        // Calculate DPS: Damage × Attack Speed
+        const dps = stats.damage * stats.attackSpeed;
+
+        // 1:1 conversion: 1 DPS = 1 Power Rating
+        return Math.floor(dps);
     },
 
     classifyDeath(combatData, winChancePerRound) {
@@ -596,7 +613,7 @@ const game = {
         // Use provided exile or default to current game exile
         const targetExile = exile || gameState.exile;
         const stats = targetExile.stats;
-        return Math.floor(stats.damage * 10);
+        return Math.floor(stats.damage * stats.attackSpeed);
     },
 
 
@@ -820,6 +837,36 @@ const game = {
         gameState.exile.stats.life = Math.floor(finalLife);
         gameState.exile.stats.damage = Math.floor(finalDamage);
         gameState.exile.stats.defense = Math.floor(finalDefense);
+
+        // Start with base attack speed from weapon (or 1.0 if no weapon)
+        let baseAttackSpeed = 1.0;
+        const equippedWeapon = gameState.inventory.equipped.weapon;
+        if (equippedWeapon && equippedWeapon.attackSpeed) {
+            baseAttackSpeed = equippedWeapon.attackSpeed;
+        }
+
+        // Collect attack speed bonuses from gear
+        let gearAttackSpeedBonus = 0;
+        Object.values(gameState.inventory.equipped).forEach(item => {
+            if (item && item.stats) {
+                gearAttackSpeedBonus += item.stats.attackSpeed || 0;
+            }
+        });
+
+        // Get passive attack speed increases (additive)
+        const passiveAttackSpeedIncrease = passiveEffects.increasedAttackSpeed || 0;
+
+        // Apply increased modifiers (additive)
+        const increasedAttackSpeed = baseAttackSpeed * (1 + (gearAttackSpeedBonus + passiveAttackSpeedIncrease) / 100);
+
+        // Apply more modifiers (multiplicative)
+        const finalAttackSpeed = increasedAttackSpeed * (1 + (passiveEffects.moreAttackSpeed || 0) / 100);
+
+        gameState.exile.stats.attackSpeed = finalAttackSpeed;
+
+        // Apply formula: (Base AS) × (1 + % Increases/100)
+        const totalAttackSpeedIncrease = gearAttackSpeedBonus + passiveAttackSpeedIncrease;
+        gameState.exile.stats.attackSpeed = baseAttackSpeed * (1 + totalAttackSpeedIncrease / 100);
 
         // Apply special stats
         gameState.exile.stats.goldFindBonus = passiveEffects.goldFindBonus;
@@ -1412,6 +1459,13 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
     formatItemStats(item) {
         let html = '';
 
+        if (item.slot === 'weapon' && item.attackSpeed) {
+            html += '<div class="weapon-attack-speed">';
+            html += `<span class="item-stat-line">Attack Speed: ${item.attackSpeed.toFixed(2)}</span>`;
+            html += '</div>';
+            html += '<div class="stat-divider"></div>'; // Visual separator
+        }
+
         // Display implicit stats first with special styling
         if (item.implicitStats && Object.keys(item.implicitStats).length > 0) {
             const implicitStats = Object.entries(item.implicitStats);
@@ -1783,6 +1837,9 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
             gameState.exile.stats.damage
         );
 
+        // Format attack speed display (show to 2 decimal places)
+        const formattedAttackSpeed = gameState.exile.stats.attackSpeed.toFixed(2);
+
         const defenseTooltip = this.createStatTooltip(
             gameState.exile.baseStats.defense,
             gearBonuses.defense,
@@ -1794,6 +1851,13 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
         // Set the values and tooltips
         document.getElementById('final-life').textContent = gameState.exile.stats.life;
         document.getElementById('final-damage').textContent = gameState.exile.stats.damage;
+
+        // Update attack speed display (we'll add the HTML element next)
+        const attackSpeedElement = document.getElementById('final-attack-speed');
+        if (attackSpeedElement) {
+            attackSpeedElement.textContent = formattedAttackSpeed;
+        }
+
         document.getElementById('final-defense').textContent = gameState.exile.stats.defense;
         document.getElementById('power-rating-calc').textContent = this.calculatePowerRating();
 
@@ -2455,11 +2519,13 @@ Final: ${final}`;
             increasedLife: 0,
             increasedDamage: 0,
             increasedDefense: 0,
+            increasedAttackSpeed: 0,
 
             // More (multiplicative)
             moreLife: 0,
             moreDamage: 0,
             moreDefense: 0,
+            moreAttackSpeed: 0,
 
             // Flat bonuses
             flatLife: 0,
@@ -2489,6 +2555,12 @@ Final: ${final}`;
             if (passive) {
                 passive.effects.forEach(effect => {
                     switch (effect.type) {
+                        case passiveTypes.INCREASED_ATTACK_SPEED:
+                            effects.increasedAttackSpeed += effect.value;
+                            break;
+                        case passiveTypes.MORE_ATTACK_SPEED:
+                            effects.moreAttackSpeed += effect.value;
+                            break;
                         case passiveTypes.INCREASED_LIFE:
                             effects.increasedLife += effect.value;
                             break;
@@ -2598,7 +2670,7 @@ Final: ${final}`;
 
     getPassiveTierForLevel(level) {
         if (level % 10 === 0) return 'keystone';  // 10, 20, 30...
-        if (level % 5 === 0) return 'notable';    // 5, 15, 25...
+        if (level % 4 === 0) return 'notable';    // 5, 15, 25...
         return 'normal';                          // All other levels
     },
 
@@ -2609,8 +2681,13 @@ Final: ${final}`;
         const tier = this.getPassiveTierForLevel(currentLevel);
 
         // Get available passives for this tier
-        const pool = passiveHelpers.getWeightedPassivePool(gameState.exile.class, tier)
-            .filter(passive => !gameState.exile.passives.allocated.includes(passive.id));
+        let pool = passiveHelpers.getWeightedPassivePool(gameState.exile.class, tier);
+
+        // For normal passives, include already allocated ones (for stacking)
+        // For notable/keystone, exclude already allocated
+        if (tier !== 'normal') {
+            pool = pool.filter(passive => !gameState.exile.passives.allocated[passive.id]);
+        }
 
         if (pool.length === 0) {
             this.log("No more passives available!", "failure");
@@ -2621,9 +2698,17 @@ Final: ${final}`;
         let choice2 = null;
 
         if (pool.length > 1) {
-            // Remove choice1 from pool for choice2
+            // Remove choice1 from pool for choice2 to prevent duplicates
             const poolWithoutChoice1 = pool.filter(p => p.id !== choice1.id);
-            choice2 = this.weightedRandomSelect(poolWithoutChoice1);
+            if (poolWithoutChoice1.length > 0) {
+                choice2 = this.weightedRandomSelect(poolWithoutChoice1);
+            } else {
+                // If only one passive left in pool, use it again
+                choice2 = choice1;
+            }
+        } else {
+            // Only one passive in pool
+            choice2 = choice1;
         }
 
         this.currentPassiveChoices = {
@@ -3856,6 +3941,13 @@ Final: ${final}`;
 
     formatItemStatsForTooltip(item) {
         let html = '';
+
+        if (item.slot === 'weapon' && item.attackSpeed) {
+            html += '<div class="tooltip-weapon-stats">';
+            html += `Attack Speed: ${item.attackSpeed.toFixed(2)}`;
+            html += '</div>';
+            html += '<div class="tooltip-stat-divider"></div>';
+        }
 
         // Display implicit stats first with special styling
         if (item.implicitStats && Object.keys(item.implicitStats).length > 0) {

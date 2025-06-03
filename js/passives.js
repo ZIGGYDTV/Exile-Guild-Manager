@@ -9,11 +9,13 @@ const passiveTypes = {
     INCREASED_LIFE: 'increasedLife',
     INCREASED_DAMAGE: 'increasedDamage',
     INCREASED_DEFENSE: 'increasedDefense',
+    INCREASED_ATTACK_SPEED: 'increasedAttackSpeed',
     
     // More multipliers (rare, powerful) - multiplicative
     MORE_DAMAGE: 'moreDamage',
     MORE_LIFE: 'moreLife',
     MORE_DEFENSE: 'moreDefense',
+    MORE_ATTACK_SPEED: 'moreAttackSpeed',
 
     // Resistance bonuses
     FIRE_RESISTANCE: 'fireResistance',
@@ -40,6 +42,18 @@ const passiveTypes = {
 // Passive definitions - easily expandable during streams!
 const passiveDefinitions = {
     // NORMAL TIER PASSIVES
+    training: {
+        name: "Training",
+        tier: "normal",
+        description: "5% increased Attack Speed, 5% increased Damage, 5% increased Defense",
+        effects: [
+            { type: passiveTypes.INCREASED_ATTACK_SPEED, value: 5 },
+            { type: passiveTypes.INCREASED_DAMAGE, value: 5 },
+            { type: passiveTypes.INCREASED_DEFENSE, value: 5 }
+        ],
+        tags: ["offense", "defense", "attack_speed"]
+    },
+    
     toughness: {
         name: "Toughness",
         tier: "normal",
@@ -67,14 +81,24 @@ const passiveDefinitions = {
     roguish: {
         name: "Roguish",
         tier: "normal",
-        description: "+10% increased Damage, +10% Gold Find",
+        description: "+6% increased Attack Speed, +20% Gold Find",
         effects: [
-            { type: passiveTypes.INCREASED_DAMAGE, value: 10 },
-            { type: passiveTypes.GOLD_FIND, value: 10 }
+            { type: passiveTypes.INCREASED_ATTACK_SPEED, value: 6 },
+            { type: passiveTypes.GOLD_FIND, value: 20 }
         ],
-        tags: ["damage", "utility", "gold"]
+        tags: ["attack_speed", "utility", "gold"]
     },
 
+    quick_draw: {
+        name: "Quick Draw",
+        tier: "normal",
+        description: "+8% increased Attack Speed",
+        effects: [
+            { type: passiveTypes.INCREASED_ATTACK_SPEED, value: 8 }
+        ],
+        tags: ["offense", "attack_speed"]
+    },
+    
     beef: {
         name: "Beef",
         tier: "normal",
@@ -152,12 +176,23 @@ const passiveDefinitions = {
     berserker: {
         name: "Berserker",
         tier: "notable",
-        description: "+30% increased Damage, +15% increased Life",
+        description: "+30% increased Damage, +10% increased Attack Speed",
         effects: [
             { type: passiveTypes.INCREASED_DAMAGE, value: 30 },
-            { type: passiveTypes.INCREASED_LIFE, value: 15 }
+            { type: passiveTypes.INCREASED_ATTACK_SPEED, value: 10 }
         ],
-        tags: ["damage", "life", "aggressive"]
+        tags: ["damage", "attack_speed"]
+    },
+
+    blur: {
+        name: "Blur",
+        tier: "notable",
+        description: "+18% increased Attack Speed, +10% increased Defense",
+        effects: [
+            { type: passiveTypes.INCREASED_ATTACK_SPEED, value: 18 },
+            { type: passiveTypes.INCREASED_DEFENSE, value: 10 }
+        ],
+        tags: ["attack_speed", "defense"]
     },
     
     juggernaut: {
@@ -267,6 +302,18 @@ const passiveDefinitions = {
         tags: ["life", "tank"]
     },
 
+    blind_rage: {
+        name: "Blind Rage",
+        tier: "keystone",
+        description: "+20% more Attack Speed, 20% decreased Damage, 10% decreased Defense",
+        effects: [
+            { type: passiveTypes.MORE_ATTACK_SPEED, value: 20 },
+            { type: passiveTypes.INCREASED_DAMAGE, value: -20 },
+            { type: passiveTypes.INCREASED_DEFENSE, value: -10 }
+        ],
+        tags: ["attack_speed", "high_risk"]
+    },
+
     fireproof: {
     name: "Fireproof",
     tier: "keystone",
@@ -368,7 +415,7 @@ const classDefinitions = {
         name: "Survivalist", 
         baseStats: {
             life: 110,   // Higher life
-            damage: 8,   // Lower damage
+            damage: 9,   // Lower damage
             defense: 7   // Higher defense  
         },
         passiveWeights: {

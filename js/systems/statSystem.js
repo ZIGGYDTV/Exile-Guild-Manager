@@ -79,6 +79,22 @@ class StatDatabase {
                 .addBreakpoint(21, 20, 28)
                 
         );
+        
+        this.registerStat(
+            new StatDefinition('attackSpeed', 'Increased Attack Speed')
+                .addBreakpoint(1, 5, 9)
+                .addBreakpoint(3, 7, 12)
+                .addBreakpoint(5, 9, 17)
+                .addBreakpoint(7, 11, 21)
+                .addBreakpoint(9, 13, 25)
+                .addBreakpoint(11, 15, 29)
+                .addBreakpoint(13, 17, 33)
+                .addBreakpoint(15, 19, 37)
+                .addBreakpoint(17, 21, 41)
+                .addBreakpoint(19, 23, 45)
+                .addBreakpoint(21, 25, 49)
+                .restrictToSlots('weapon', 'gloves')
+        );
 
         this.registerStat(
             new StatDefinition('defense', 'Defense')
