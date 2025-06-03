@@ -1454,7 +1454,7 @@ h2 {
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid #444;
-    max-height: 200px;
+    max-height: 100%;
     overflow-y: auto;
 }
 
@@ -1508,6 +1508,134 @@ h2 {
         padding: 8px;
         margin-bottom: 6px;
     }
+}
+
+/* Round by round combat log - Table Layout */
+.round-by-round-section {
+    margin-top: 15px;
+    border-top: 1px solid #444;
+    padding-top: 10px;
+}
+
+.combat-log-table {
+    background-color: #222;
+    border: 1px solid #333;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Table header */
+.combat-log-header {
+    display: grid;
+    grid-template-columns: 60px 1fr 180px 60px;
+    gap: 10px;
+    padding: 10px;
+    background-color: #2a2a2a;
+    border-bottom: 2px solid #444;
+    font-weight: bold;
+    color: #c9aa71;
+    font-size: 0.9em;
+}
+
+/* Table rows */
+.combat-log-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 180px 60px;
+    gap: 10px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #333;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.combat-log-row:last-child {
+    border-bottom: none;
+}
+
+.combat-log-row:hover {
+    background-color: #2a2a2a;
+}
+
+/* Column styles */
+.col-round {
+    text-align: center;
+    font-weight: bold;
+    color: #c9aa71;
+}
+
+.col-damage-types {
+    display: flex;
+    gap: 15px;
+    font-style: italic;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.col-total {
+    text-align: right;
+    color: #f44336;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.col-life {
+    text-align: right;
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+/* Damage type cells */
+.damage-type-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85em;
+    white-space: nowrap;
+}
+
+.damage-icon {
+    font-size: 1.1em;
+    filter: drop-shadow(0 0 2px currentColor);
+}
+
+.damage-values {
+    font-family: monospace;
+}
+
+/* Damage type colors */
+.damage-type-cell.element-physical   { color: #b8b8b8; }
+.damage-type-cell.element-fire       { color: #ff6040; }
+.damage-type-cell.element-cold       { color: #40a0ff; }
+.damage-type-cell.element-lightning  { color: #ffe94a; }
+.damage-type-cell.element-chaos      { color: #b85cff; }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .combat-log-header,
+    .combat-log-row {
+        grid-template-columns: 50px 1fr 140px 50px;
+        gap: 5px;
+        font-size: 0.85em;
+    }
+    
+    .damage-type-cell {
+        font-size: 0.8em;
+    }
+    
+    .damage-icon {
+        font-size: 1em;
+    }
+}
+
+/* Keep the existing heaviest hit summary styles */
+.heaviest-hit-summary {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #2a1a1a;
+    border-left: 3px solid #f44336;
+    border-radius: 3px;
+    font-size: 1.1em;
+    color: #e0e0e0;
 }
 /* END OF DAY REPORT MODAL */
 

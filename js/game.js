@@ -362,6 +362,7 @@ const game = {
 
             // Check for death
             if (currentLife <= 0) {
+                console.log("EXILE DEATH DETECTED in combat!");  // DEBUG
                 combatData.outcome = 'death';
                 combatData.deathType = this.classifyDeath(combatData, winChancePerRound);
                 this.lastDeathMission = missionData.name;
@@ -1188,6 +1189,7 @@ const game = {
 
     // Current exile is logged, "deleted" and new exile is created
     handleExileDeath() {
+        console.log("handleExileDeath called!");
         const fallenExile = gameState.exile;
         const deathDay = timeState.currentDay;
 
@@ -1202,6 +1204,15 @@ const game = {
 
         // Add to fallen exiles array
         gameState.fallenExiles.push(fallenRecord);
+
+        // Clear any mission assignments for the dead exile - ADD THIS
+        gameState.assignments = gameState.assignments.filter(
+            assignment => assignment.exileName !== fallenExile.name
+        );
+
+        // Update Command Center Display
+        this.updateCommandCenterDisplay();
+
 
         // Delete equipped gear (hardcore death penalty)
         Object.keys(gameState.inventory.equipped).forEach(slot => {
@@ -2329,6 +2340,18 @@ Final: ${final}`;
         return stat ? stat.displayName : statKey;
     },
 
+    // Helper function to get damage type icons
+    getDamageTypeIcon(damageType) {
+        const icons = {
+            physical: '⚔️',
+            fire: '🔥',
+            cold: '❄️',
+            lightning: '⚡',
+            chaos: '🫧'
+        };
+        return icons[damageType] || '✦';
+    },
+
     // Helper function to get stat range for specific ilvl
     getStatRangeForIlvl(statDef, ilvl) {
         const breakpoints = statDef.ilvlBreakpoints;
@@ -2717,6 +2740,18 @@ Final: ${final}`;
 
         // Reset animation state
         this.dayReportAnimationState = { skipped: false, currentStep: 0 };
+
+        // ADD: Check if any exile died during this day
+        const hadDeath = this.dayReportData.missionResults.some(result =>
+            result.combatResult.outcome === 'death'
+        );
+
+        console.log("Day report closed. Had death?", hadDeath);  // TEMPORARY DEBUG
+        console.log("Mission results:", this.dayReportData.missionResults);  // TEMPORARY DEBUG
+
+        if (hadDeath) {
+            this.handleExileDeath();
+        }
     },
 
     handleDayReportClick(event) {
@@ -3010,6 +3045,8 @@ Final: ${final}`;
             }
         }, delay);
     },
+
+    // Krangled Combination of Discoveries and Combat Details
     showDiscoveries() {
         let discoveryContent = '';
 
@@ -3068,29 +3105,83 @@ Final: ${final}`;
                 const combatDetails = result.combatDetails;
                 const combatResult = result.combatResult;
 
-                return `
-                <div class="combat-detail-section">
-                    <h5>${result.missionContext.missionName} - Combat Analysis</h5>
-                    <div class="combat-summary">
-                        <div><strong>Power vs Difficulty:</strong> ${result.missionContext.powerRating} vs ${result.missionContext.difficulty}</div>
-                        <div><strong>Win Chance per Round:</strong> ${Math.round(combatDetails.winChancePerRound * 100)}%</div>
-                        <div><strong>Combat Duration:</strong> ${combatResult.rounds} rounds</div>
-                        <div><strong>Total Damage Taken:</strong> ${Math.round(combatResult.totalDamageTaken)}</div>
-                        <div><strong>Heaviest Hit:</strong> ${Math.round(combatResult.heaviestHit * 10) / 10}</div>
-                    </div>
-                    
-                    ${combatDetails.damageLog.length > 0 ? `
-                        <div class="damage-log-section">
-                            <h6>Round-by-Round Damage:</h6>
-                            ${combatDetails.damageLog.map(log => `
-                                <div class="damage-log-entry">
-                                    Round ${log.round}: ${Math.round(log.actualDamage * 10) / 10} damage, ${Math.round(log.lifeRemaining)} life remaining
-                                </div>
-                            `).join('')}
+                // Generate round-by-round damage log with breakdowns
+                let roundByRoundHtml = '';
+                if (combatDetails.damageLog && combatDetails.damageLog.length > 0) {
+                    // Create the table header
+                    roundByRoundHtml = `
+                        <div class="combat-log-table">
+                            <div class="combat-log-header">
+                                <span class="col-round">Round</span>
+                                <span class="col-damage-types">Unmitigated → Mitigated Damage</span>
+                                <span class="col-total">Total Damage</span>
+                                <span class="col-life">Life</span>
+                            </div>
+                    `;
+
+                    // Add each round as a row
+                    roundByRoundHtml += combatDetails.damageLog.map(log => {
+                        // Build damage type cells
+                        let damageTypeCells = '';
+                        if (log.breakdown && log.breakdown.length > 0) {
+                            damageTypeCells = log.breakdown.map(b => {
+                                const typeClass = `element-${b.type.toLowerCase()}`;
+                                const icon = this.getDamageTypeIcon(b.type);
+                                return `
+                                    <span class="damage-type-cell ${typeClass}">
+                                        <span class="damage-icon">${icon}</span>
+                                        <span class="damage-values">${Math.round(b.raw * 10) / 10} → ${Math.round(b.final * 10) / 10}</span>
+                                    </span>
+                                `;
+                            }).join('');
+                        }
+
+                        return `
+                            <div class="combat-log-row">
+                                <span class="col-round">${log.round}</span>
+                                <span class="col-damage-types">${damageTypeCells}</span>
+                                <span class="col-total">${Math.round(log.rawDamage)} → ${Math.round(log.actualDamage * 10) / 10} total damage</span>
+                                <span class="col-life">${Math.round(log.lifeRemaining)}</span>
+                            </div>
+                        `;
+                    }).join('');
+
+                    roundByRoundHtml += '</div>'; // Close the table
+                }
+
+                // Find the heaviest hit for summary
+                let heaviestHitSummary = '';
+                if (combatResult.heaviestHitBreakdown) {
+                    const totalRaw = combatResult.heaviestHitBreakdown.reduce((sum, b) => sum + b.raw, 0);
+                    const totalFinal = combatResult.heaviestHitBreakdown.reduce((sum, b) => sum + b.final, 0);
+
+                    heaviestHitSummary = `
+                        <div class="heaviest-hit-summary">
+                            <strong>Heaviest Hit:</strong> ${Math.round(totalRaw)} → ${Math.round(totalFinal * 10) / 10} damage
                         </div>
-                    ` : ''}
-                </div>
-            `;
+                    `;
+                }
+
+                return `
+                    <div class="combat-detail-section">
+                        <h5>${result.missionContext.missionName} - Combat Analysis</h5>
+                        <div class="combat-summary">
+                            <div><strong>Power vs Difficulty:</strong> ${result.missionContext.powerRating} vs ${result.missionContext.difficulty}</div>
+                            <div><strong>Win Chance per Round:</strong> ${Math.round(combatDetails.winChancePerRound * 100)}%</div>
+                            <div><strong>Combat Duration:</strong> ${combatResult.rounds} rounds</div>
+                            <div><strong>Total Damage Taken:</strong> ${Math.round(combatResult.totalDamageTaken)}</div>
+                        </div>
+                        
+                        ${roundByRoundHtml ? `
+                            <div class="round-by-round-section">
+                                <h6>Round-by-Round Combat Log:</h6>
+                                ${roundByRoundHtml}
+                            </div>
+                        ` : '<div class="no-combat-data">No detailed combat data available</div>'}
+                        
+                        ${heaviestHitSummary}
+                    </div>
+                `;
             }).join('');
         }
     },
