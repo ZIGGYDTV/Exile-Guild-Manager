@@ -562,6 +562,33 @@ const game = {
         return "Broken";
     },
 
+    createMoraleTooltip(morale) {
+        let tooltip = `Morale: ${morale}/100\n`;
+        tooltip += `―――――――――――――――\n`;
+
+        if (morale >= 90) {
+            tooltip += "Confident:\n";
+            tooltip += "+10% Damage\n";
+            tooltip += "+5% Defense";
+        } else if (morale >= 70) {
+            tooltip += "Content:\n";
+            tooltip += "No bonuses or penalties";
+        } else if (morale >= 50) {
+            tooltip += "Discouraged:\n";
+            tooltip += "-5% Damage";
+        } else if (morale >= 25) {
+            tooltip += "Demoralized:\n";
+            tooltip += "-10% Damage\n";
+            tooltip += "-5% Defense";
+        } else {
+            tooltip += "Broken:\n";
+            tooltip += "-20% Damage\n";
+            tooltip += "-10% Defense";
+        }
+
+        return tooltip;
+    },
+
     calculatePowerRating(exile = null) {
         // Use provided exile or default to current game exile
         const targetExile = exile || gameState.exile;
@@ -1328,7 +1355,7 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
 
     formatItemStats(item) {
         let html = '';
-    
+
         // Display implicit stats first with special styling
         if (item.implicitStats && Object.keys(item.implicitStats).length > 0) {
             const implicitStats = Object.entries(item.implicitStats);
@@ -1340,12 +1367,12 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
             html += '</div>';
             html += '<div class="stat-divider"></div>'; // Visual separator
         }
-    
+
         // Display regular stats
         const stats = item.stats instanceof Map ?
             Array.from(item.stats.entries()) :
             Object.entries(item.stats || {});
-    
+
         if (stats.length > 0) {
             html += '<div class="regular-stats">';
             html += stats.map(([stat, value]) => {
@@ -1354,7 +1381,7 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
             }).join('');
             html += '</div>';
         }
-    
+
         return html;
     },
 
@@ -1390,6 +1417,17 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
 
     // Inventory Modal Methods
     openInventoryModal() {
+        console.log("openInventoryModal called!");
+
+        // Check if modal exists
+        const modal = document.getElementById('inventory-modal');
+        console.log("Modal element:", modal);
+
+        if (!modal) {
+            console.error("Inventory modal not found!");
+            return;
+        }
+
         // Update inventory count
         const count = gameState.inventory.backpack.length;
         document.getElementById('modal-inventory-count').textContent = `${count}`;
@@ -1404,7 +1442,9 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
         this.updateInventoryModalDisplay();
 
         // Show modal
-        document.getElementById('inventory-modal').style.display = 'flex';
+        console.log("Setting modal display to flex");
+        modal.style.display = 'flex';
+        console.log("Modal display is now:", modal.style.display);
     },
 
     closeInventoryModal() {
@@ -1419,17 +1459,17 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
 
     updateInventoryModalDisplay() {
         const container = document.getElementById('inventory-items-grid');
-    
+
         if (gameState.inventory.backpack.length === 0) {
             container.innerHTML = '<div style="color: #666; text-align: center; grid-column: 1/-1;">No items in inventory</div>';
             return;
         }
-    
+
         container.innerHTML = gameState.inventory.backpack.map(item => {
             const displayName = item.name;
             const displayColor = rarityDB.getRarity(item.rarity)?.color || '#888';
             const sellValue = this.calculateItemSellValue(item);
-    
+
             return `
                 <div class="inventory-item ${item.rarity}">
                     <div class="item-details">
@@ -1492,19 +1532,19 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
 
     useChaosOrbModal(itemId) {
         const result = this.useChaosOrb(itemId);
-        
+
         // Update modal currency displays
         document.getElementById('modal-chaos-orbs').textContent = gameState.resources.chaosOrbs;
-        
+
         this.updateInventoryModalDisplay();
     },
 
     useExaltedOrbModal(itemId) {
         const result = this.useExaltedOrb(itemId);
-        
+
         // Update modal currency displays
         document.getElementById('modal-exalted-orbs').textContent = gameState.resources.exaltedOrbs;
-        
+
         this.updateInventoryModalDisplay();
     },
 
@@ -1524,13 +1564,13 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
     sellItem(itemId) {
         const item = gameState.inventory.backpack.find(i => i.id === itemId);
         if (!item) return;
-        
+
         const sellValue = this.calculateItemSellValue(item);
-        
+
         // Find the item element in the DOM
         const itemElements = document.querySelectorAll('.inventory-item');
         let itemElement = null;
-        
+
         // Find the specific item element by checking if it contains the sell button with this itemId
         itemElements.forEach(el => {
             const sellBtn = el.querySelector(`button[onclick="game.sellItem(${itemId})"]`);
@@ -1538,14 +1578,14 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
                 itemElement = el;
             }
         });
-        
+
         if (itemElement) {
             // Add dissolving class for the main animation
             itemElement.classList.add('dissolving');
-            
+
             // Create gold particles
             this.createGoldParticles(itemElement);
-            
+
             // Wait for animation to complete before removing
             setTimeout(() => {
                 this.completeSellItem(itemId, item, sellValue);
@@ -1555,40 +1595,40 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
             this.completeSellItem(itemId, item, sellValue);
         }
     },
-    
+
     // New helper method to complete the sale after animation
     completeSellItem(itemId, item, sellValue) {
         // Remove item from backpack
         gameState.inventory.backpack = gameState.inventory.backpack.filter(i => i.id !== itemId);
-        
+
         // Add gold
         gameState.resources.gold += sellValue;
-        
+
         // Log the sale
         this.log(`💰 Sold ${item.name} for ${sellValue} gold`, "success");
-        
+
         // Update displays
         this.updateInventoryModalDisplay();
         this.updateDisplay();
-        
+
         // Update modal gold with pulse effect
         const modalGoldElement = document.getElementById('modal-gold');
         if (modalGoldElement) {
             modalGoldElement.textContent = gameState.resources.gold;
-            
+
             // Add pulse effect
             modalGoldElement.classList.remove('resource-glow-pulse');
             void modalGoldElement.offsetWidth; // Force reflow to restart animation
             modalGoldElement.classList.add('resource-glow-pulse');
-            
+
             // Remove class after animation
             setTimeout(() => {
                 modalGoldElement.classList.remove('resource-glow-pulse');
             }, 700);
         }
-        
+
         this.saveGame();
-        
+
         // Update counts
         const count = gameState.inventory.backpack.length;
         document.getElementById('modal-inventory-count').textContent = `${count}`;
@@ -1599,31 +1639,31 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
     createGoldParticles(element) {
         const rect = element.getBoundingClientRect();
         const particleCount = 8;
-        
+
         for (let i = 0; i < particleCount; i++) {
             const particle = document.createElement('div');
             particle.className = 'gold-particle';
-            
+
             // Random starting position within the item
             const startX = rect.left + Math.random() * rect.width;
             const startY = rect.top + Math.random() * rect.height;
-            
+
             // Random horizontal drift
             const dx = (Math.random() - 0.5) * 60;
-            
+
             particle.style.left = startX + 'px';
             particle.style.top = startY + 'px';
             particle.style.setProperty('--dx', dx + 'px');
-            
+
             // Random animation duration for variety
             const duration = 0.6 + Math.random() * 0.3;
             particle.style.animation = `floatUp ${duration}s ease-out forwards`;
-            
+
             // Random delay for staggered effect
             particle.style.animationDelay = `${Math.random() * 0.1}s`;
-            
+
             document.body.appendChild(particle);
-            
+
             // Remove particle after animation
             setTimeout(() => {
                 particle.remove();
@@ -1642,8 +1682,12 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
         document.getElementById('char-exp-needed').textContent = gameState.exile.experienceNeeded;
         document.getElementById('char-morale').textContent = gameState.exile.morale;
         document.getElementById('char-morale-status').textContent = this.getMoraleStatus(gameState.exile.morale);
-        document.getElementById('final-exploration-bonus').textContent = Math.round((gameState.exile.stats.scoutingBonus - 1.0) * 100) + "%";
 
+        // Update morale tooltip
+        const moraleElement = document.querySelector('.morale-value-with-tooltip');
+        if (moraleElement) {
+            moraleElement.setAttribute('data-tooltip', this.createMoraleTooltip(gameState.exile.morale));
+        }
 
         // Combined resistances display
         const resists = [
@@ -1711,6 +1755,7 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
 
         // Update equipment and inventory
         this.updateCharacterEquipment();
+
     },
 
     createStatTooltip(base, gear, passives, morale, final) {
@@ -1801,7 +1846,7 @@ Final: ${final}`;
                 const displayColor = equipped.getDisplayColor ? equipped.getDisplayColor() :
                     rarityDB.getRarity(equipped.rarity)?.color || '#888';
 
-                    slotContent.innerHTML = `
+                slotContent.innerHTML = `
                     <div class="item-equipped">
                         <div class="item-name" style="color: ${displayColor}">
                             ${displayName}
@@ -1997,24 +2042,32 @@ Final: ${final}`;
         }
         // Show assignment status in exile summary 
         const assignment = this.getExileAssignment(gameState.exile.name);
+        const assignmentBadge = document.getElementById('exile-assignment-badge');
+
         if (assignment) {
+            // Show the assignment badge
+            if (assignmentBadge) {
+                assignmentBadge.style.display = 'inline-flex';
+            }
+
             const missionData = getMissionData(assignment.areaId, assignment.missionId);
             const assignmentText = `📋 Assigned: ${missionData.name}`;
 
-            // Add to notifications area if it exists
-            const notificationsArea = document.querySelector('.exile-notifications');
-            if (notificationsArea) {
-                // Remove any existing assignment status
-                const existingAssignment = notificationsArea.querySelector('.assignment-status');
-                if (existingAssignment) existingAssignment.remove();
+            // Commented out in favor of simple icon but may want for showing who is doing what
+            // // Add to notifications area if it exists
+            // const notificationsArea = document.querySelector('.exile-notifications');
+            // if (notificationsArea) {
+            //     // Remove any existing assignment status
+            //     const existingAssignment = notificationsArea.querySelector('.assignment-status');
+            //     if (existingAssignment) existingAssignment.remove();
 
-                // Add new assignment status
-                const assignmentDiv = document.createElement('div');
-                assignmentDiv.className = 'assignment-status';
-                assignmentDiv.style.cssText = 'font-size: 0.8em; color: #c9aa71; margin-top: 5px;';
-                assignmentDiv.textContent = assignmentText;
-                notificationsArea.appendChild(assignmentDiv);
-            }
+            //     // Add new assignment status
+            //     const assignmentDiv = document.createElement('div');
+            //     assignmentDiv.className = 'assignment-status';
+            //     assignmentDiv.style.cssText = 'font-size: 0.8em; color: #c9aa71; margin-top: 5px;';
+            //     assignmentDiv.textContent = assignmentText;
+            //     notificationsArea.appendChild(assignmentDiv);
+            // }
         }
     },
 
@@ -3309,17 +3362,6 @@ Final: ${final}`;
         // Update day displays
         document.getElementById('current-day-display').textContent = `(Day ${timeState.currentDay})`;
         document.getElementById('current-day-main').textContent = timeState.currentDay;
-
-        // Update discovered areas count
-        const discoveredCount = getDiscoveredAreas().length;
-        document.getElementById('areas-discovered').textContent = discoveredCount;
-
-        // Update available missions count
-        let totalMissions = 0;
-        getDiscoveredAreas().forEach(area => {
-            totalMissions += getAvailableMissions(area.id).length;
-        });
-        document.getElementById('missions-available').textContent = totalMissions;
 
         // Update inventory count on main screen
         const inventoryCount = gameState.inventory.backpack.length;

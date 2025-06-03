@@ -5,21 +5,6 @@
     margin-bottom: 20px;
 }
 
-.world-map-btn,
-.process-day-btn {
-    width: 100%;
-    padding: 0;
-    background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
-    border: 2px solid #c9aa71;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    color: #e0e0e0;
-    display: flex;
-    align-items: center;
-    min-height: 80px;
-}
-
 .world-map-btn:hover,
 .process-day-btn:hover {
     transform: translateY(-2px);
@@ -53,6 +38,30 @@
 .btn-subtitle {
     font-size: 0.9em;
     color: #888;
+}
+
+.inventory-btn,
+.world-map-btn,
+.process-day-btn {
+    width: 100%;
+    padding: 0;
+    background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+    border: 2px solid #c9aa71;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    min-height: 80px;
+}
+
+.inventory-btn:hover,
+.world-map-btn:hover,
+.process-day-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(201, 170, 113, 0.3);
+    border-color: #e6c585;
 }
 
 /* Process Day Button Variations */
