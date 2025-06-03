@@ -55,8 +55,9 @@
 }
 
 .resource-value {
-    color: #e0e0e0;
+    color: #c6ab4b;
     font-weight: bold;
+    font-size: 1.5em;
 }
 
 /* Exile Section */
@@ -739,7 +740,7 @@ h2 {
     display: block;
     font-size: 1.2em;
     font-weight: bold;
-    color: #4CAF50;
+    color: #e2b960;
 }
 
 .quick-stat.morale-stat .stat-value {
@@ -1550,3 +1551,5 @@ h2 {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+

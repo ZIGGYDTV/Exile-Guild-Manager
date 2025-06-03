@@ -65,11 +65,11 @@
                         <span id="gold" class="resource-value">0</span>
                     </div>
                     <div class="resource-item">
-                        <span class="resource-label">Chaos Orbs:</span>
+                        <span class="resource-label">Chaotic Essence:</span>
                         <span id="chaos-orbs" class="resource-value">0</span>
                     </div>
                     <div class="resource-item">
-                        <span class="resource-label">Exalted Orbs:</span>
+                        <span class="resource-label">Exalted Essence:</span>
                         <span id="exalted-orbs" class="resource-value">0</span>
                     </div>
                 </div>
@@ -617,93 +617,93 @@
                 <button class="continue-btn" onclick="game.closeDayReport()">Continue</button>
             </div>
         </div>
-        </div>
-        <!-- Day Report Modal END -->
+    </div>
+    <!-- Day Report Modal END -->
 
 
-        <!-- Equipment Slot Selector Modal -->
-        <div id="equipment-selector-modal" class="modal-overlay" style="display: none;"
-            onclick="game.handleEquipmentSelectorClick(event)">
-            <div class="equipment-selector-content" onclick="event.stopPropagation()">
-                <div class="equipment-selector-header">
-                    <h3 id="equipment-selector-title">Select Equipment</h3>
-                    <button class="close-btn" onclick="game.closeEquipmentSelector()">&times;</button>
-                </div>
-
-                <div class="equipment-selector-body">
-                    <div class="current-equipped-section">
-                        <h4>Currently Equipped</h4>
-                        <div id="current-equipped-item">
-                            <div class="empty-slot">Nothing equipped</div>
-                        </div>
-                    </div>
-
-                    <div class="available-items-section">
-                        <h4>Available Items</h4>
-                        <div id="available-items-list">
-                            <!-- Items will be populated here -->
-                        </div>
-                    </div>
-                </div>
+    <!-- Equipment Slot Selector Modal -->
+    <div id="equipment-selector-modal" class="modal-overlay" style="display: none;"
+        onclick="game.handleEquipmentSelectorClick(event)">
+        <div class="equipment-selector-content" onclick="event.stopPropagation()">
+            <div class="equipment-selector-header">
+                <h3 id="equipment-selector-title">Select Equipment</h3>
+                <button class="close-btn" onclick="game.closeEquipmentSelector()">&times;</button>
             </div>
-        </div>
 
-
-        <!-- Inventory Management Modal -->
-        <div id="inventory-modal" class="modal-overlay" style="display: none;"
-            onclick="game.handleInventoryModalClick(event)">
-            <div class="inventory-modal-content" onclick="event.stopPropagation()">
-
-                <div class="inventory-info-bar">
-                    <div class="inventory-capacity">
-                        <strong>Items:</strong> <span id="modal-inventory-count">0</span>
-                    </div>
-                    <div class="currency-display">
-                        <span class="currency-item">
-                            <strong>Chaos:</strong> <span id="modal-chaos-orbs">0</span>
-                        </span>
-                        <span class="currency-item">
-                            <strong>Exalts:</strong> <span id="modal-exalted-orbs">0</span>
-                        </span>
-                        <span class="currency-item">
-                            <strong>Gold:</strong> <span id="modal-gold">0</span>
-                        </span>
+            <div class="equipment-selector-body">
+                <div class="current-equipped-section">
+                    <h4>Currently Equipped</h4>
+                    <div id="current-equipped-item">
+                        <div class="empty-slot">Nothing equipped</div>
                     </div>
                 </div>
-                <div class="inventory-modal-body">
-                    <div id="inventory-items-grid" class="inventory-grid">
+
+                <div class="available-items-section">
+                    <h4>Available Items</h4>
+                    <div id="available-items-list">
                         <!-- Items will be populated here -->
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- SCRIPTS MUST GO LAST html elements need to be loaded for these to interact with -->
-        <script src="js/gameState.js"></script>
-        <script src="js/passives.js"></script>
-        <script src="js/nameGenerator.js"></script>
 
-        <!-- World system data files -->
-        <script src="js/data/missionTypes.js"></script>
-        <script src="js/data/areas.js"></script>
+    <!-- Inventory Management Modal -->
+    <div id="inventory-modal" class="modal-overlay" style="display: none;"
+        onclick="game.handleInventoryModalClick(event)">
+        <div class="inventory-modal-content" onclick="event.stopPropagation()">
 
-        <!-- World system logic -->
-        <script src="js/systems/worldSystem.js"></script>
+            <div class="inventory-info-bar">
+                <div class="inventory-capacity">
+                    <strong>Items:</strong> <span id="modal-inventory-count">0</span>
+                </div>
+                <div class="currency-display">
+                    <span class="currency-item">
+                        <strong>Chaos:</strong> <span id="modal-chaos-orbs">0</span>
+                    </span>
+                    <span class="currency-item">
+                        <strong>Exalts:</strong> <span id="modal-exalted-orbs">0</span>
+                    </span>
+                    <span class="currency-item">
+                        <strong>Gold:</strong> <span id="modal-gold">0</span>
+                    </span>
+                </div>
+            </div>
+            <div class="inventory-modal-body">
+                <div id="inventory-items-grid" class="inventory-grid">
+                    <!-- Items will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <!-- New item system modules -->
-        <script type="module">
-            import { itemDB } from './js/systems/itemSystem.js';
-            import { statDB } from './js/systems/statSystem.js';
-            import { rarityDB } from './js/systems/raritySystem.js';
+    <!-- SCRIPTS MUST GO LAST html elements need to be loaded for these to interact with -->
+    <script src="js/gameState.js"></script>
+    <script src="js/passives.js"></script>
+    <script src="js/nameGenerator.js"></script>
 
-            // Make them globally available for now (temporary)
-            window.itemDB = itemDB;
-            window.statDB = statDB;
-            window.rarityDB = rarityDB;
-        </script>
+    <!-- World system data files -->
+    <script src="js/data/missionTypes.js"></script>
+    <script src="js/data/areas.js"></script>
 
-        <script src="js/game.js"></script>
-        <script src="js/main.js"></script>
+    <!-- World system logic -->
+    <script src="js/systems/worldSystem.js"></script>
+
+    <!-- New item system modules -->
+    <script type="module">
+        import { itemDB } from './js/systems/itemSystem.js';
+        import { statDB } from './js/systems/statSystem.js';
+        import { rarityDB } from './js/systems/raritySystem.js';
+
+        // Make them globally available for now (temporary)
+        window.itemDB = itemDB;
+        window.statDB = statDB;
+        window.rarityDB = rarityDB;
+    </script>
+
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
 
 
 </body>
