@@ -546,11 +546,12 @@
 .assignment-status {
     font-size: 0.8em;
     color: #c9aa71;
-    margin-top: 5px;
     padding: 2px 6px;
     background-color: rgba(201, 170, 113, 0.1);
     border-radius: 3px;
     border-left: 2px solid #c9aa71;
+    margin-left: 10px;
+    margin-bottom: 5px;
 }
 
 /* Process day button with assignments */

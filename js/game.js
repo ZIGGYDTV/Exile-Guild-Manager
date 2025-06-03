@@ -624,6 +624,46 @@ const game = {
         return itemForSave;
     },
 
+    calculateItemSellValue(item) {
+        // Base values per rarity
+        const rarityMultipliers = {
+            common: { min: 5, max: 10 },
+            magic: { min: 15, max: 25 },
+            rare: { min: 40, max: 60 }
+        };
+
+        const rarity = item.rarity || 'common';
+        const ilvl = item.ilvl || 1;
+        const multipliers = rarityMultipliers[rarity] || rarityMultipliers.common;
+
+        // Calculate base value with some randomness
+        const baseValue = this.randomBetween(multipliers.min, multipliers.max);
+        const sellValue = Math.floor(baseValue * ilvl);
+
+        // Minimum sell value of 10 gold
+        return Math.max(10, sellValue);
+    },
+
+    calculateItemSellValue(item) {
+        // Base values per rarity
+        const rarityMultipliers = {
+            common: { min: 5, max: 10 },
+            magic: { min: 15, max: 25 },
+            rare: { min: 40, max: 60 }
+        };
+
+        const rarity = item.rarity || 'common';
+        const ilvl = item.ilvl || 1;
+        const multipliers = rarityMultipliers[rarity] || rarityMultipliers.common;
+
+        // Calculate base value with some randomness
+        const baseValue = this.randomBetween(multipliers.min, multipliers.max);
+        const sellValue = Math.floor(baseValue * ilvl);
+
+        // Minimum sell value of 10 gold
+        return Math.max(10, sellValue);
+    },
+
     equipItem(itemId) {
         const item = gameState.inventory.backpack.find(i => i.id === itemId);
         if (!item) return;
@@ -1288,33 +1328,33 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
 
     formatItemStats(item) {
         let html = '';
-
+    
         // Display implicit stats first with special styling
         if (item.implicitStats && Object.keys(item.implicitStats).length > 0) {
             const implicitStats = Object.entries(item.implicitStats);
             html += '<div class="implicit-stats">';
             html += implicitStats.map(([stat, value]) => {
                 const statName = this.getStatDisplayName(stat);
-                return `+${value} ${statName}`;
-            }).join(', ');
+                return `<span class="item-stat-line">+${value} ${statName}</span>`;
+            }).join('');
             html += '</div>';
             html += '<div class="stat-divider"></div>'; // Visual separator
         }
-
+    
         // Display regular stats
         const stats = item.stats instanceof Map ?
             Array.from(item.stats.entries()) :
             Object.entries(item.stats || {});
-
+    
         if (stats.length > 0) {
             html += '<div class="regular-stats">';
             html += stats.map(([stat, value]) => {
                 const statName = this.getStatDisplayName(stat);
-                return `+${value} ${statName}`;
-            }).join(', ');
+                return `<span class="item-stat-line">+${value} ${statName}</span>`;
+            }).join('');
             html += '</div>';
         }
-
+    
         return html;
     },
 
@@ -1356,6 +1396,7 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
         document.getElementById('inventory-count-main').textContent = `${count}`;
 
         // Update currency display
+        document.getElementById('modal-gold').textContent = gameState.resources.gold;
         document.getElementById('modal-chaos-orbs').textContent = gameState.resources.chaosOrbs;
         document.getElementById('modal-exalted-orbs').textContent = gameState.resources.exaltedOrbs;
 
@@ -1378,44 +1419,50 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
 
     updateInventoryModalDisplay() {
         const container = document.getElementById('inventory-items-grid');
-
+    
         if (gameState.inventory.backpack.length === 0) {
             container.innerHTML = '<div style="color: #666; text-align: center; grid-column: 1/-1;">No items in inventory</div>';
             return;
         }
-
+    
         container.innerHTML = gameState.inventory.backpack.map(item => {
             const displayName = item.name;
             const displayColor = rarityDB.getRarity(item.rarity)?.color || '#888';
-
+            const sellValue = this.calculateItemSellValue(item);
+    
             return `
-            <div class="inventory-item ${item.rarity}">
-                <div class="item-header">
-                    <div class="item-name" style="color: ${displayColor}">
-                    ${displayName}
-${item.isOvercapped ? '<span class="overcapped-icon" title="Perfected with Exalted Orb">✦</span>' : ''}
-                     </div>
-                    <div class="item-type">${item.slot.charAt(0).toUpperCase() + item.slot.slice(1)}</div>
+                <div class="inventory-item ${item.rarity}">
+                    <div class="item-details">
+                        <div class="item-header">
+                            <div class="item-name" style="color: ${displayColor}">
+                                ${displayName}
+                                ${item.isOvercapped ? '<span class="overcapped-icon" title="Perfected with Exalted Orb">✦</span>' : ''}
+                            </div>
+                            <div class="item-type">${item.slot.charAt(0).toUpperCase() + item.slot.slice(1)}</div>
+                        </div>
+                        <div class="item-ilvl">Item Level: ${item.ilvl}</div>
+                        <div class="item-stats">
+                            ${this.formatItemStats(item)}
+                        </div>
+                        <div class="item-sell-value">Sell: ${sellValue}g</div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="action-btn chaos" onclick="game.useChaosOrbModal(${item.id})" 
+                            ${gameState.resources.chaosOrbs < 1 ? 'disabled' : ''} 
+                            title="Chaos Orb (${gameState.resources.chaosOrbs})">
+                            🌀
+                        </button>
+                        <button class="action-btn exalted" onclick="game.useExaltedOrbModal(${item.id})" 
+                            ${gameState.resources.exaltedOrbs < 1 ? 'disabled' : ''}
+                            title="Exalted Orb (${gameState.resources.exaltedOrbs})">
+                            ⭐
+                        </button>
+                        <button class="action-btn sell" onclick="game.sellItem(${item.id})" title="Sell ${sellValue}g">
+                            💰
+                        </button>
+                    </div>
                 </div>
-                <div class="item-ilvl">Item Level: ${item.ilvl}</div>
-                <div class="item-stats">
-                    ${this.formatItemStats(item)}
-                </div>
-                <div class="item-actions">
-                    <button class="action-btn chaos" onclick="game.useChaosOrbModal(${item.id})" 
-                        ${gameState.resources.chaosOrbs < 1 ? 'disabled' : ''}>
-                        Chaos (${gameState.resources.chaosOrbs})
-                    </button>
-                    <button class="action-btn exalted" onclick="game.useExaltedOrbModal(${item.id})" 
-                        ${gameState.resources.exaltedOrbs < 1 ? 'disabled' : ''}>
-                        Exalted (${gameState.resources.exaltedOrbs})
-                    </button>
-                    <button class="action-btn delete" onclick="game.deleteItem(${item.id})">
-                        Delete
-                    </button>
-                </div>
-            </div>
-        `;
+            `;
         }).join('');
     },
 
@@ -1444,12 +1491,20 @@ ${item.isOvercapped ? '<span class="overcapped-icon" title="Perfected with Exalt
     },
 
     useChaosOrbModal(itemId) {
-        this.useChaosOrb(itemId);
+        const result = this.useChaosOrb(itemId);
+        
+        // Update modal currency displays
+        document.getElementById('modal-chaos-orbs').textContent = gameState.resources.chaosOrbs;
+        
         this.updateInventoryModalDisplay();
     },
 
     useExaltedOrbModal(itemId) {
-        this.useExaltedOrb(itemId);
+        const result = this.useExaltedOrb(itemId);
+        
+        // Update modal currency displays
+        document.getElementById('modal-exalted-orbs').textContent = gameState.resources.exaltedOrbs;
+        
         this.updateInventoryModalDisplay();
     },
 
@@ -1465,6 +1520,117 @@ ${item.isOvercapped ? '<span class="overcapped-icon" title="Perfected with Exalt
             document.getElementById('inventory-count-main').textContent = `${count}`;
         }
     },
+
+    sellItem(itemId) {
+        const item = gameState.inventory.backpack.find(i => i.id === itemId);
+        if (!item) return;
+        
+        const sellValue = this.calculateItemSellValue(item);
+        
+        // Find the item element in the DOM
+        const itemElements = document.querySelectorAll('.inventory-item');
+        let itemElement = null;
+        
+        // Find the specific item element by checking if it contains the sell button with this itemId
+        itemElements.forEach(el => {
+            const sellBtn = el.querySelector(`button[onclick="game.sellItem(${itemId})"]`);
+            if (sellBtn) {
+                itemElement = el;
+            }
+        });
+        
+        if (itemElement) {
+            // Add dissolving class for the main animation
+            itemElement.classList.add('dissolving');
+            
+            // Create gold particles
+            this.createGoldParticles(itemElement);
+            
+            // Wait for animation to complete before removing
+            setTimeout(() => {
+                this.completeSellItem(itemId, item, sellValue);
+            }, 300);
+        } else {
+            // Fallback if element not found
+            this.completeSellItem(itemId, item, sellValue);
+        }
+    },
+    
+    // New helper method to complete the sale after animation
+    completeSellItem(itemId, item, sellValue) {
+        // Remove item from backpack
+        gameState.inventory.backpack = gameState.inventory.backpack.filter(i => i.id !== itemId);
+        
+        // Add gold
+        gameState.resources.gold += sellValue;
+        
+        // Log the sale
+        this.log(`💰 Sold ${item.name} for ${sellValue} gold`, "success");
+        
+        // Update displays
+        this.updateInventoryModalDisplay();
+        this.updateDisplay();
+        
+        // Update modal gold with pulse effect
+        const modalGoldElement = document.getElementById('modal-gold');
+        if (modalGoldElement) {
+            modalGoldElement.textContent = gameState.resources.gold;
+            
+            // Add pulse effect
+            modalGoldElement.classList.remove('resource-glow-pulse');
+            void modalGoldElement.offsetWidth; // Force reflow to restart animation
+            modalGoldElement.classList.add('resource-glow-pulse');
+            
+            // Remove class after animation
+            setTimeout(() => {
+                modalGoldElement.classList.remove('resource-glow-pulse');
+            }, 700);
+        }
+        
+        this.saveGame();
+        
+        // Update counts
+        const count = gameState.inventory.backpack.length;
+        document.getElementById('modal-inventory-count').textContent = `${count}`;
+        document.getElementById('inventory-count-main').textContent = `${count}`;
+    },
+
+    // New method to create gold particle effects
+    createGoldParticles(element) {
+        const rect = element.getBoundingClientRect();
+        const particleCount = 8;
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'gold-particle';
+            
+            // Random starting position within the item
+            const startX = rect.left + Math.random() * rect.width;
+            const startY = rect.top + Math.random() * rect.height;
+            
+            // Random horizontal drift
+            const dx = (Math.random() - 0.5) * 60;
+            
+            particle.style.left = startX + 'px';
+            particle.style.top = startY + 'px';
+            particle.style.setProperty('--dx', dx + 'px');
+            
+            // Random animation duration for variety
+            const duration = 0.6 + Math.random() * 0.3;
+            particle.style.animation = `floatUp ${duration}s ease-out forwards`;
+            
+            // Random delay for staggered effect
+            particle.style.animationDelay = `${Math.random() * 0.1}s`;
+            
+            document.body.appendChild(particle);
+            
+            // Remove particle after animation
+            setTimeout(() => {
+                particle.remove();
+            }, (duration + 0.1) * 1000);
+        }
+    },
+
     // End of Inventory Modal Methods
 
     updateCharacterScreen() {
@@ -1635,11 +1801,11 @@ Final: ${final}`;
                 const displayColor = equipped.getDisplayColor ? equipped.getDisplayColor() :
                     rarityDB.getRarity(equipped.rarity)?.color || '#888';
 
-                slotContent.innerHTML = `
+                    slotContent.innerHTML = `
                     <div class="item-equipped">
                         <div class="item-name" style="color: ${displayColor}">
-                        ${displayName}
-${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected with Exalted Orb">✦</span>' : ''}
+                            ${displayName}
+                            ${equipped.isOvercapped ? '<span class="overcapped-icon" title="Perfected with Exalted Orb">✦</span>' : ''}
                         </div>
                         <div class="item-stats">
                             ${this.formatItemStats(equipped)}

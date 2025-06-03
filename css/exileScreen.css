@@ -30,7 +30,7 @@
 
 .modal-header {
     background-color: #2a2a2a;
-    padding: 15px 20px;
+    padding: 10px 20px;
     border-bottom: 1px solid #444;
     display: flex;
     justify-content: space-between;
@@ -74,7 +74,7 @@
 .character-left-column,
 .character-middle-column,
 .character-right-column {
-    padding: 20px;
+    padding: 15px;
     overflow-y: auto;
 }
 
@@ -99,7 +99,7 @@
 .passives-section,
 .equipment-section,
 .character-inventory-section {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .character-info-section h3,
@@ -145,7 +145,7 @@
 .stat-breakdown-row {
     display: flex;
     align-items: baseline; /* Align items along their text baseline */
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     font-family: monospace;
     font-size: 1.1em;
 }
@@ -178,18 +178,18 @@
 /* Passive allocation */
 .allocated-passives {
     background-color: #2a2a2a;
-    padding: 15px;
+    padding: 12px;
     border-radius: 5px;
-    min-height: 200px;
-    margin-bottom: 15px;
+    min-height: 150px;
+    margin-bottom: 12px;
 }
 
 .passive-item {
     background-color: #1a1a1a;
     border: 1px solid #444;
     border-radius: 3px;
-    padding: 10px;
-    margin-bottom: 8px;
+    padding: 8px;
+    margin-bottom: 6px;
 }
 
 .passive-item:last-child {
@@ -228,34 +228,6 @@
     transform: translateY(-1px);
 }
 
-/* Character equipment grid */
-.character-equipment-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.char-equip-slot {
-    background-color: #2a2a2a;
-    border: 1px solid #444;
-    border-radius: 5px;
-    padding: 10px;
-    text-align: center;
-    min-height: 80px;
-    display: flex;
-    flex-direction: column;
-}
-
-.char-equip-slot.future-slot {
-    opacity: 0.5;
-}
-
-.char-equip-slot .slot-label {
-    font-size: 0.8em;
-    color: #c9aa71;
-    margin-bottom: 5px;
-}
 
 .char-equip-slot .slot-content {
     flex: 1;
@@ -264,12 +236,6 @@
     justify-content: center;
     cursor: pointer;
     box-shadow: 0 0 10px #3f3527;
-}
-
-.char-equip-slot .empty-slot {
-    color: #666;
-    font-style: italic;
-    font-size: 0.8em;
 }
 
 /* Character inventory */
@@ -466,17 +432,18 @@
 .character-equipment-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    gap: 8px;
     margin-top: 15px;
 }
 
 .char-equip-slot {
     border: 2px solid #444;
     background: #1a1a1a;
-    padding: 10px;
+    padding: 8px;
     text-align: center;
-    min-height: 80px;
+    min-height: 70px;
     position: relative;
+    border-radius: 5px;
 }
 
 .char-equip-slot:hover {
@@ -484,7 +451,7 @@
 }
 
 .char-equip-slot .slot-label {
-    font-size: 0.8em;
+    font-size: 0.5em;
     color: #888;
     margin-bottom: 5px;
 }
@@ -508,6 +475,15 @@
 /* Item display in slots */
 .char-equip-slot .item-equipped {
     cursor: pointer;
+    line-height: 1.3;  /* Tighter line spacing */
+
+}
+
+/* Remove any padding from stat wrappers */
+.char-equip-slot .implicit-stats,
+.char-equip-slot .regular-stats {
+    margin: 0;
+    padding: 0;
 }
 
 .char-equip-slot .item-name {
@@ -520,6 +496,57 @@
     font-size: 0.75em;
     color: #aaa;
 }
+
+/* Item stats formatting in character screen */
+.char-equip-slot .item-stats {
+    font-size: 0.75em;
+    line-height: 1.3;
+}
+
+.char-equip-slot .item-stat-line {
+    display: block !important;
+    color: #aaa;
+}
+
+.char-equip-slot .implicit-stats {
+    color: #5f5f74;
+    font-style: italic;
+    font-size: 0.7em;
+}
+
+.char-equip-slot .stat-divider {
+    height: 1px;
+    background: #444;
+    margin: 3px 0;
+    opacity: 0.5;
+}
+
+.char-equip-slot .regular-stats {
+    color: #aaa;
+}
+
+/* Also apply to equipment selector modal */
+.equipment-option .item-stats {
+    font-size: 0.85em;
+    line-height: 1.3;
+}
+
+.equipment-option .item-stat-line {
+    display: block;
+    color: #aaa;
+}
+
+.equipment-option .stat-divider {
+    height: 1px;
+    background: #444;
+    margin: 3px 0;
+    opacity: 0.5;
+}
+
+.equipment-option .regular-stats {
+    color: #aaa;
+}
+
 
 /* Indicator for slots with available items */
 .slot-has-items {

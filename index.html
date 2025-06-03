@@ -167,7 +167,6 @@
                                 <!-- Left Column: Character Info & Stats -->
                                 <div class="character-left-column">
                                     <div class="character-info-section">
-                                        <h3>Character Information</h3>
                                         <div class="character-details">
                                             <div class="detail-row">
                                                 <span class="detail-label">Name:</span>
@@ -197,7 +196,6 @@
                                     </div>
 
                                     <div class="stats-breakdown-section">
-                                        <h3>Combat Statistics</h3>
                                         <div class="stat-breakdown">
                                             <div class="stat-breakdown-row">
                                                 <span class="stat-name">Life:</span>
@@ -261,7 +259,6 @@
                                 <!-- Middle Column: Passives -->
                                 <div class="character-middle-column">
                                     <div class="passives-section">
-                                        <h3>Passive Skills</h3>
                                         <div id="passive-allocation-area">
                                             <button id="allocate-passive-btn" class="allocate-btn"
                                                 onclick="game.openPassiveSelection()" style="display: none;">
@@ -276,7 +273,6 @@
                                 <!-- Right Column: Equipment & Inventory -->
                                 <div class="character-right-column">
                                     <div class="equipment-section">
-                                        <h3>Equipment</h3>
                                         <div class="character-equipment-grid">
                                             <!-- Top row -->
                                             <div class="char-equip-slot" id="char-helmet-slot">
@@ -495,23 +491,25 @@
                     <div id="inventory-modal" class="modal-overlay" style="display: none;"
                         onclick="game.handleInventoryModalClick(event)">
                         <div class="inventory-modal-content" onclick="event.stopPropagation()">
-
-                            <div class="inventory-modal-body">
-                                <div class="inventory-info-bar">
-                                    <div class="inventory-capacity">
-                                        <strong>Items:</strong> <span id="modal-inventory-count">0</span>
-                                    </div>
-                                    <div class="currency-display">
-                                        <span class="currency-item">
-                                            <strong>Chaos:</strong> <span id="modal-chaos-orbs">0</span>
-                                        </span>
-                                        <span class="currency-item">
-                                            <strong>Exalts:</strong> <span id="modal-exalted-orbs">0</span>
-                                        </span>
-                                    </div>
+                         
+                            <div class="inventory-info-bar">
+                                <div class="inventory-capacity">
+                                    <strong>Items:</strong> <span id="modal-inventory-count">0</span>
                                 </div>
-
-                                <div id="inventory-items-grid" class="inventory-grid">
+                                <div class="currency-display">
+                                    <span class="currency-item">
+                                        <strong>Chaos:</strong> <span id="modal-chaos-orbs">0</span>
+                                    </span>
+                                    <span class="currency-item">
+                                        <strong>Exalts:</strong> <span id="modal-exalted-orbs">0</span>
+                                    </span>
+                                    <span class="currency-item">
+                                        <strong>Gold:</strong> <span id="modal-gold">0</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="inventory-modal-body">
+                                    <div id="inventory-items-grid" class="inventory-grid">
                                     <!-- Items will be populated here -->
                                 </div>
                             </div>

@@ -23,7 +23,8 @@
     background: #1a1a1a;
     border: 2px solid #444;
     border-radius: 8px;
-    max-width: 900px;
+    max-width: 1200px;  /* Increase from 900px */
+    width: 90vw;        /* Add this - use 90% of viewport width */
     max-height: 80vh;
     overflow: hidden;
     display: flex;
@@ -65,18 +66,158 @@
     font-weight: bold;
 }
 
+
+/* Inventory Grid */
 .inventory-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* size of inventory items */
+    gap: 8px; /* space between inventory items */
 }
 
 .inventory-grid .inventory-item {
     background: #222;
     border: 2px solid #333;
     border-radius: 5px;
-    padding: 15px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    font-size: 0.95em;
+    position: relative;
+    min-height: 160px; /* Ensure minimum height for button positioning */
 }
+
+.inventory-item .item-header {
+    margin-bottom: 6px;
+}
+
+.inventory-item .item-name {
+    font-size: 1em;
+    line-height: 1.2;
+    margin-bottom: 2px;
+}
+
+.inventory-item .item-type {
+    font-size: 0.7em;
+    color: #888;
+}
+
+.inventory-item .item-ilvl {
+    font-size: 0.65em;
+    color: #666;
+    font-style: italic;
+    margin-bottom: 4px;
+}
+
+.inventory-item .item-stats {
+    font-size: 0.75em;
+    line-height: 1.3;
+    margin-bottom: 6px;
+    flex: 1;
+}
+
+/* Each stat on its own line */
+.inventory-item .item-stat-line {
+    display: block;
+    color: #aaa;
+}
+
+.inventory-item .item-sell-value {
+    position: absolute;
+    bottom: 8px;
+    right: 38px;  /* Position it to the left of the buttons (24px button + 8px padding + 6px gap) */
+    font-size: 0.7em;
+    color: #c9aa71;
+    opacity: 0.6;
+    font-weight: bold;
+    background: #1a1a1a;  /* Dark background for readability */
+    padding: 2px 4px;
+    border-radius: 3px;
+    line-height: 20px;  /* Match button height for alignment */
+}
+
+/* Remove the wrapper approach */
+.item-details {
+    flex: 1;
+    padding-right: 35px; /* Make room for buttons */
+    padding-bottom: 30px;   /* prevent overlap with buttons */
+}
+
+/* Position buttons absolutely in bottom right */
+.inventory-item .item-actions {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.inventory-item .action-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9em;
+    border-radius: 3px;
+    position: relative;
+}
+
+/* Smaller tooltips for compact buttons */
+.inventory-item .action-btn::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 50%;
+    right: 100%;
+    transform: translateY(50%);
+    background: #1a1a1a;
+    color: #e0e0e0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.65em;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    z-index: 100;
+    margin-right: 4px;
+}
+
+.inventory-item .action-btn:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+    .inventory-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+}
+
+@media (max-width: 480px) {
+    .inventory-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+}
+
+/* Implicit/regular stats styling updates */
+.inventory-item .implicit-stats,
+.inventory-item .regular-stats {
+    margin: 0;
+}
+
+.inventory-item .stat-divider {
+    height: 1px;
+    background: #444;
+    margin: 2px 0;
+    opacity: 0.5;
+}
+/* ENd of Inventory Grid
+
+
 
 
 /* Item Tooltips on Hover */
@@ -140,4 +281,52 @@
 
 .item-name-hover:hover {
     text-decoration: underline;
+}
+
+
+/* Dissolve to gold particles effect */
+@keyframes dissolveToGold {
+    0% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+        filter: brightness(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(0.95) rotate(5deg);
+        filter: brightness(1.5) sepia(1) saturate(2) hue-rotate(45deg);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.8) rotate(10deg) translateY(-20px);
+        filter: brightness(2) sepia(1) saturate(2) hue-rotate(45deg);
+    }
+}
+
+.inventory-item.dissolving {
+    animation: dissolveToGold 0.3s ease-out forwards;
+    pointer-events: none;
+}
+
+/* Gold particles */
+.gold-particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: radial-gradient(circle, #ffd700, #ff9500);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1000;
+    box-shadow: 0 0 6px #ffd700;
+}
+
+@keyframes floatUp {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--dx), -80px) scale(0.3);
+    }
 }
