@@ -501,6 +501,7 @@
 .char-equip-slot .item-stats {
     font-size: 0.75em;
     line-height: 1.3;
+    margin-top: 2px;
 }
 
 .char-equip-slot .item-stat-line {
@@ -511,7 +512,8 @@
 .char-equip-slot .implicit-stats {
     color: #5f5f74;
     font-style: italic;
-    font-size: 0.7em;
+    font-size: 0.8em;
+    margin-bottom: 2px;
 }
 
 .char-equip-slot .stat-divider {
@@ -527,7 +529,7 @@
 
 /* Also apply to equipment selector modal */
 .equipment-option .item-stats {
-    font-size: 0.85em;
+    font-size: 0.99em;
     line-height: 1.3;
 }
 

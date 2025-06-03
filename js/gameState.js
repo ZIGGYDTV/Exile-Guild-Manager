@@ -100,6 +100,13 @@ const gameState = {
                         firstCompleted: false,
                         lastCompleted: null,
                         availableAgainOnDay: null
+                    },
+                    crab_hunting: {
+                        discovered: true,
+                        completions: 0,
+                        firstCompleted: false,
+                        lastCompleted: null,
+                        availableAgainOnDay: null
                     }
                 }
             },

@@ -311,37 +311,59 @@ class ItemDatabase {
     initializeEquipment() {
         // Weapons
         this.registerEquipment(
-            new Weapon('Short Sword', 'sword')
-                .setAttackSpeed(1.5)
-                .setDamageMultiplier(1.0)
-                .addImplicitStat('damage', 15)
+            new Weapon('Broken Short Sword', 'sword') // Item base name, weapon type
+                .setAttackSpeed(1.2)
+                .setDamageMultiplier(0.9)
+                .addImplicitStat('damage', 8)
                 .addStatWeight('damage', 3)
-                .addStatWeight('life', 1)
+                .addStatWeight('life', 0.2)
+                .addStatWeight('defense', 1.5)
+                .addStatWeight('attackSpeed', 2)
         );
 
         this.registerEquipment(
-            new Weapon('Battle Axe', 'axe')
-                .setAttackSpeed(0.9)
-                .setDamageMultiplier(1.2)
-                .addImplicitStat('damage', 25)
+            new Weapon('Jagged Cannibal Machete', 'sword')
+                .setRequirements(5)
+                .setAttackSpeed(1.0)
+                .setDamageMultiplier(1.1)
+                .addImplicitStat('damage', 12)
                 .addStatWeight('damage', 4)
         );
 
         this.registerEquipment(
-            new Weapon('War Hammer', 'mace')
-                .setAttackSpeed(1.0)
+            new Weapon('Stone Hatchet', 'axe')
+                .setAttackSpeed(0.9)
+                .setDamageMultiplier(1.2)
+                .addImplicitStat('damage', 12)
+                .addStatWeight('damage', 4)
+                .addStatWeight('life', 1.2)
+        );
+
+        this.registerEquipment(
+            new Weapon('Iron Bar', 'mace')
+                .setAttackSpeed(0.7)
                 .setDamageMultiplier(1.1)
-                .addImplicitStat('damage', 20)
-                .addImplicitStat('defense', 5)
+                .addImplicitStat('damage', 10)
+                .addImplicitStat('defense', 4)
                 .addStatWeight('damage', 3)
-                .addStatWeight('defense', 1)
+                .addStatWeight('defense', 2)
+        );
+
+        this.registerEquipment(
+            new Weapon('Femur Club', 'mace')
+                .setRequirements(5)
+                .setAttackSpeed(0.7)
+                .setDamageMultiplier(1.1)
+                .addImplicitStat('damage', 14)
+                .addImplicitStat('defense', 3)
+                .addStatWeight('damage', 4)
         );
 
         this.registerEquipment(
             new Weapon('Quarterstaff', 'staff')
                 .setAttackSpeed(1.2)
-                .setDamageMultiplier(0.9)
-                .addImplicitStat('damage', 12)
+                .setDamageMultiplier(1.0)
+                .addImplicitStat('damage', 8)
                 .addImplicitStat('defense', 8)
                 .addStatWeight('damage', 2)
                 .addStatWeight('defense', 2)
@@ -349,205 +371,195 @@ class ItemDatabase {
 
         // Armor - Helmets
         this.registerEquipment(
-            new Armor('Leather Cap', 'helmet')
+            new Armor('Patchleather Cap', 'helmet')
                 .setDefenseMultiplier(0.8)
-                .addImplicitStat('lightRadius', 15)
+                .addImplicitStat('defense', 3)
                 .addStatWeight('life', 2)
                 .addStatWeight('defense', 2)
-                .addStatWeight('lightRadius', 1)
+                .addStatWeight('lightRadius', 3)
         );
 
         this.registerEquipment(
-            new Armor('Chain Coif', 'helmet')
+            new Armor('Rag and Chain Cowl', 'helmet')
                 .setDefenseMultiplier(1.0)
-                .addImplicitStat('defense', 10)
+                .addImplicitStat('defense', 5)
                 .addStatWeight('defense', 3)
                 .addStatWeight('life', 1)
-                .addStatWeight('lightRadius', 1)
+                .addStatWeight('lightRadius', 3)
         );
 
         this.registerEquipment(
-            new Armor('Plate Helm', 'helmet')
+            new Armor('Strapped Bucket', 'helmet')
                 .setDefenseMultiplier(1.2)
-                .addImplicitStat('defense', 15)
+                .addImplicitStat('defense', 9)
                 .addStatWeight('defense', 4)
                 .addStatWeight('life', 1)
-                .addStatWeight('lightRadius', 1)
+                .addStatWeight('lightRadius', 0.05)
         );
 
         // Armor - Body
         this.registerEquipment(
-            new Armor('Leather Tunic', 'chest')
-                .setDefenseMultiplier(0.8)
-                .addImplicitStat('moveSpeed', 5)
+            new Armor('Rag Tunic', 'chest')
+                .setDefenseMultiplier(0.6)
+                .addImplicitStat('defense', 3)
                 .addStatWeight('life', 2)
                 .addStatWeight('defense', 2)
-                .addStatWeight('moveSpeed', 1)
         );
 
         this.registerEquipment(
-            new Armor('Chain Mail', 'chest')
+            new Armor('Hide and Chain Poncho', 'chest')
                 .setDefenseMultiplier(1.0)
-                .addImplicitStat('defense', 20)
+                .addImplicitStat('defense', 9)
                 .addStatWeight('defense', 3)
                 .addStatWeight('life', 2)
         );
 
         this.registerEquipment(
-            new Armor('Plate Armor', 'chest')
+            new Armor('Scrapmetal Vest', 'chest')
                 .setDefenseMultiplier(1.2)
-                .addImplicitStat('defense', 30)
+                .addImplicitStat('defense', 12)
+                .addImplicitStat('moveSpeed', -5)
                 .addStatWeight('defense', 4)
                 .addStatWeight('life', 2)
+                .addStatWeight('moveSpeed', 0)
         );
 
         // Armor - Gloves
         this.registerEquipment(
-            new Armor('Leather Gloves', 'gloves')
-                .setDefenseMultiplier(0.8)
-                .addImplicitStat('damage', 5)
-                .addStatWeight('life', 1)
-                .addStatWeight('defense', 1)
-                .addStatWeight('damage', 1)
+            new Armor('Rag Handwraps', 'gloves')
+                .setDefenseMultiplier(0.6)
+                .addImplicitStat('defense', 1)
+                .addStatWeight('attackSpeed', 3)
+                .addStatWeight('damage', 2)
         );
 
         this.registerEquipment(
-            new Armor('Chain Gauntlets', 'gloves')
-                .setDefenseMultiplier(1.0)
-                .addImplicitStat('defense', 8)
-                .addStatWeight('defense', 2)
-                .addStatWeight('damage', 1)
+            new Armor('A Leather Glove', 'gloves')
+                .setDefenseMultiplier(0.7)
+                .addImplicitStat('defense', 2)
+                .addStatWeight('attackSpeed', 2.5)
+                .addStatWeight('damage', 2.5)
         );
 
         this.registerEquipment(
-            new Armor('Plate Gauntlets', 'gloves')
+            new Armor('Rawhide Mittens', 'gloves')
                 .setDefenseMultiplier(1.2)
-                .addImplicitStat('defense', 12)
+                .addImplicitStat('defense', 5)
                 .addStatWeight('defense', 3)
                 .addStatWeight('damage', 1)
+                .addStatWeight('attackSpeed', 0.1)
         );
 
         // Armor - Boots
         this.registerEquipment(
-            new Armor('Leather Boots', 'boots')
-                .setDefenseMultiplier(0.8)
-                .addImplicitStat('moveSpeed', 10)
+            new Armor('Driftwood Sandals', 'boots')
+                .setDefenseMultiplier(0.3)
+                .addImplicitStat('moveSpeed', 8)
                 .addStatWeight('moveSpeed', 2)
-                .addStatWeight('defense', 1)
-                .addStatWeight('life', 1)
+                .addStatWeight('lightningResist', 1.5)
         );
 
         this.registerEquipment(
-            new Armor('Chain Boots', 'boots')
-                .setDefenseMultiplier(1.0)
-                .addImplicitStat('moveSpeed', 5)
-                .addImplicitStat('defense', 5)
+            new Armor('PatchLeather Footwraps', 'boots')
+                .setDefenseMultiplier(0.6)
+                .addImplicitStat('defense', 2)
+                .addImplicitStat('moveSpeed', 4)
                 .addStatWeight('defense', 2)
-                .addStatWeight('moveSpeed', 1)
-                .addStatWeight('life', 1)
+                .addStatWeight('moveSpeed', 1.5)
+                .addStatWeight('coldResist', 1.5)
         );
 
         this.registerEquipment(
-            new Armor('Plate Greaves', 'boots')
+            new Armor('Gobletcapped Boots', 'boots')
                 .setDefenseMultiplier(1.2)
-                .addImplicitStat('defense', 10)
+                .addImplicitStat('defense', 4)
                 .addStatWeight('defense', 3)
-                .addStatWeight('moveSpeed', 1)
-                .addStatWeight('life', 1)
+                .addStatWeight('moveSpeed', 0.5)
+                .addStatWeight('fireResist', 1.5)
         );
 
         // Armor - Shields
         this.registerEquipment(
-            new Armor('Wooden Shield', 'shield')
-                .setDefenseMultiplier(0.8)
-                .addImplicitStat('defense', 15)
+            new Armor('Plank and Rope Armguard', 'shield')
+                .setDefenseMultiplier(0.6)
+                .addImplicitStat('defense', 9)
                 .addStatWeight('defense', 2)
                 .addStatWeight('life', 2)
+                .addStatWeight('coldResist', 1.5)
+                .addStatWeight('lightningResist', 1.5)
         );
 
         this.registerEquipment(
-            new Armor('Kite Shield', 'shield')
-                .setDefenseMultiplier(1.0)
-                .addImplicitStat('defense', 20)
+            new Armor('Barrel Lid', 'shield')
+                .setDefenseMultiplier(0.8)
+                .addImplicitStat('defense', 15)
                 .addStatWeight('defense', 3)
-                .addStatWeight('life', 1)
         );
 
         this.registerEquipment(
-            new Armor('Tower Shield', 'shield')
-                .setDefenseMultiplier(1.2)
-                .addImplicitStat('defense', 30)
-                .addStatWeight('defense', 4)
+            new Armor('Basket Rapier Handguard', 'shield')
+                .setDefenseMultiplier(0.4)
+                .addImplicitStat('defense', 4)
+                .addImplicitStat('damage', 2)
+                .addStatWeight('damage', 2)
         );
 
         // Rings
         this.registerEquipment(
-            new Ring('Iron Ring')
-                .addImplicitStat('defense', 5)
-                .addStatWeight('life', 1)
-                .addStatWeight('defense', 1)
-                .addStatWeight('damage', 1)
+            new Ring('Wooden Ring')
+                .addImplicitStat('defense', 1)
         );
 
         this.registerEquipment(
-            new Ring('Ruby Ring')
-                .addImplicitStat('fireResist', 10)
-                .addStatWeight('life', 2)
+            new Ring('Quartz Ring')
+                .addImplicitStat('fireResist', 5)
                 .addStatWeight('fireResist', 2)
         );
 
         this.registerEquipment(
-            new Ring('Sapphire Ring')
-                .addImplicitStat('coldResist', 10)
-                .addStatWeight('life', 2)
-                .addStatWeight('coldResist', 2)
+            new Ring('Stone Ring')
+                .addImplicitStat('lightningResist', 5)
+                .addStatWeight('lightningResist', 2)
         );
 
         // Amulets
         this.registerEquipment(
-            new Amulet('Amber Amulet')
-                .addImplicitStat('life', 20)
-                .addStatWeight('life', 3)
-                .addStatWeight('defense', 1)
+            new Amulet('Bonecharm Amulet')
+                .addImplicitStat('life', 9)
+                .addStatWeight('life', 2)
         );
 
         this.registerEquipment(
-            new Amulet('Jade Amulet')
-                .addImplicitStat('defense', 15)
+            new Amulet('Pukashell Necklace')
+                .addImplicitStat('coldResist', 9)
+                .addStatWeight('coldResist', 2)
+        );
+
+        this.registerEquipment(
+            new Amulet('Scrap Iron Torc')
+                .addImplicitStat('defense', 4)
                 .addStatWeight('defense', 2)
-                .addStatWeight('life', 2)
-        );
-
-        this.registerEquipment(
-            new Amulet('Onyx Amulet')
-                .addImplicitStat('damage', 10)
-                .addStatWeight('damage', 2)
-                .addStatWeight('life', 2)
         );
 
         // Belts
         this.registerEquipment(
-            new Belt('Leather Belt')
-                .addImplicitStat('life', 30)
-                .addStatWeight('life', 3)
-                .addStatWeight('defense', 1)
-        );
-
-        this.registerEquipment(
-            new Belt('Chain Belt')
-                .addImplicitStat('defense', 10)
-                .addImplicitStat('life', 15)
+            new Belt('Cord Belt')
+                .addImplicitStat('life', 4)
                 .addStatWeight('life', 2)
-                .addStatWeight('defense', 2)
         );
 
         this.registerEquipment(
-            new Belt('Studded Belt')
+            new Belt('Old Scarf Wrap')
+                .addImplicitStat('coldResist', 6)
+                .addStatWeight('coldResist', 2)
+        );
+
+        this.registerEquipment(
+            new Belt('Nail-studded Leather Belt')
                 .addImplicitStat('defense', 8)
-                .addImplicitStat('damage', 5)
-                .addStatWeight('life', 2)
+                .addImplicitStat('damage', 3)
                 .addStatWeight('defense', 2)
-                .addStatWeight('damage', 1)
+                .addStatWeight('damage', 0.5)
         );
     }
 
@@ -591,7 +603,6 @@ class ItemDatabase {
         }
 
         // Step 2: Get all equipment of that slot type
-        // Step 2: Get all equipment of that slot type
         let possibleBases;
 
         // Define armor slots for easy checking
@@ -600,29 +611,100 @@ class ItemDatabase {
 
         if (selectedSlot === 'weapon') {
             possibleBases = Array.from(this.equipment.values())
-                .filter(eq => eq instanceof Weapon);
+                .filter(eq => eq instanceof Weapon)
+                .filter(eq => eq.requirements.level <= targetIlvl)
+                .filter(eq => !eq.requirements.themes.length || 
+                        eq.requirements.themes.some(theme => missionThemes.includes(theme)));
         } else if (selectedSlot === 'jewelry') {
             possibleBases = Array.from(this.equipment.values())
-                .filter(eq => eq instanceof Ring || eq instanceof Amulet || eq instanceof Belt);
+                .filter(eq => eq instanceof Ring || eq instanceof Amulet || eq instanceof Belt)
+                .filter(eq => eq.requirements.level <= targetIlvl)
+                .filter(eq => !eq.requirements.themes.length || 
+                        eq.requirements.themes.some(theme => missionThemes.includes(theme)));
         } else if (selectedSlot === 'armor') {
             // When "armor" category is selected, get ALL armor pieces
             possibleBases = Array.from(this.equipment.values())
-                .filter(eq => eq instanceof Armor);
+                .filter(eq => eq instanceof Armor)
+                .filter(eq => eq.requirements.level <= targetIlvl)
+                .filter(eq => !eq.requirements.themes.length || 
+                        eq.requirements.themes.some(theme => missionThemes.includes(theme)));
         } else if (armorSlots.includes(selectedSlot)) {
             // Specific armor slot requested (helmet, chest, etc.)
             possibleBases = Array.from(this.equipment.values())
-                .filter(eq => eq.slot === selectedSlot);
+                .filter(eq => eq.slot === selectedSlot)
+                .filter(eq => eq.requirements.level <= targetIlvl)
+                .filter(eq => !eq.requirements.themes.length || 
+                        eq.requirements.themes.some(theme => missionThemes.includes(theme)));
         } else if (jewelrySlots.includes(selectedSlot)) {
             // Specific jewelry slot requested
             possibleBases = Array.from(this.equipment.values())
-                .filter(eq => eq.slot === selectedSlot);
+                .filter(eq => eq.slot === selectedSlot)
+                .filter(eq => eq.requirements.level <= targetIlvl)
+                .filter(eq => !eq.requirements.themes.length || 
+                        eq.requirements.themes.some(theme => missionThemes.includes(theme)));
         } else {
             // Fallback for any other specific slot
             possibleBases = Array.from(this.equipment.values())
-                .filter(eq => eq.slot === selectedSlot);
+                .filter(eq => eq.slot === selectedSlot)
+                .filter(eq => eq.requirements.level <= targetIlvl)
+                .filter(eq => !eq.requirements.themes.length || 
+                        eq.requirements.themes.some(theme => missionThemes.includes(theme)));
         }
 
-        // If no bases found for slot, fallback to any equipment
+        // Graduated fallback system
+        if (!possibleBases.length) {
+            // First fallback: Remove theme requirement but keep level + slot filtering
+            if (selectedSlot === 'weapon') {
+                possibleBases = Array.from(this.equipment.values())
+                    .filter(eq => eq instanceof Weapon)
+                    .filter(eq => eq.requirements.level <= targetIlvl);
+            } else if (selectedSlot === 'jewelry') {
+                possibleBases = Array.from(this.equipment.values())
+                    .filter(eq => eq instanceof Ring || eq instanceof Amulet || eq instanceof Belt)
+                    .filter(eq => eq.requirements.level <= targetIlvl);
+            } else if (selectedSlot === 'armor') {
+                possibleBases = Array.from(this.equipment.values())
+                    .filter(eq => eq instanceof Armor)
+                    .filter(eq => eq.requirements.level <= targetIlvl);
+            } else if (armorSlots.includes(selectedSlot)) {
+                possibleBases = Array.from(this.equipment.values())
+                    .filter(eq => eq.slot === selectedSlot)
+                    .filter(eq => eq.requirements.level <= targetIlvl);
+            } else if (jewelrySlots.includes(selectedSlot)) {
+                possibleBases = Array.from(this.equipment.values())
+                    .filter(eq => eq.slot === selectedSlot)
+                    .filter(eq => eq.requirements.level <= targetIlvl);
+            } else {
+                possibleBases = Array.from(this.equipment.values())
+                    .filter(eq => eq.slot === selectedSlot)
+                    .filter(eq => eq.requirements.level <= targetIlvl);
+            }
+        }
+
+        if (!possibleBases.length) {
+            // Second fallback: Remove level requirement but keep slot filtering
+            if (selectedSlot === 'weapon') {
+                possibleBases = Array.from(this.equipment.values())
+                    .filter(eq => eq instanceof Weapon);
+            } else if (selectedSlot === 'jewelry') {
+                possibleBases = Array.from(this.equipment.values())
+                    .filter(eq => eq instanceof Ring || eq instanceof Amulet || eq instanceof Belt);
+            } else if (selectedSlot === 'armor') {
+                possibleBases = Array.from(this.equipment.values())
+                    .filter(eq => eq instanceof Armor);
+            } else if (armorSlots.includes(selectedSlot)) {
+                possibleBases = Array.from(this.equipment.values())
+                    .filter(eq => eq.slot === selectedSlot);
+            } else if (jewelrySlots.includes(selectedSlot)) {
+                possibleBases = Array.from(this.equipment.values())
+                    .filter(eq => eq.slot === selectedSlot);
+            } else {
+                possibleBases = Array.from(this.equipment.values())
+                    .filter(eq => eq.slot === selectedSlot);
+            }
+        }
+
+        // Final fallback: If still no bases found, use any equipment
         if (!possibleBases.length) {
             possibleBases = Array.from(this.equipment.values());
         }

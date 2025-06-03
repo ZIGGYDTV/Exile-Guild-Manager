@@ -25,7 +25,7 @@ class RarityDatabase {
                 color: '#888',
                 minStats: 0,
                 maxStats: 0,  // Changed from 1 to 0
-                dropWeight: 70
+                dropWeight: 60
             })
         );
     
@@ -34,7 +34,7 @@ class RarityDatabase {
                 color: '#4169E1',
                 minStats: 1,
                 maxStats: 2,  // Already correct
-                dropWeight: 25
+                dropWeight: 30
             })
         );
     
@@ -43,7 +43,7 @@ class RarityDatabase {
                 color: '#FFD700',
                 minStats: 3,  // Changed from 2 to 3
                 maxStats: 4,  // Already correct
-                dropWeight: 5
+                dropWeight: 10
             })
         );
 

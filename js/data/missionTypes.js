@@ -21,7 +21,7 @@ const missionTypeDefinitions = {
 
         // How much scouting information this mission type provides
         scoutingGain: {
-            base: 10,        // Always get this much
+            base: 6,        // Always get this much
             onSuccess: 3,    // Bonus for complseting successfully  
             onFailure: -5    // Penalty for failing/retreating
         },
@@ -68,9 +68,9 @@ const missionTypeDefinitions = {
         baseDanger: 1.2,  // Slightly more dangerous than exploration
 
         scoutingGain: {
-            base: 5,
-            onSuccess: 2,
-            onFailure: -3
+            base: 3,
+            onSuccess: 1,
+            onFailure: -2
         },
 
         randomCurrency: {

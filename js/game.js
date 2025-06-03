@@ -111,8 +111,8 @@ const game = {
             // Log special currency rewards
             if (rewards.chaosOrbs > 0 || rewards.exaltedOrbs > 0) {
                 let orbMessage = "";
-                if (rewards.chaosOrbs > 0) orbMessage += `, +${rewards.chaosOrbs} Chaos Orb(s)`;
-                if (rewards.exaltedOrbs > 0) orbMessage += `, +${rewards.exaltedOrbs} Exalted Orb(s)`;
+                if (rewards.chaosOrbs > 0) orbMessage += `, +${rewards.chaosOrbs} Chaos Shard(s)`;
+                if (rewards.exaltedOrbs > 0) orbMessage += `, +${rewards.exaltedOrbs} Exhultation shard(s)`;
                 this.log(`🎁 Bonus rewards${orbMessage}!`, "legendary");
             }
 
@@ -798,20 +798,35 @@ const game = {
         const baseDamage = gameState.exile.baseStats.damage;
         const baseDefense = gameState.exile.baseStats.defense;
 
-        // Calculate gear bonuses including implicits
+        // Calculate gear bonuses including implicits AND weapon damage multipliers
         let gearLife = 0, gearDamage = 0, gearDefense = 0;
         Object.values(gameState.inventory.equipped).forEach(item => {
             if (item) {
                 // Add implicit stats
                 if (item.implicitStats) {
                     gearLife += item.implicitStats.life || 0;
-                    gearDamage += item.implicitStats.damage || 0;
                     gearDefense += item.implicitStats.defense || 0;
+
+                    // Handle weapon damage with multiplier
+                    if (item.slot === 'weapon' && item.damageMultiplier) {
+                        const weaponImplicitDamage = (item.implicitStats.damage || 0) * item.damageMultiplier;
+                        gearDamage += weaponImplicitDamage;
+                    } else {
+                        gearDamage += item.implicitStats.damage || 0;
+                    }
                 }
+
                 // Add regular stats
                 gearLife += item.stats.life || 0;
-                gearDamage += item.stats.damage || 0;
                 gearDefense += item.stats.defense || 0;
+
+                // Handle weapon damage with multiplier
+                if (item.slot === 'weapon' && item.damageMultiplier) {
+                    const weaponRolledDamage = (item.stats.damage || 0) * item.damageMultiplier;
+                    gearDamage += weaponRolledDamage;
+                } else {
+                    gearDamage += item.stats.damage || 0;
+                }
             }
         });
 
@@ -1008,7 +1023,7 @@ const game = {
         // Consume orb
         gameState.resources.chaosOrbs--;
 
-        this.log(`🌀 Chaos Orb used! ${this.getStatDisplayName(statToRemove)} (${oldValue}) → ${this.getStatDisplayName(newStat)} (${value})`, "legendary");
+        this.log(`🌀 Chaotic Shard used! ${this.getStatDisplayName(statToRemove)} (${oldValue}) → ${this.getStatDisplayName(newStat)} (${value})`, "legendary");
 
         // Update main resource display
         this.updateResourceDisplay();
@@ -1043,7 +1058,7 @@ const game = {
 
         // Check if item is already overcapped
         if (item.isOvercapped) {
-            this.log("This item has already been perfected with an Exalted Orb!", "failure");
+            this.log("This item has already been perfected with an Exalted Shard!", "failure");
             return false;
         }
 
@@ -1128,7 +1143,7 @@ const game = {
         // Consume orb
         gameState.resources.exaltedOrbs--;
 
-        this.log(`⭐ Exalted Orb used! Added ${this.getStatDisplayName(newStat)} (${value})`, "legendary");
+        this.log(`⭐ Exalted Shard used! Added ${this.getStatDisplayName(newStat)} (${value})`, "legendary");
 
         // Update main resource display
         this.updateResourceDisplay();
@@ -1463,8 +1478,10 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
             html += '<div class="weapon-attack-speed">';
             html += `<span class="item-stat-line">Attack Speed: ${item.attackSpeed.toFixed(2)}</span>`;
             html += '</div>';
-            html += '<div class="stat-divider"></div>'; // Visual separator
         }
+
+        // Get effective damage values for weapons
+        const effectiveDamage = this.getEffectiveDamageValues(item);
 
         // Display implicit stats first with special styling
         if (item.implicitStats && Object.keys(item.implicitStats).length > 0) {
@@ -1472,10 +1489,18 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
             html += '<div class="implicit-stats">';
             html += implicitStats.map(([stat, value]) => {
                 const statName = this.getStatDisplayName(stat);
+
+                // Show effective damage for weapons
+                if (stat === 'damage' && effectiveDamage) {
+                    const effectiveValue = effectiveDamage.implicitDamage;
+                    if (effectiveValue !== value) {
+                        return `<span class="item-stat-line">+${effectiveValue} ${statName} <span class="damage-multiplier">(${value} × ${effectiveDamage.multiplier})</span></span>`;
+                    }
+                }
+
                 return `<span class="item-stat-line">+${value} ${statName}</span>`;
             }).join('');
             html += '</div>';
-            html += '<div class="stat-divider"></div>'; // Visual separator
         }
 
         // Display regular stats
@@ -1487,6 +1512,15 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
             html += '<div class="regular-stats">';
             html += stats.map(([stat, value]) => {
                 const statName = this.getStatDisplayName(stat);
+
+                // Show effective damage for weapons
+                if (stat === 'damage' && effectiveDamage) {
+                    const effectiveValue = effectiveDamage.rolledDamage;
+                    if (effectiveValue !== value) {
+                        return `<span class="item-stat-line">+${effectiveValue} ${statName} <span class="damage-multiplier">(${value} × ${effectiveDamage.multiplier})</span></span>`;
+                    }
+                }
+
                 return `<span class="item-stat-line">+${value} ${statName}</span>`;
             }).join('');
             html += '</div>';
@@ -1599,7 +1633,7 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
                     <div class="item-actions">
                         <button class="action-btn chaos" onclick="game.useChaosOrbModal(${item.id})" 
                             ${gameState.resources.chaosOrbs < 1 ? 'disabled' : ''} 
-                            title="Chaos Orb (${gameState.resources.chaosOrbs})">
+                            title="Chaotic Orb (${gameState.resources.chaosOrbs})">
                             🌀
                         </button>
                         <button class="action-btn exalted" onclick="game.useExaltedOrbModal(${item.id})" 
@@ -3044,7 +3078,7 @@ Final: ${final}`;
         if (lootData.chaosOrbs > 0) {
             const chaosItem = document.createElement('div');
             chaosItem.className = 'loot-item chaos';
-            chaosItem.innerHTML = `<span>🌀</span><span>+${lootData.chaosOrbs} Chaos Orb${lootData.chaosOrbs > 1 ? 's' : ''}</span>`;
+            chaosItem.innerHTML = `<span>🌀</span><span>+${lootData.chaosOrbs} Chaotic Shard${lootData.chaosOrbs > 1 ? 's' : ''}</span>`;
             container.appendChild(chaosItem);
             this.animateLootPop(chaosItem, itemIndex * 150);
             itemIndex++;
@@ -3410,16 +3444,23 @@ Final: ${final}`;
 
         // Update areas list
         this.updateWorldAreasDisplay();
-
-        // Clear mission panel
-        document.getElementById('world-mission-content').innerHTML = `
+        // AUTO-SELECT FIRST AREA: Automatically select the first discovered area
+        const discoveredAreas = getDiscoveredAreas();
+        if (discoveredAreas.length > 0) {
+            // Select the first area automatically
+            setTimeout(() => {
+                this.selectArea(discoveredAreas[0].id);
+            }, 50); // Small delay to ensure DOM is updated
+        } else {
+            // Clear mission panel
+            document.getElementById('world-mission-content').innerHTML = `
         <div style="text-align: center; color: #666; margin-top: 50px;">
             <h3>Select an area to view missions</h3>
             <p>Choose an area from the left panel to see available missions and plan your expedition.</p>
         </div>
     `;
+        }
     },
-
     updateWorldAreasDisplay() {
         const areasContainer = document.getElementById('world-areas-list');
         const discoveredAreas = getDiscoveredAreas();
@@ -3443,8 +3484,18 @@ Final: ${final}`;
         document.querySelectorAll('.area-card').forEach(card => {
             card.classList.remove('selected');
         });
-        event.currentTarget.classList.add('selected');
-
+        
+        // Find and select the correct area card by areaId
+        // This works for both click events and programmatic calls
+        const areaCards = document.querySelectorAll('.area-card');
+        areaCards.forEach(card => {
+            // Check if this card's onclick contains the areaId we want
+            const onclickAttr = card.getAttribute('onclick');
+            if (onclickAttr && onclickAttr.includes(`'${areaId}'`)) {
+                card.classList.add('selected');
+            }
+        });
+    
         // Show missions for this area
         this.showAreaMissions(areaId);
     },
@@ -3946,8 +3997,11 @@ Final: ${final}`;
             html += '<div class="tooltip-weapon-stats">';
             html += `Attack Speed: ${item.attackSpeed.toFixed(2)}`;
             html += '</div>';
-            html += '<div class="tooltip-stat-divider"></div>';
+            html += '<div class="stat-divider"></div>'; // Visual separator
         }
+
+        // Get effective damage values for weapons
+        const effectiveDamage = this.getEffectiveDamageValues(item);
 
         // Display implicit stats first with special styling
         if (item.implicitStats && Object.keys(item.implicitStats).length > 0) {
@@ -3955,10 +4009,19 @@ Final: ${final}`;
             html += '<div class="tooltip-implicit-stats">';
             html += implicitStats.map(([stat, value]) => {
                 const statName = this.getStatDisplayName(stat);
+
+                // Show effective damage for weapons
+                if (stat === 'damage' && effectiveDamage) {
+                    const effectiveValue = effectiveDamage.implicitDamage;
+                    if (effectiveValue !== value) {
+                        return `+${effectiveValue} ${statName} <span class="damage-multiplier">(${value} × ${effectiveDamage.multiplier})</span>`;
+                    }
+                }
+
                 return `+${value} ${statName}`;
             }).join('<br>');
             html += '</div>';
-            html += '<div class="tooltip-stat-divider"></div>';
+            html += '<div class="stat-divider"></div>'; // Visual separator
         }
 
         // Display regular stats
@@ -3967,14 +4030,40 @@ Final: ${final}`;
             html += '<div class="tooltip-regular-stats">';
             html += stats.map(([stat, value]) => {
                 const statName = this.getStatDisplayName(stat);
+
+                // Show effective damage for weapons
+                if (stat === 'damage' && effectiveDamage) {
+                    const effectiveValue = effectiveDamage.rolledDamage;
+                    if (effectiveValue !== value) {
+                        return `+${effectiveValue} ${statName} <span class="damage-multiplier">(${value} × ${effectiveDamage.multiplier})</span>`;
+                    }
+                }
+
                 return `+${value} ${statName}`;
             }).join('<br>');
             html += '</div>';
         }
 
         return html;
-    }
+    },
 
+    // Helper function to calculate effective damage values for weapons
+    getEffectiveDamageValues(item) {
+        if (item.slot !== 'weapon' || !item.damageMultiplier) {
+            return null; // Not a weapon or no multiplier
+        }
+
+        const implicitDamage = (item.implicitStats?.damage || 0);
+        const rolledDamage = (item.stats?.damage || 0);
+
+        return {
+            implicitDamage: Math.floor(implicitDamage * item.damageMultiplier),
+            rolledDamage: Math.floor(rolledDamage * item.damageMultiplier),
+            originalImplicitDamage: implicitDamage,
+            originalRolledDamage: rolledDamage,
+            multiplier: item.damageMultiplier
+        };
+    },
 
 };
 // END OF GAME OBJECT =====================

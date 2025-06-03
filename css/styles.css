@@ -84,7 +84,7 @@
 
 /* Placeholder exile styling */
 .placeholder-exile {
-    opacity: 0.7;
+    opacity: 0.1;
     border-color: #666;
 }
 
@@ -1654,6 +1654,7 @@ h2 {
     background: #444;
     margin: 4px 0;
     opacity: 0.5;
+    margin: 2px 2px 2px 2px;
 }
 
 .regular-stats {
@@ -1678,6 +1679,24 @@ h2 {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Damage multiplier display styling */
+.damage-multiplier {
+    color: #888;
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+
+.implicit-stats {
+    color: #c9aa71;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+}
+
+.regular-stats {
+    color: #88ccff;
 }
 
 
