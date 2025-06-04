@@ -34,12 +34,12 @@ const areaDefinitions = {
         // Information players can discover through scouting
         scoutingInfo: [
             {
-                text: "A windswept coastline with scattered wreckage from ancient storms. The carniviorous crabs are barely edible, but can keep us going.",
+                text: "A windswept coastline with scattered shipwrecks from ancient storms. Corpsecrab spawn cause the bodies washed ashore to twitch. There's little close to our refuge to sustain us, we must explore further afield.",
                 threshold: 0,    // Unlocked at start
                 tag: "initial"
             },
             {
-                text: "I see sparks of light comin' from the wreckages sometimes... crackles and scraping. But it looks like a cargo ship containing a shipment broke apart on the rocks. Weapons will be gone to the Cannibals but they don't seem to take any of the clothing... unless there's people in it.",
+                text: "I see sparks of light comin' from the wreckages sometimes... crackles and scraping. There's crates of clothing and other goods scattered about one larger wreck, but no sign of weapons I can see.",
                 threshold: 15,
                 tag: "danger"
             },
@@ -49,7 +49,7 @@ const areaDefinitions = {
                 tag: "loot"
             },
             {
-                text: "Sighted a massive crab-like creature, it was eating the smaller crabs like snacks. It left a frozen trail in it's wake.",
+                text: "Sighted a massive crab-like cbomination... it was eating the smaller crabs like grapes. Where it stepped, spikes of seawater froze into shards of ice.",
                 threshold: 50,
                 tag: "danger"
             },
