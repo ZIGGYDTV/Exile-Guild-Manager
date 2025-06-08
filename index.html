@@ -22,7 +22,7 @@
 
                 <!-- World Map Access -->
                 <div class="command-section">
-                    <button class="world-map-btn" onclick="game.openWorldMap()">
+                    <button class="world-map-btn" onclick="worldMapSystem.openWorldMap()">
                         <div class="btn-icon">🗺️</div>
                         <div class="btn-content">
                             <div class="btn-title">Open World Map</div>
@@ -710,6 +710,7 @@
     import { combatSystem } from './js/systems/combatSystem.js';
     import { missionSystem } from './js/systems/missionSystem.js';
     import { inventorySystem } from './js/systems/inventorySystem.js';
+    import { worldMapSystem } from './js/systems/worldMapSystem.js';
     import { uiSystem } from './js/systems/uiSystem.js';
 
     // Make them globally available during transition
@@ -721,6 +722,7 @@
     window.combatSystem = combatSystem;
     window.missionSystem = missionSystem;
     window.inventorySystem = inventorySystem; 
+    window.worldMapSystem = worldMapSystem;
     window.uiSystem = uiSystem;
     
     // Log that systems are loaded

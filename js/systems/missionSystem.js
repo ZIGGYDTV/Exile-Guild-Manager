@@ -427,7 +427,7 @@ class MissionSystem {
         this.runMission(`${areaId}.${missionId}`);
 
         // Close world map
-        game.closeWorldMap();
+                    worldMapSystem.closeWorldMap();
 
         // Update displays
         game.updateCommandCenterDisplay();
@@ -447,7 +447,7 @@ class MissionSystem {
         }
 
         // Update world map display
-        game.updateWorldMapDisplay();
+        worldMapSystem.updateWorldMapDisplay();
     }
 }
 

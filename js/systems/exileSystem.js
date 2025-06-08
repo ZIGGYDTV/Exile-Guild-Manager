@@ -216,7 +216,7 @@ class ExileSystem {
 
         // Update displays
         game.updateCommandCenterDisplay();  // TEMPORARY
-        game.updateWorldMapDisplay();       // TEMPORARY
+        worldMapSystem.updateWorldMapDisplay();
         game.saveGame();                    // TEMPORARY
 
         return true;
@@ -237,7 +237,7 @@ class ExileSystem {
 
         // Update displays
         game.updateCommandCenterDisplay();  // TEMPORARY
-        game.updateWorldMapDisplay();       // TEMPORARY
+        worldMapSystem.updateWorldMapDisplay();
         game.saveGame();                    // TEMPORARY
 
         return true;
