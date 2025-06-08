@@ -33,7 +33,7 @@
 
                 <!-- Inventory Management -->
                 <div class="command-section">
-                    <button class="inventory-btn" onclick="game.openInventoryModal()">
+                    <button class="inventory-btn" onclick="inventorySystem.openInventoryModal()">
                         <div class="btn-icon">🎒</div>
                         <div class="btn-content">
                             <div class="btn-title">Manage Inventory</div>
@@ -45,7 +45,7 @@
 
                 <!-- Day Management -->
                 <div class="command-section">
-                    <button class="process-day-btn" onclick="game.processDay()">
+                    <button class="process-day-btn" onclick="missionSystem.processDay()">
                         <div class="btn-icon">⏳</div>
                         <div class="btn-content">
                             <div class="btn-title">End Day <span id="current-day-display">(Day 1)</span></div>
@@ -454,13 +454,13 @@
                             <!-- Top row -->
                             <div class="char-equip-slot" id="char-helmet-slot">
                                 <div class="slot-label">Helmet</div>
-                                <div class="slot-content" onclick="game.openEquipmentSelector('helmet')">
+                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('helmet')">
                                     <div class="empty-slot">Empty</div>
                                 </div>
                             </div>
                             <div class="char-equip-slot" id="char-amulet-slot">
                                 <div class="slot-label">Amulet</div>
-                                <div class="slot-content" onclick="game.openEquipmentSelector('amulet')">
+                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('amulet')">
                                     <div class="empty-slot">Empty</div>
                                 </div>
                             </div>
@@ -469,19 +469,19 @@
                             <!-- Middle row -->
                             <div class="char-equip-slot" id="char-gloves-slot">
                                 <div class="slot-label">Gloves</div>
-                                <div class="slot-content" onclick="game.openEquipmentSelector('gloves')">
+                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('gloves')">
                                     <div class="empty-slot">Empty</div>
                                 </div>
                             </div>
                             <div class="char-equip-slot" id="char-chest-slot">
                                 <div class="slot-label">Chest</div>
-                                <div class="slot-content" onclick="game.openEquipmentSelector('chest')">
+                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('chest')">
                                     <div class="empty-slot">Empty</div>
                                 </div>
                             </div>
                             <div class="char-equip-slot" id="char-belt-slot">
                                 <div class="slot-label">Belt</div>
-                                <div class="slot-content" onclick="game.openEquipmentSelector('belt')">
+                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('belt')">
                                     <div class="empty-slot">Empty</div>
                                 </div>
                             </div>
@@ -489,19 +489,19 @@
                             <!-- Bottom row -->
                             <div class="char-equip-slot" id="char-ring1-slot">
                                 <div class="slot-label">Ring</div>
-                                <div class="slot-content" onclick="game.openEquipmentSelector('ring1')">
+                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('ring1')">
                                     <div class="empty-slot">Empty</div>
                                 </div>
                             </div>
                             <div class="char-equip-slot" id="char-boots-slot">
                                 <div class="slot-label">Boots</div>
-                                <div class="slot-content" onclick="game.openEquipmentSelector('boots')">
+                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('boots')">
                                     <div class="empty-slot">Empty</div>
                                 </div>
                             </div>
                             <div class="char-equip-slot" id="char-ring2-slot">
                                 <div class="slot-label">Ring</div>
-                                <div class="slot-content" onclick="game.openEquipmentSelector('ring2')">
+                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('ring2')">
                                     <div class="empty-slot">Empty</div>
                                 </div>
                             </div>
@@ -509,14 +509,14 @@
                             <!-- Weapon row -->
                             <div class="char-equip-slot" id="char-weapon-slot">
                                 <div class="slot-label">Weapon</div>
-                                <div class="slot-content" onclick="game.openEquipmentSelector('weapon')">
+                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('weapon')">
                                     <div class="empty-slot">Empty</div>
                                 </div>
                             </div>
                             <div class="char-equip-slot empty-grid-slot"></div>
                             <div class="char-equip-slot" id="char-shield-slot">
                                 <div class="slot-label">Shield</div>
-                                <div class="slot-content" onclick="game.openEquipmentSelector('shield')">
+                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('shield')">
                                     <div class="empty-slot">Empty</div>
                                 </div>
                             </div>
@@ -628,11 +628,11 @@
 
     <!-- Equipment Slot Selector Modal -->
     <div id="equipment-selector-modal" class="modal-overlay" style="display: none;"
-        onclick="game.handleEquipmentSelectorClick(event)">
+                    onclick="inventorySystem.handleEquipmentSelectorClick(event)">
         <div class="equipment-selector-content" onclick="event.stopPropagation()">
             <div class="equipment-selector-header">
                 <h3 id="equipment-selector-title">Select Equipment</h3>
-                <button class="close-btn" onclick="game.closeEquipmentSelector()">&times;</button>
+                <button class="close-btn" onclick="inventorySystem.closeEquipmentSelector()">&times;</button>
             </div>
 
             <div class="equipment-selector-body">
@@ -656,7 +656,7 @@
 
     <!-- Inventory Management Modal -->
     <div id="inventory-modal" class="modal-overlay" style="display: none;"
-        onclick="game.handleInventoryModalClick(event)">
+        onclick="inventorySystem.handleInventoryModalClick(event)">
         <div class="inventory-modal-content" onclick="event.stopPropagation()">
 
             <div class="inventory-info-bar">
@@ -683,33 +683,59 @@
         </div>
     </div>
 
-    <!-- SCRIPTS MUST GO LAST html elements need to be loaded for these to interact with -->
-    <script src="js/gameState.js"></script>
-    <script src="js/passives.js"></script>
-    <script src="js/nameGenerator.js"></script>
+  <!-- SCRIPTS MUST GO LAST html elements need to be loaded for these to interact with -->
+<script src="js/gameState.js"></script>
+<script src="js/passives.js"></script>
+<script src="js/nameGenerator.js"></script>
 
-    <!-- World system data files -->
-    <script src="js/data/missionTypes.js"></script>
-    <script src="js/data/areas.js"></script>
+<!-- World system data files -->
+<script src="js/data/missionTypes.js"></script>
+<script src="js/data/areas.js"></script>
 
-    <!-- World system logic -->
-    <script src="js/systems/worldSystem.js"></script>
+<!-- World system logic -->
+<script src="js/systems/worldSystem.js"></script>
 
-    <!-- New item system modules -->
-    <script type="module">
-        import { itemDB } from './js/systems/itemSystem.js';
-        import { statDB } from './js/systems/statSystem.js';
-        import { rarityDB } from './js/systems/raritySystem.js';
+<!-- New game system modules -->
+<script type="module">
+    // Import data systems
+    import { monsterDB } from './js/data/monsters.js';
+    
+    // Import existing item systems
+    import { itemDB } from './js/systems/itemSystem.js';
+    import { statDB } from './js/systems/statSystem.js';
+    import { rarityDB } from './js/systems/raritySystem.js';
+    
+    // Import new game systems
+    import { exileSystem } from './js/systems/exileSystem.js';
+    import { combatSystem } from './js/systems/combatSystem.js';
+    import { missionSystem } from './js/systems/missionSystem.js';
+    import { inventorySystem } from './js/systems/inventorySystem.js';
+    import { uiSystem } from './js/systems/uiSystem.js';
 
-        // Make them globally available for now (temporary)
-        window.itemDB = itemDB;
-        window.statDB = statDB;
-        window.rarityDB = rarityDB;
-    </script>
+    // Make them globally available during transition
+    window.monsterDB = monsterDB;
+    window.itemDB = itemDB;
+    window.statDB = statDB;
+    window.rarityDB = rarityDB;
+    window.exileSystem = exileSystem;
+    window.combatSystem = combatSystem;
+    window.missionSystem = missionSystem;
+    window.inventorySystem = inventorySystem; 
+    window.uiSystem = uiSystem;
+    
+    // Log that systems are loaded
+    console.log("Game systems loaded:", {
+        monsters: !!window.monsterDB,
+        items: !!window.itemDB,
+        exile: !!window.exileSystem,
+        combat: !!window.combatSystem,
+        mission: !!window.missionSystem,
+        ui: !!window.uiSystem
+    });
+</script>
 
-    <script src="js/game.js"></script>
-    <script src="js/main.js"></script>
-
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
 
 </body>
 
