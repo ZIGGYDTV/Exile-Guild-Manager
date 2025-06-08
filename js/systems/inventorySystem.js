@@ -35,9 +35,9 @@ const inventorySystem = {
         gameState.inventory.backpack = gameState.inventory.backpack.filter(i => i.id !== itemId);
 
         exileSystem.recalculateStats();
-        game.updateDisplay();
+        uiSystem.updateDisplay();
         this.updateInventoryDisplay();
-        game.updateCharacterScreenIfOpen();
+        characterScreenSystem.updateCharacterScreenIfOpen();
         game.saveGame();
     },
 
@@ -65,9 +65,9 @@ const inventorySystem = {
         gameState.inventory.backpack = gameState.inventory.backpack.filter(i => i.id !== itemId);
 
         exileSystem.recalculateStats();
-        game.updateDisplay();
+        uiSystem.updateDisplay();
         this.updateInventoryDisplay();
-        game.updateCharacterScreenIfOpen();
+        characterScreenSystem.updateCharacterScreenIfOpen();
         game.saveGame();
     },
 
@@ -80,9 +80,9 @@ const inventorySystem = {
         gameState.inventory.equipped[slot] = null;
 
         exileSystem.recalculateStats();
-        game.updateDisplay();
+        uiSystem.updateDisplay();
         this.updateInventoryDisplay();
-        game.updateCharacterScreenIfOpen();
+        characterScreenSystem.updateCharacterScreenIfOpen();
         game.saveGame();
     },
 
@@ -128,7 +128,7 @@ const inventorySystem = {
 
         this.equipItemToSlot(itemId, targetSlot);
         this.updateInventoryModalDisplay();
-        game.updateCharacterScreenIfOpen();
+        characterScreenSystem.updateCharacterScreenIfOpen();
     },
 
     deleteItem(itemId) {
@@ -187,11 +187,11 @@ const inventorySystem = {
         gameState.resources.gold += sellValue;
 
         // Log the sale
-        game.log(`💰 Sold ${item.name} for ${sellValue} gold`, "success");
+        uiSystem.log(`💰 Sold ${item.name} for ${sellValue} gold`, "success");
 
         // Update displays
         this.updateInventoryModalDisplay();
-        game.updateDisplay();
+        uiSystem.updateDisplay();
 
         // Update modal gold with pulse effect
         const modalGoldElement = document.getElementById('modal-gold');
@@ -262,7 +262,7 @@ const inventorySystem = {
         // Get only non-implicit stats
         const currentStatKeys = Object.keys(item.stats);
         if (currentStatKeys.length === 0) {
-            game.log("No stats to reroll!", "failure");
+            uiSystem.log("No stats to reroll!", "failure");
             return false;
         }
 
@@ -282,7 +282,7 @@ const inventorySystem = {
         }
 
         if (!itemBase) {
-            game.log("Cannot determine item base type!", "failure");
+            uiSystem.log("Cannot determine item base type!", "failure");
             return false;
         }
 
@@ -291,7 +291,7 @@ const inventorySystem = {
             .filter(stat => !currentStatKeys.includes(stat) && stat !== statToRemove);
 
         if (availableStats.length === 0) {
-            game.log("No new stats available to roll!", "failure");
+            uiSystem.log("No new stats available to roll!", "failure");
             return false;
         }
 
@@ -301,7 +301,7 @@ const inventorySystem = {
         // Roll value using stat system
         const statDef = statDB.getStat(newStat);
         if (!statDef) {
-            game.log("Stat definition not found!", "failure");
+            uiSystem.log("Stat definition not found!", "failure");
             return false;
         }
 
@@ -315,19 +315,19 @@ const inventorySystem = {
         // Consume orb
         gameState.resources.chaosOrbs--;
 
-        game.log(`🌀 Chaotic Shard used! ${game.getStatDisplayName(statToRemove)} (${oldValue}) → ${game.getStatDisplayName(newStat)} (${value})`, "legendary");
+        uiSystem.log(`🌀 Chaotic Shard used! ${game.getStatDisplayName(statToRemove)} (${oldValue}) → ${game.getStatDisplayName(newStat)} (${value})`, "legendary");
 
         // Update main resource display
-        game.updateResourceDisplay();
+        uiSystem.updateResourceDisplay();
 
         // Update displays
         if (item.equipped) {
             exileSystem.recalculateStats();
-            game.updateDisplay();
+            uiSystem.updateDisplay();
         }
         this.updateInventoryDisplay();
         game.saveGame();
-        game.updateCharacterScreenIfOpen();
+        characterScreenSystem.updateCharacterScreenIfOpen();
 
         return true;
     },
@@ -343,13 +343,13 @@ const inventorySystem = {
         // Get current rarity info
         const currentRarity = rarityDB.getRarity(item.rarity);
         if (!currentRarity) {
-            game.log("Unknown item rarity!", "failure");
+            uiSystem.log("Unknown item rarity!", "failure");
             return false;
         }
 
         // Check if item is already overcapped
         if (item.isOvercapped) {
-            game.log("This item has already been perfected with an Exalted Shard!", "failure");
+            uiSystem.log("This item has already been perfected with an Exalted Shard!", "failure");
             return false;
         }
 
@@ -362,17 +362,17 @@ const inventorySystem = {
                 targetRarity = rarityDB.getRarity('magic');
                 item.rarity = 'magic';
                 canAddStat = true;
-                game.log(`⚡ Item upgraded to Magic rarity!`, "legendary");
+                uiSystem.log(`⚡ Item upgraded to Magic rarity!`, "legendary");
             } else if (item.rarity === 'magic') {
                 targetRarity = rarityDB.getRarity('rare');
                 item.rarity = 'rare';
                 canAddStat = true;
-                game.log(`⚡ Item upgraded to Rare rarity!`, "legendary");
+                uiSystem.log(`⚡ Item upgraded to Rare rarity!`, "legendary");
             } else if (item.rarity === 'rare' && currentStatCount >= currentRarity.maxStats) {
                 // Only allow overcapping if the rare item is ALREADY at max stats (4)
                 canAddStat = true;
                 item.isOvercapped = true;
-                game.log(`✨ Pushing beyond normal limits!`, "legendary");
+                uiSystem.log(`✨ Pushing beyond normal limits!`, "legendary");
             }
 
             // Update item name with new rarity (except for overcapped)
@@ -394,7 +394,7 @@ const inventorySystem = {
         }
 
         if (!itemBase) {
-            game.log("Cannot determine item base type!", "failure");
+            uiSystem.log("Cannot determine item base type!", "failure");
             return false;
         }
 
@@ -418,7 +418,7 @@ const inventorySystem = {
         }
 
         if (availableStats.length === 0) {
-            game.log("No available stats to add!", "failure");
+            uiSystem.log("No available stats to add!", "failure");
             return false;
         }
 
@@ -434,19 +434,19 @@ const inventorySystem = {
         // Consume orb
         gameState.resources.exaltedOrbs--;
 
-        game.log(`⭐ Exalted Shard used! Added ${game.getStatDisplayName(newStat)} (${value})`, "legendary");
+        uiSystem.log(`⭐ Exalted Shard used! Added ${game.getStatDisplayName(newStat)} (${value})`, "legendary");
 
         // Update main resource display
-        game.updateResourceDisplay();
+        uiSystem.updateResourceDisplay();
 
         // Update displays
         if (item.equipped) {
             exileSystem.recalculateStats();
-            game.updateDisplay();
+            uiSystem.updateDisplay();
         }
         this.updateInventoryDisplay();
         game.saveGame();
-        game.updateCharacterScreenIfOpen();
+        characterScreenSystem.updateCharacterScreenIfOpen();
 
         return true;
     },
@@ -465,7 +465,7 @@ const inventorySystem = {
     useExaltedOrbModal(itemId) {
         this.useExaltedOrb(itemId);
         this.updateInventoryModalDisplay();
-        game.updateCharacterScreenIfOpen();
+        characterScreenSystem.updateCharacterScreenIfOpen();
     },
 
     // === DISPLAY AND FORMATTING METHODS ===
@@ -870,7 +870,7 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
         }
 
         this.closeEquipmentSelector();
-        game.updateCharacterScreen();
+        characterScreenSystem.updateCharacterScreen();
     },
 
     // === ITEM TOOLTIP SYSTEM ===

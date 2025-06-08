@@ -10,7 +10,7 @@ class MissionSystem {
         const [areaId, missionId] = missionKey.split('.');
 
         if (!areaId || !missionId) {
-            game.log("Invalid mission format!", "failure");
+            uiSystem.log("Invalid mission format!", "failure");
             return;
         }
 
@@ -19,9 +19,9 @@ class MissionSystem {
         if (!isMissionAvailable(areaId, missionId)) {
             const daysUntil = getDaysUntilAvailable(areaId, missionId);
             if (daysUntil > 0) {
-                game.log(`Mission on cooldown for ${daysUntil} more days!`, "failure");
+                uiSystem.log(`Mission on cooldown for ${daysUntil} more days!`, "failure");
             } else {
-                game.log("Mission not discovered yet!", "failure");
+                uiSystem.log("Mission not discovered yet!", "failure");
             }
             return;
         }
@@ -33,11 +33,11 @@ class MissionSystem {
         const levelBeforeMission = exile.level;
 
         if (!missionData) {
-            game.log("Mission data not found!", "failure");
+            uiSystem.log("Mission data not found!", "failure");
             return;
         }
 
-        game.log(`🗺️ ${exile.name} embarks on ${missionData.name}...`, "info");
+        uiSystem.log(`🗺️ ${exile.name} embarks on ${missionData.name}...`, "info");
 
         // Combat using new world system
         const combatResult = combatSystem.simulateCombat(exile, missionData);
@@ -70,7 +70,7 @@ class MissionSystem {
                 let orbMessage = "";
                 if (rewards.chaosOrbs > 0) orbMessage += `, +${rewards.chaosOrbs} Chaos Shard(s)`;
                 if (rewards.exaltedOrbs > 0) orbMessage += `, +${rewards.exaltedOrbs} Exhultation shard(s)`;
-                game.log(`🎁 Bonus rewards${orbMessage}!`, "legendary");
+                uiSystem.log(`🎁 Bonus rewards${orbMessage}!`, "legendary");
             }
 
             // Check for gear drop using world system
@@ -82,7 +82,7 @@ class MissionSystem {
                 // Use updated generateGear method
                 const newGear = this.generateGear(areaId, missionId, gearIlvl);
                 gameState.inventory.backpack.push(newGear);
-                game.log(`⭐ Found ${newGear.name}!`, newGear.rarity === 'rare' ? 'legendary' : 'success');
+                uiSystem.log(`⭐ Found ${newGear.name}!`, newGear.rarity === 'rare' ? 'legendary' : 'success');
                 inventorySystem.updateInventoryDisplay();
             }
 
@@ -153,32 +153,32 @@ class MissionSystem {
                 if (discovery.type === 'mission') {
                     const newMission = getMissionData(discovery.areaId, discovery.missionId);
                     if (newMission) {
-                        game.log(`🔍 Discovered: ${newMission.name}!`, "legendary");
+                        uiSystem.log(`🔍 Discovered: ${newMission.name}!`, "legendary");
                     } else {
-                        game.log(`🔍 Discovered: New mission in ${discovery.areaId}!`, "legendary");
+                        uiSystem.log(`🔍 Discovered: New mission in ${discovery.areaId}!`, "legendary");
                     }
                 } else if (discovery.type === 'connection') {
-                    game.log(`🗺️ Discovered passage to new area!`, "legendary");
+                    uiSystem.log(`🗺️ Discovered passage to new area!`, "legendary");
                 }
             });
-            game.updateCommandCenterDisplay(); // Update mission counts
+            uiSystem.updateCommandCenterDisplay(); // Update mission counts
         }
 
         // Log scouting progress (new world system feature)
         if (completionResult.scoutingGain > 0) {
-            game.log(`📖 Gained ${completionResult.scoutingGain} scouting knowledge about the area`, "info");
+            uiSystem.log(`📖 Gained ${completionResult.scoutingGain} scouting knowledge about the area`, "info");
         }
 
         // Combine and log as a single entry (preserve existing detailed logging)
         if (mainMessage) {
-            game.log(
+            uiSystem.log(
                 `${mainMessage}${breakdownHtml ? "<br>" + breakdownHtml : ""}${moraleHtml || ""}`,
                 combatResult.outcome === 'victory' ? "success" : "failure",
                 true // isHtml
             );
         }
 
-        game.updateDisplay();
+        uiSystem.updateDisplay();
         game.saveGame();
 
         // Return comprehensive combat data for day report
@@ -310,13 +310,13 @@ class MissionSystem {
 
         // Check if any assignments exist
         if (gameState.assignments.length === 0) {
-            game.log("⚠️ No assignments given! Assign exiles to missions before processing the day.", "failure");
+            uiSystem.log("⚠️ No assignments given! Assign exiles to missions before processing the day.", "failure");
             return; // Stop processing
         }
 
         // Process all assigned missions
         if (gameState.assignments.length > 0) {
-            game.log(`🌅 Day ${timeState.currentDay + 1} begins...`, "info");
+            uiSystem.log(`🌅 Day ${timeState.currentDay + 1} begins...`, "info");
 
             // Run each assigned mission
             gameState.assignments.forEach(assignment => {
@@ -325,7 +325,7 @@ class MissionSystem {
                 // Check if mission is still available (might have gone on cooldown)
                 if (isMissionAvailable(areaId, missionId)) {
                     const missionData = getMissionData(areaId, missionId);
-                    game.log(`⚔️ ${exileName} embarks on ${missionData.name}...`, "info");
+                    uiSystem.log(`⚔️ ${exileName} embarks on ${missionData.name}...`, "info");
 
                     // CAPTURE PRE-MISSION STATE for reward tracking
                     const preMissionResources = {
@@ -370,7 +370,7 @@ class MissionSystem {
 
                     // Check if mission went on cooldown - if so, unassign
                     if (!isMissionAvailable(areaId, missionId)) {
-                        game.log(`📋 Mission went on cooldown - ${exileName} unassigned`, "info");
+                        uiSystem.log(`📋 Mission went on cooldown - ${exileName} unassigned`, "info");
                         // Remove this assignment from the array
                         const assignmentIndex = gameState.assignments.findIndex(a =>
                             a.exileName === exileName && a.areaId === areaId && a.missionId === missionId
@@ -381,7 +381,7 @@ class MissionSystem {
                     }
                 } else {
                     const missionData = getMissionData(areaId, missionId);
-                    game.log(`📋 ${missionData.name} unavailable - ${exileName} unassigned`, "info");
+                    uiSystem.log(`📋 ${missionData.name} unavailable - ${exileName} unassigned`, "info");
                     // Remove this assignment from the array
                     const assignmentIndex = gameState.assignments.findIndex(a =>
                         a.exileName === exileName && a.areaId === areaId && a.missionId === missionId
@@ -392,14 +392,14 @@ class MissionSystem {
                 }
             });
         } else {
-            game.log("⏳ Time passes... No missions assigned.", "info");
+            uiSystem.log("⏳ Time passes... No missions assigned.", "info");
         }
 
         // Advance time
         timeState.currentDay++;
 
         // Update all displays
-        game.updateCommandCenterDisplay();
+        uiSystem.updateCommandCenterDisplay();
 
         // Check for missions coming off cooldown
         let missionsBackOnline = 0;
@@ -415,7 +415,7 @@ class MissionSystem {
         });
 
         if (missionsBackOnline > 0) {
-            game.log(`⏰ ${missionsBackOnline} mission(s) are no longer on cooldown`, "info");
+            uiSystem.log(`⏰ ${missionsBackOnline} mission(s) are no longer on cooldown`, "info");
         }
 
         game.saveGame(); // saves the game state after processing the day
@@ -430,7 +430,7 @@ class MissionSystem {
                     worldMapSystem.closeWorldMap();
 
         // Update displays
-        game.updateCommandCenterDisplay();
+        uiSystem.updateCommandCenterDisplay();
     }
 
     // Mission Assignment Toggle

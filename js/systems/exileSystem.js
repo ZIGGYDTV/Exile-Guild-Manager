@@ -76,7 +76,7 @@ class ExileSystem {
         };
         //temp still calling game object methods
         this.recalculateStats();
-        game.updateDisplay();
+        uiSystem.updateDisplay();
     }
 
 
@@ -119,7 +119,7 @@ class ExileSystem {
         const randomClass = classes[Math.floor(Math.random() * classes.length)];
         gameState.exile.class = randomClass;
 
-        this.log(`${gameState.exile.name} is a ${classDefinitions[randomClass].name}!`, "info");
+        uiSystem.log(`${gameState.exile.name} is a ${classDefinitions[randomClass].name}!`, "info");
     }
 
     // Give a random notable as starting passive
@@ -128,7 +128,7 @@ class ExileSystem {
         const randomNotable = notables[Math.floor(Math.random() * notables.length)];
         gameState.exile.passives.allocated.push(randomNotable.id);
 
-        this.log(`${gameState.exile.name} starts with ${randomNotable.name}!`, "legendary");
+        uiSystem.log(`${gameState.exile.name} starts with ${randomNotable.name}!`, "legendary");
     }
 
 
@@ -156,7 +156,7 @@ class ExileSystem {
         );
 
         // Update Command Center Display
-        game.updateCommandCenterDisplay();  // TEMPORARY - will move to uiSystem
+        uiSystem.updateCommandCenterDisplay();  // TEMPORARY - will move to uiSystem
 
         // Delete equipped gear (hardcore death penalty)
         Object.keys(gameState.inventory.equipped).forEach(slot => {
@@ -173,11 +173,11 @@ class ExileSystem {
 
         // Recalculate stats for new exile
         this.recalculateStats();  // TEMPORARY
-        game.updateDisplay();     // TEMPORARY
+        uiSystem.updateDisplay();     // TEMPORARY
 
         // Log the transition
-        game.log(`⚰️ ${fallenRecord.name} has fallen. May they rest in peace.`, "failure");
-        game.log(`🌟 ${gameState.exile.name} the ${classDefinitions[gameState.exile.class].name} has joined the guild!`, "legendary");
+        uiSystem.log(`⚰️ ${fallenRecord.name} has fallen. May they rest in peace.`, "failure");
+        uiSystem.log(`🌟 ${gameState.exile.name} the ${classDefinitions[gameState.exile.class].name} has joined the guild!`, "legendary");
 
         // Save immediately
         game.saveGame();  // TEMPORARY
@@ -193,7 +193,7 @@ class ExileSystem {
     assignMissionToExile(exileName, areaId, missionId) {
         // Check if mission is available
         if (!isMissionAvailable(areaId, missionId)) {
-            game.log("Cannot assign to unavailable mission!", "failure");  // TEMPORARY
+            uiSystem.log("Cannot assign to unavailable mission!", "failure");  // TEMPORARY
             return false;
         }
 
@@ -212,10 +212,10 @@ class ExileSystem {
         });
 
         const missionData = getMissionData(areaId, missionId);
-        game.log(`📋 ${exileName} assigned to ${missionData.name}`, "info");  // TEMPORARY
+        uiSystem.log(`📋 ${exileName} assigned to ${missionData.name}`, "info");  // TEMPORARY
 
         // Update displays
-        game.updateCommandCenterDisplay();  // TEMPORARY
+        uiSystem.updateCommandCenterDisplay();  // TEMPORARY
         worldMapSystem.updateWorldMapDisplay();
         game.saveGame();                    // TEMPORARY
 
@@ -227,16 +227,16 @@ class ExileSystem {
         const assignmentIndex = gameState.assignments.findIndex(a => a.exileName === exileName);
 
         if (assignmentIndex === -1) {
-            game.log(`${exileName} is not assigned to any mission`, "info");  // TEMPORARY
+            uiSystem.log(`${exileName} is not assigned to any mission`, "info");  // TEMPORARY
             return false;
         }
 
         // Remove assignment
         gameState.assignments.splice(assignmentIndex, 1);
-        game.log(`📋 ${exileName} unassigned from mission`, "info");  // TEMPORARY
+        uiSystem.log(`📋 ${exileName} unassigned from mission`, "info");  // TEMPORARY
 
         // Update displays
-        game.updateCommandCenterDisplay();  // TEMPORARY
+        uiSystem.updateCommandCenterDisplay();  // TEMPORARY
         worldMapSystem.updateWorldMapDisplay();
         game.saveGame();                    // TEMPORARY
 

@@ -80,7 +80,7 @@
         <div class="exiles-section">
             <div class="exiles-grid">
                 <!-- Main Exile -->
-                <div id="exile-summary-card" class="exile-summary-card" onclick="game.openCharacterScreen()">
+                <div id="exile-summary-card" class="exile-summary-card" onclick="characterScreenSystem.openCharacterScreen()">
                     <div class="exile-basic-info">
                         <div class="exile-name-class">
                             <span id="exile-name-summary">Unnamed Exile</span>
@@ -335,10 +335,10 @@
 
     <!-- Character Screen Modal -->
     <div id="character-screen-modal" class="modal-overlay" style="display: none;"
-        onclick="game.handleModalClick(event)">
+    onclick="characterScreenSystem.handleModalClick(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
 
-            <button class="close-btn" onclick="game.closeCharacterScreen()">&times;</button>
+                            <button class="close-btn" onclick="characterScreenSystem.closeCharacterScreen()">&times;</button>
 
             <div class="character-screen-layout">
                 <!-- Left Column: Character Info & Stats -->
@@ -711,6 +711,7 @@
     import { missionSystem } from './js/systems/missionSystem.js';
     import { inventorySystem } from './js/systems/inventorySystem.js';
     import { worldMapSystem } from './js/systems/worldMapSystem.js';
+    import { characterScreenSystem } from './js/systems/characterScreenSystem.js';
     import { uiSystem } from './js/systems/uiSystem.js';
 
     // Make them globally available during transition
@@ -723,6 +724,7 @@
     window.missionSystem = missionSystem;
     window.inventorySystem = inventorySystem; 
     window.worldMapSystem = worldMapSystem;
+    window.characterScreenSystem = characterScreenSystem;
     window.uiSystem = uiSystem;
     
     // Log that systems are loaded
@@ -732,6 +734,7 @@
         exile: !!window.exileSystem,
         combat: !!window.combatSystem,
         mission: !!window.missionSystem,
+        characterScreen: !!window.characterScreenSystem,
         ui: !!window.uiSystem
     });
 </script>

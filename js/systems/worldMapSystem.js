@@ -32,7 +32,7 @@ const worldMapSystem = {
         document.removeEventListener('keydown', this.handleWorldMapKeydown.bind(this));
 
         // Update main screen status
-        game.updateCommandCenterDisplay();
+        uiSystem.updateCommandCenterDisplay();
     },
 
     handleWorldMapKeydown(event) {

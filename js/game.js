@@ -7,10 +7,10 @@ const game = {
         // Initialize exile with class system and passives
         exileSystem.initializeExile();
         inventorySystem.initializeItemTooltips();
-        this.updateDisplay();
+        uiSystem.updateDisplay();
         inventorySystem.updateInventoryDisplay();
-        this.updateCommandCenterDisplay();
-        this.log("Send exiles on missions. Make them more powerful. Each area has dangers and rewards to discover.", "info");
+        uiSystem.updateCommandCenterDisplay();
+        uiSystem.log("Send exiles on missions. Make them more powerful. Each area has dangers and rewards to discover.", "info");
     },
 
  
@@ -30,7 +30,7 @@ const game = {
             // Give passive point
             gameState.exile.passives.pendingPoints++;
 
-            this.log(`🎉 LEVEL UP! ${gameState.exile.name} is now level ${gameState.exile.level}! (+1 Passive Point)`, "legendary");
+            uiSystem.log(`🎉 LEVEL UP! ${gameState.exile.name} is now level ${gameState.exile.level}! (+1 Passive Point)`, "legendary");
 
             // Immediately offer passive selection
             this.startPassiveSelection();
@@ -144,310 +144,22 @@ const game = {
     },
 
 
-    updateDisplay() {
-        // Only update elements that still exist
-        // Try to update old elements if they exist (for backwards compatibility)
-        const elements = {
-            'exile-name': gameState.exile.name,
-            'exile-class': gameState.exile.class,
-            'exile-level': gameState.exile.level,
-            'exile-exp': gameState.exile.experience,
-            'exile-exp-needed': gameState.exile.experienceNeeded,
-            'stat-life': gameState.exile.stats.life,
-            'stat-damage': gameState.exile.stats.damage,
-            'stat-defense': gameState.exile.stats.defense,
-            'power-rating': combatSystem.calculatePowerRating(),
-            'morale-value': gameState.exile.morale,
-            'morale-status': exileSystem.getMoraleStatus(gameState.exile.morale)
-        };
-
-        // Safely update elements that exist
-        Object.entries(elements).forEach(([id, value]) => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = value;
-            }
-        });
-
-        // Update resources
-        document.getElementById('gold').textContent = gameState.resources.gold;
-        document.getElementById('chaos-orbs').textContent = gameState.resources.chaosOrbs;
-        document.getElementById('exalted-orbs').textContent = gameState.resources.exaltedOrbs;
-        this.updateResourceDisplay();
-
-        // Apply morale effects before displaying
-        this.applyMoraleEffects(gameState.exile);
-
-        // Set morale color if element exists
-        const moraleElement = document.getElementById('morale-status');
-        if (moraleElement) {
-            const moraleValue = gameState.exile.morale;
-            if (moraleValue >= 85) moraleElement.style.color = '#4CAF50';
-            else if (moraleValue >= 70) moraleElement.style.color = '#888';
-            else if (moraleValue >= 50) moraleElement.style.color = '#ff9800';
-            else moraleElement.style.color = '#f44336';
-        }
-
-        // Update exile summary for new UI
-        this.updateExileSummary();
-    },
-
-    // Exile Summary Button to Exile Screen ========    
-    openCharacterScreen() {
-        // Show the character screen modal
-        const modal = document.getElementById('character-screen-modal');
-        modal.style.display = 'flex';
-        this.updateCharacterScreen();
-
-        // Add escape key listener
-        document.addEventListener('keydown', this.handleModalKeydown.bind(this));
-    },
-
-    closeCharacterScreen() {
-        const modal = document.getElementById('character-screen-modal');
-        modal.style.display = 'none';
-
-        // Remove escape key listener
-        document.removeEventListener('keydown', this.handleModalKeydown.bind(this));
-    },
-
-
-
-
-    handleModalKeydown(event) {
-        if (event.key === 'Escape') {
-            this.closeCharacterScreen();
-        }
-    },
-
-    handleModalClick(event) {
-        // Only close if clicking the overlay (not the content)
-        if (event.target.classList.contains('modal-overlay')) {
-            this.closeCharacterScreen();
-        }
-    },
 
 
 
 
 
-    updateCharacterScreen() {
-        // Update character info
-        document.getElementById('char-name').textContent = gameState.exile.name;
-        document.getElementById('char-class').textContent = classDefinitions[gameState.exile.class].name;
-        document.getElementById('char-level').textContent = gameState.exile.level;
-        document.getElementById('char-exp').textContent = gameState.exile.experience;
-        document.getElementById('char-exp-needed').textContent = gameState.exile.experienceNeeded;
-        document.getElementById('char-morale').textContent = gameState.exile.morale;
-        document.getElementById('char-morale-status').textContent = exileSystem.getMoraleStatus(gameState.exile.morale);
 
-        // Update morale tooltip
-        const moraleElement = document.querySelector('.morale-value-with-tooltip');
-        if (moraleElement) {
-            moraleElement.setAttribute('data-tooltip', exileSystem.createMoraleTooltip(gameState.exile.morale));
-        }
 
-        // Combined resistances display
-        const resists = [
-            { key: 'fireResist', color: '#ff7043', label: 'Fire' },
-            { key: 'coldResist', color: '#42a5f5', label: 'Cold' },
-            { key: 'lightningResist', color: '#ffd600', label: 'Lightning' },
-            { key: 'chaosResist', color: '#ab47bc', label: 'Chaos' }
-        ];
-        const resistsHtml = resists.map(r =>
-            `<span style="color:${r.color};font-weight:bold;cursor:help;" title="${r.label} Resist">${gameState.exile.stats[r.key] || 0}%</span>`
-        ).join(' / ');
-        document.getElementById('final-resists-line').innerHTML = resistsHtml;
 
-        document.getElementById('final-gold-find').textContent = gameState.exile.stats.goldFindBonus + "%";
-        document.getElementById('final-morale-gain').textContent = gameState.exile.stats.moraleGain;
-        document.getElementById('final-morale-resist').textContent = gameState.exile.stats.moraleResistance + "%";
-        // Convert scoutingBonus (1.0 = 100%) to percentage display
-        const explorationBonusPercent = Math.round((gameState.exile.stats.scoutingBonus - 1.0) * 100);
-        document.getElementById('final-exploration-bonus').textContent = explorationBonusPercent + "%";
 
-        // Calculate all the breakdown components
-        const gearBonuses = this.calculateGearBonuses();
-        const passiveBonuses = this.calculatePassiveBonusesForDisplay();
-        const moraleBonuses = this.calculateMoraleBonuses();
 
-        // Create formatted tooltips with aligned numbers
-        const lifeTooltip = this.createStatTooltip(
-            gameState.exile.baseStats.life,
-            gearBonuses.life,
-            passiveBonuses.life,
-            moraleBonuses.life,
-            gameState.exile.stats.life
-        );
 
-        const damageTooltip = this.createStatTooltip(
-            gameState.exile.baseStats.damage,
-            gearBonuses.damage,
-            passiveBonuses.damage,
-            moraleBonuses.damage,
-            gameState.exile.stats.damage
-        );
-
-        // Format attack speed display (show to 2 decimal places)
-        const formattedAttackSpeed = gameState.exile.stats.attackSpeed.toFixed(2);
-
-        const defenseTooltip = this.createStatTooltip(
-            gameState.exile.baseStats.defense,
-            gearBonuses.defense,
-            passiveBonuses.defense,
-            moraleBonuses.defense,
-            gameState.exile.stats.defense
-        );
-
-        // Set the values and tooltips
-        document.getElementById('final-life').textContent = gameState.exile.stats.life;
-        document.getElementById('final-damage').textContent = gameState.exile.stats.damage;
-
-        // Update attack speed display (we'll add the HTML element next)
-        const attackSpeedElement = document.getElementById('final-attack-speed');
-        if (attackSpeedElement) {
-            attackSpeedElement.textContent = formattedAttackSpeed;
-        }
-
-        document.getElementById('final-defense').textContent = gameState.exile.stats.defense;
-        document.getElementById('power-rating-calc').textContent = combatSystem.calculatePowerRating();
-
-        // Find and update tooltips
-        const tooltipElements = document.querySelectorAll('.stat-value-with-tooltip');
-        if (tooltipElements[0]) tooltipElements[0].title = lifeTooltip;
-        if (tooltipElements[1]) tooltipElements[1].title = damageTooltip;
-        if (tooltipElements[2]) tooltipElements[2].title = defenseTooltip;
-
-        // Update allocated passives
-        this.updateAllocatedPassives();
-
-        // Update passive allocation button
-        this.updatePassiveButton();
-
-        // Update equipment and inventory
-        this.updateCharacterEquipment();
-
-    },
-
-    createStatTooltip(base, gear, passives, morale, final) {
-        // Create formatted tooltip with aligned columns
-        return `Base (${base}) + Gear (${gear}) + Passives (${passives}) + Morale (${morale})
-―――――――――――――――――――――――――――
-Final: ${final}`;
-    },
-
-    calculatePassiveBonusesForDisplay() {
-        // Calculate the total passive contribution to final stats
-        const baseStats = gameState.exile.baseStats;
-        const gearBonuses = this.calculateGearBonuses();
-        const passiveEffects = exileSystem.calculatePassiveEffects();
-
-        // Add flat passives BEFORE scaling
-        const flatBase = {
-            life: baseStats.life + gearBonuses.life + (passiveEffects.flatLife || 0),
-            damage: baseStats.damage + gearBonuses.damage + (passiveEffects.flatDamage || 0),
-            defense: baseStats.defense + gearBonuses.defense + (passiveEffects.flatDefense || 0)
-        };
-
-        // Apply passive scaling
-        const passiveContribution = {
-            life: Math.floor(flatBase.life * ((passiveEffects.increasedLife || 0) / 100) +
-                flatBase.life * ((passiveEffects.moreLife || 0) / 100)),
-            damage: Math.floor(flatBase.damage * ((passiveEffects.increasedDamage || 0) / 100) +
-                flatBase.damage * ((passiveEffects.moreDamage || 0) / 100)),
-            defense: Math.floor(flatBase.defense * ((passiveEffects.increasedDefense || 0) / 100) +
-                flatBase.defense * ((passiveEffects.moreDefense || 0) / 100))
-        };
-
-        return passiveContribution;
-    },
-
-    updateAllocatedPassives() {
-        const container = document.getElementById('allocated-passives-list');
-
-        if (gameState.exile.passives.allocated.length === 0) {
-            container.innerHTML = '<div style="color: #666; text-align: center;">No passives allocated</div>';
-            return;
-        }
-
-        container.innerHTML = gameState.exile.passives.allocated.map(passiveId => {
-            const passive = passiveDefinitions[passiveId];
-            if (!passive) return '';
-
-            return `
-            <div class="passive-item">
-                <div class="passive-name ${passive.tier}">${passive.name}</div>
-                <div class="passive-description">${passive.description}</div>
-            </div>
-        `;
-        }).join('');
-    },
-
-    updatePassiveButton() {
-        const button = document.getElementById('allocate-passive-btn');
-        if (gameState.exile.passives.pendingPoints > 0) {
-            button.style.display = 'block';
-            button.textContent = `Allocate Passive Skill (${gameState.exile.passives.pendingPoints})`;
-        } else {
-            button.style.display = 'none';
-        }
-    },
-
-    updateCharacterEquipment() {
-        // Update character screen equipment display for all slots
-        const slots = ['weapon', 'helmet', 'chest', 'gloves', 'boots', 'shield', 'ring1', 'ring2', 'amulet', 'belt'];
-
-        slots.forEach(slot => {
-            const slotElement = document.getElementById(`char-${slot}-slot`);
-            if (!slotElement) {
-                console.warn(`Slot element not found: char-${slot}-slot`);
-                return;
-            }
-
-            const slotContent = slotElement.querySelector('.slot-content');
-            if (!slotContent) {
-                console.warn(`Slot content not found for: ${slot}`);
-                return;
-            }
-
-            const equipped = gameState.inventory.equipped[slot];
-
-            if (equipped) {
-                const displayName = equipped.getDisplayName ? equipped.getDisplayName() : equipped.name;
-                const displayColor = equipped.getDisplayColor ? equipped.getDisplayColor() :
-                    rarityDB.getRarity(equipped.rarity)?.color || '#888';
-
-                slotContent.innerHTML = `
-                    <div class="item-equipped">
-                        <div class="item-name" style="color: ${displayColor}">
-                            ${displayName}
-                            ${equipped.isOvercapped ? '<span class="overcapped-icon" title="Perfected with Exalted Orb">✦</span>' : ''}
-                        </div>
-                        <div class="item-stats">
-                            ${inventorySystem.formatItemStats(equipped)}
-                        </div>
-                    </div>
-                `;
-            } else {
-                // Check if items are available for this slot
-                const availableItems = inventorySystem.getItemsForSlot(slot);
-                const hasItems = availableItems.length > 0;
-
-                console.log(`Slot ${slot}: ${availableItems.length} items available`); // DEBUG
-
-                slotContent.innerHTML = `
-                    <div class="empty-slot">
-                        Empty${hasItems ? '<span class="slot-has-items">+</span>' : ''}
-                    </div>
-                `;
-            }
-        });
-    },
 
     openPassiveSelection() {
         // Make sure we have pending points and choices ready
         if (gameState.exile.passives.pendingPoints <= 0) {
-            this.log("No passive points to spend!", "failure");
+            uiSystem.log("No passive points to spend!", "failure");
             return;
         }
 
@@ -529,9 +241,9 @@ Final: ${final}`;
             this.closePassiveSelection();
 
             // Update character screen if open
-            this.updateCharacterScreenIfOpen();
+            characterScreenSystem.updateCharacterScreenIfOpen();
 
-            this.log(`Selected ${selectedPassive.name}!`, "legendary");
+            uiSystem.log(`Selected ${selectedPassive.name}!`, "legendary");
         }
     },
 
@@ -542,7 +254,7 @@ Final: ${final}`;
 
         // Check if player can afford reroll
         if (gameState.resources.gold < rerollCost) {
-            this.log("Not enough gold to reroll!", "failure");
+            uiSystem.log("Not enough gold to reroll!", "failure");
             return;
         }
 
@@ -555,7 +267,7 @@ Final: ${final}`;
         const choice2 = this.selectPassiveForLevelUp(tier);
 
         if (!choice1 || !choice2) {
-            this.log("No more passives available for reroll!", "failure");
+            uiSystem.log("No more passives available for reroll!", "failure");
             return;
         }
 
@@ -569,172 +281,17 @@ Final: ${final}`;
 
         // Update display
         this.updatePassiveSelectionDisplay();
-        this.updateDisplay(); // Update gold
+        uiSystem.updateDisplay(); // Update gold
 
-        this.log(`Rerolled passive choices! (-${rerollCost} gold)`, "info");
+        uiSystem.log(`Rerolled passive choices! (-${rerollCost} gold)`, "info");
     },
     // End of Passive Screen
     // End of Exile Screen from Exile Button
 
 
-    updateExileSummary() {
-        // Update the compact exile summary on main screen
-        document.getElementById('exile-name-summary').textContent = gameState.exile.name;
-        document.getElementById('exile-class-summary').textContent = classDefinitions[gameState.exile.class].name;
-        document.getElementById('exile-level-summary').textContent = gameState.exile.level;
 
-        document.getElementById('exile-life-summary').textContent = gameState.exile.stats.life;
-        document.getElementById('exile-damage-summary').textContent = gameState.exile.stats.damage;
-        document.getElementById('exile-defense-summary').textContent = gameState.exile.stats.defense;
-        document.getElementById('exile-morale-summary').textContent = gameState.exile.morale;
 
-        // Update EXP bar
-        const exp = gameState.exile.experience;
-        const expNeeded = gameState.exile.experienceNeeded;
-        const percent = Math.min(100, Math.round((exp / expNeeded) * 100));
-        document.getElementById('exp-bar-fill').style.width = percent + "%";
-        document.getElementById('exp-bar-label').textContent = `${exp} / ${expNeeded} EXP`;
 
-        // Set morale color
-        const moraleElement = document.getElementById('exile-morale-summary');
-        const moraleValue = gameState.exile.morale;
-        if (moraleValue >= 85) moraleElement.style.color = '#4CAF50';
-        else if (moraleValue >= 70) moraleElement.style.color = '#888';
-        else if (moraleValue >= 50) moraleElement.style.color = '#ff9800';
-        else moraleElement.style.color = '#f44336';
-
-        // Show passive points indicator
-        const indicator = document.getElementById('passive-points-indicator');
-        if (gameState.exile.passives.pendingPoints > 0) {
-            indicator.style.display = 'block';
-            indicator.textContent = `(+) ${gameState.exile.passives.pendingPoints} Passive Point${gameState.exile.passives.pendingPoints > 1 ? 's' : ''} Available`;
-        } else {
-            indicator.style.display = 'none';
-        }
-        // Show assignment status in exile summary 
-        const assignment = exileSystem.getExileAssignment(gameState.exile.name);
-        const assignmentBadge = document.getElementById('exile-assignment-badge');
-
-        if (assignment) {
-            // Show the assignment badge
-            if (assignmentBadge) {
-                assignmentBadge.style.display = 'inline-flex';
-            }
-
-            const missionData = getMissionData(assignment.areaId, assignment.missionId);
-            const assignmentText = `📋 Assigned: ${missionData.name}`;
-
-        }
-    },
-
-    calculateGearBonuses() {
-        let life = 0, damage = 0, defense = 0;
-        Object.values(gameState.inventory.equipped).forEach(item => {
-            if (item) {
-                life += item.stats.life || 0;
-                damage += item.stats.damage || 0;
-                defense += item.stats.defense || 0;
-            }
-        });
-        return { life, damage, defense };
-    },
-
-    calculateMoraleBonuses() {
-        // Calculate what morale is contributing to current stats
-        const morale = gameState.exile.morale;
-        let damageBonus = 0;
-        let defenseBonus = 0;
-
-        // We need to get the pre-morale stats to calculate the bonus
-        const baseStats = gameState.exile.baseStats;
-        const gearBonuses = this.calculateGearBonuses();
-        const passiveBonuses = this.calculatePassiveBonusesForDisplay();
-
-        const premoraleStats = {
-            damage: baseStats.damage + gearBonuses.damage + passiveBonuses.damage,
-            defense: baseStats.defense + gearBonuses.defense + passiveBonuses.defense
-        };
-
-        if (morale >= 85) {
-            // Confident: +10% damage, +5% defense
-            damageBonus = Math.floor(premoraleStats.damage * 0.1);
-            defenseBonus = Math.floor(premoraleStats.defense * 0.05);
-        } else if (morale <= 49) {
-            // Demoralized: -10% damage, -5% defense
-            damageBonus = -Math.floor(premoraleStats.damage * 0.1);
-            defenseBonus = -Math.floor(premoraleStats.defense * 0.05);
-        } else if (morale <= 69) {
-            // Discouraged: -5% damage
-            damageBonus = -Math.floor(premoraleStats.damage * 0.05);
-        }
-
-        return { life: 0, damage: damageBonus, defense: defenseBonus };
-    },
-
-    updateCharacterEquipment() {
-        // Update character screen equipment display for all slots
-        const slots = ['weapon', 'helmet', 'chest', 'gloves', 'boots', 'shield', 'ring1', 'ring2', 'amulet', 'belt'];
-
-        slots.forEach(slot => {
-            const slotElement = document.getElementById(`char-${slot}-slot`);
-            if (!slotElement) {
-                console.warn(`Slot element not found: char-${slot}-slot`);
-                return; // Skip if element doesn't exist
-            }
-
-            const slotContent = slotElement.querySelector('.slot-content');
-            if (!slotContent) {
-                console.warn(`Slot content not found for: ${slot}`);
-                return;
-            }
-
-            const equipped = gameState.inventory.equipped[slot];
-
-            if (equipped) {
-                const displayName = equipped.getDisplayName ? equipped.getDisplayName() : equipped.name;
-                const displayColor = equipped.getDisplayColor ? equipped.getDisplayColor() :
-                    rarityDB.getRarity(equipped.rarity)?.color || '#888';
-
-                slotContent.innerHTML = `
-                    <div class="item-equipped">
-                        <div class="item-name" style="color: ${displayColor}">
-                        ${displayName}
-                        ${equipped.isOvercapped ? '<span class="overcapped-icon" title="Perfected with Exalted Orb">✦</span>' : ''}
-                        </div>
-                        <div class="item-stats">
-                            ${inventorySystem.formatItemStats(equipped)}
-                        </div>
-                    </div>
-                `;
-            } else {
-                // Check if items are available for this slot
-                const checkSlot = (slot === 'ring1' || slot === 'ring2') ? 'ring' : slot;
-                const availableItems = gameState.inventory.backpack.filter(item => item.slot === checkSlot);
-                const hasItems = availableItems.length > 0;
-
-                slotContent.innerHTML = `
-                    <div class="empty-slot">
-                        Empty${hasItems ? '<span class="slot-has-items">+</span>' : ''}
-                    </div>
-                `;
-            }
-        });
-    },
-
-    // Helpers for Exile Screen
-    isCharacterScreenOpen() {
-        const modal = document.getElementById('character-screen-modal');
-        return modal && modal.style.display === 'flex';
-    },
-
-    updateCharacterScreenIfOpen() {
-        if (this.isCharacterScreenOpen()) {
-            this.updateCharacterScreen();
-        }
-    },
-
-    // End of Character Stat Calcs for Exile Screen
-    // End of Exile Summary Button to Exile Screen ========    
 
     // Additional Helper Functions
     // Helper to check if a mission caused a level up
@@ -753,45 +310,7 @@ Final: ${final}`;
     },
 
 
-    log(message, type = "info", isHtml = false) {
-        const logContainer = document.getElementById('log');
-        const entry = document.createElement('div');
-        entry.className = `log-entry ${type}`;
-        if (isHtml) {
-            entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
-        } else {
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-        }
-        logContainer.insertBefore(entry, logContainer.firstChild);
 
-        // Always scroll to top to show newest entry
-        logContainer.scrollTop = 0;
-
-        // Keep only last 100 entries
-        while (logContainer.children.length > 100) {
-            logContainer.removeChild(logContainer.lastChild);
-        }
-    },
-
-    // Helper to Update Resources Display Effects
-    updateResourceDisplay() {
-        // Update main screen resources
-        document.getElementById('gold').textContent = gameState.resources.gold;
-        document.getElementById('chaos-orbs').textContent = gameState.resources.chaosOrbs;
-        document.getElementById('exalted-orbs').textContent = gameState.resources.exaltedOrbs;
-
-        // Optional: Add the glow effect for currency changes
-        const chaosElem = document.getElementById('chaos-orbs');
-        const exaltedElem = document.getElementById('exalted-orbs');
-
-        // Store previous values using data attributes
-        const prevChaos = parseInt(chaosElem.getAttribute('data-prev') || "0", 10);
-        const prevExalted = parseInt(exaltedElem.getAttribute('data-prev') || "0", 10);
-
-        // Update stored values
-        chaosElem.setAttribute('data-prev', gameState.resources.chaosOrbs);
-        exaltedElem.setAttribute('data-prev', gameState.resources.exaltedOrbs);
-    },
 
 
     saveGame() {
@@ -820,8 +339,8 @@ Final: ${final}`;
                 Object.assign(gameState, loadedData);
             }
 
-            this.log("Game loaded!", "info");
-            this.updateDisplay();
+            uiSystem.log("Game loaded!", "info");
+            uiSystem.updateDisplay();
         }
     },
 
@@ -956,7 +475,7 @@ Final: ${final}`;
         }
 
         if (pool.length === 0) {
-            this.log("No more passives available!", "failure");
+            uiSystem.log("No more passives available!", "failure");
             return;
         }
 
@@ -984,7 +503,7 @@ Final: ${final}`;
             rerollCost: this.getRerollCost(tier, gameState.exile.passives.rerollsUsed)
         };
 
-        this.log(
+        uiSystem.log(
             pool.length === 1
                 ? `Only one passive left to choose!`
                 : `Choose your ${tier} passive! (Reroll cost: ${this.currentPassiveChoices.rerollCost} gold)`,
@@ -1011,11 +530,11 @@ Final: ${final}`;
         gameState.exile.passives.pendingPoints--;
         gameState.exile.passives.rerollsUsed = 0; // Reset for next level
 
-        this.log(`🎯 Allocated ${passive.name}: ${passive.description}`, "legendary");
+        uiSystem.log(`🎯 Allocated ${passive.name}: ${passive.description}`, "legendary");
 
         // Recalculate stats with new passive
         exileSystem.recalculateStats();
-        this.updateDisplay();
+        uiSystem.updateDisplay();
         this.saveGame();
 
         return true;
@@ -1609,37 +1128,7 @@ Final: ${final}`;
 
 
 
-    // Update command center display on main screen
-    updateCommandCenterDisplay() {
-        // Update day displays
-        document.getElementById('current-day-display').textContent = `(Day ${timeState.currentDay})`;
-        document.getElementById('current-day-main').textContent = timeState.currentDay;
 
-        // Update inventory count on main screen
-        const inventoryCount = gameState.inventory.backpack.length;
-        const countElement = document.getElementById('inventory-count-main');
-        if (countElement) {
-            countElement.textContent = `${inventoryCount}`;
-        }
-        // Update assignment status
-        const assignedMissionsEl = document.getElementById('assigned-missions-count');
-        const processBtn = document.querySelector('.process-day-btn');
-
-        if (gameState.assignments.length > 0) {
-            // Show assignment summary
-            if (gameState.assignments.length === 1) {
-                const assignment = gameState.assignments[0];
-                const missionData = getMissionData(assignment.areaId, assignment.missionId);
-                assignedMissionsEl.textContent = `${assignment.exileName} → ${missionData.name}`;
-            } else {
-                assignedMissionsEl.textContent = `${gameState.assignments.length} exiles assigned`;
-            }
-            processBtn.classList.add('has-assignments');
-        } else {
-            assignedMissionsEl.textContent = "No missions assigned";
-            processBtn.classList.remove('has-assignments');
-        }
-    },
 
 
 
