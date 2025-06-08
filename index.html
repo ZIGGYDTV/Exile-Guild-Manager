@@ -437,7 +437,7 @@
                 <div class="character-middle-column">
                     <div class="passives-section">
                         <div id="passive-allocation-area">
-                            <button id="allocate-passive-btn" class="allocate-btn" onclick="game.openPassiveSelection()"
+                            <button id="allocate-passive-btn" class="allocate-btn" onclick="passiveSystem.openPassiveSelection()"
                                 style="display: none;">
                                 Allocate Passive Skill (1)
                             </button>
@@ -530,15 +530,15 @@
 
     <!-- Passive Selection Modal -->
     <div id="passive-selection-modal" class="modal-overlay" style="display: none;"
-        onclick="game.handlePassiveModalClick(event)">
+        onclick="passiveSystem.handlePassiveModalClick(event)">
         <div class="passive-modal-content" onclick="event.stopPropagation()">
             <div class="passive-modal-header">
                 <h2 id="passive-modal-title">Choose Your Passive Skill</h2>
-                <button class="close-btn" onclick="game.closePassiveSelection()">&times;</button>
+                <button class="close-btn" onclick="passiveSystem.closePassiveSelection()">&times;</button>
             </div>
 
             <div class="passive-choices-container">
-                <div class="passive-choice" id="passive-choice-1" onclick="game.selectPassive(1)">
+                <div class="passive-choice" id="passive-choice-1" onclick="passiveSystem.selectPassive(1)">
                     <div class="passive-choice-header">
                         <span class="passive-choice-name">Passive Name</span>
                         <span class="passive-choice-tier">Notable</span>
@@ -548,7 +548,7 @@
                     </div>
                 </div>
 
-                <div class="passive-choice" id="passive-choice-2" onclick="game.selectPassive(2)">
+                <div class="passive-choice" id="passive-choice-2" onclick="passiveSystem.selectPassive(2)">
                     <div class="passive-choice-header">
                         <span class="passive-choice-name">Passive Name</span>
                         <span class="passive-choice-tier">Notable</span>
@@ -560,7 +560,7 @@
             </div>
 
             <div class="passive-modal-footer">
-                <button id="reroll-passive-btn" class="reroll-btn" onclick="game.rerollPassiveChoices()">
+                <button id="reroll-passive-btn" class="reroll-btn" onclick="passiveSystem.rerollPassiveChoices()">
                     Reroll (50 gold)
                 </button>
                 <div class="passive-help-text">
@@ -712,6 +712,7 @@
     import { inventorySystem } from './js/systems/inventorySystem.js';
     import { worldMapSystem } from './js/systems/worldMapSystem.js';
     import { characterScreenSystem } from './js/systems/characterScreenSystem.js';
+    import { passiveSystem } from './js/systems/passiveSystem.js';
     import { uiSystem } from './js/systems/uiSystem.js';
 
     // Make them globally available during transition
@@ -725,6 +726,7 @@
     window.inventorySystem = inventorySystem; 
     window.worldMapSystem = worldMapSystem;
     window.characterScreenSystem = characterScreenSystem;
+    window.passiveSystem = passiveSystem;
     window.uiSystem = uiSystem;
     
     // Log that systems are loaded
@@ -735,6 +737,7 @@
         combat: !!window.combatSystem,
         mission: !!window.missionSystem,
         characterScreen: !!window.characterScreenSystem,
+        passive: !!window.passiveSystem,
         ui: !!window.uiSystem
     });
 </script>
