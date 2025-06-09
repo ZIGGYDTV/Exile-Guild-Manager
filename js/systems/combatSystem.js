@@ -136,13 +136,17 @@ class CombatSystem {
     }
 
     calculatePowerRating(exile = null) {
-        // Use provided exile or default to current game exile
-        const targetExile = exile || gameState.exile;
-        const stats = targetExile.stats;
-
+        // Default to current exile if not provided
+        if (!exile) {
+            exile = getCurrentExile();
+            if (!exile) return 0;
+        }
+        
+        const stats = exile.stats;
+    
         // Calculate DPS: Damage × Attack Speed
         const dps = stats.damage * stats.attackSpeed;
-
+    
         // 1:1 conversion: 1 DPS = 1 Power Rating
         return Math.floor(dps);
     }

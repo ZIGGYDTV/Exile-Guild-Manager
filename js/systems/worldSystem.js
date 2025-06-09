@@ -29,11 +29,11 @@ function getCompleteMissionData(areaId, missionId) {
 
 // Check if a mission is currently available to run
 function isMissionAvailable(areaId, missionId) {
-    const missionState = gameState.worldState.areas[areaId]?.missions[missionId];
+    const missionState = worldState.areas[areaId]?.missions[missionId];
     if (!missionState || !missionState.discovered) return false;
 
     // Check day-based cooldown
-    if (missionState.availableAgainOnDay && timeState.currentDay < missionState.availableAgainOnDay) {
+    if (missionState.availableAgainOnDay && turnState.currentTurn < missionState.availableAgainOnDay) {
         return false; // Still on cooldown
     }
 
@@ -42,19 +42,19 @@ function isMissionAvailable(areaId, missionId) {
 
 // Get how many days until mission is available
 function getDaysUntilAvailable(areaId, missionId) {
-    const missionState = gameState.worldState.areas[areaId]?.missions[missionId];
+    const missionState = worldState.areas[areaId]?.missions[missionId];
     if (!missionState?.availableAgainOnDay) return 0;
 
-    return Math.max(0, missionState.availableAgainOnDay - timeState.currentDay);
+    return Math.max(0, missionState.availableAgainOnDay - turnState.currentTurn);
 }
 
 // Start cooldown for a mission after completion
 function startMissionCooldown(areaId, missionId) {
     const missionData = getCompleteMissionData(areaId, missionId);
-    const missionState = gameState.worldState.areas[areaId].missions[missionId];
+    const missionState = worldState.areas[areaId].missions[missionId];
 
     if (missionData.cooldown && missionData.cooldown.enabled) {
-        missionState.availableAgainOnDay = timeState.currentDay + missionData.cooldown.days;
+        missionState.availableAgainOnDay = turnState.currentTurn + missionData.cooldown.days;
     }
 }
 
@@ -64,7 +64,7 @@ function startMissionCooldown(areaId, missionId) {
 function calculateCompleteMissionRewards(areaId, missionId, outcome) {
     const missionData = getCompleteMissionData(areaId, missionId);
     const areaData = getAreaData(areaId);
-    const missionState = gameState.worldState.areas[areaId].missions[missionId];
+    const missionState = worldState.areas[areaId].missions[missionId];
 
     if (!missionData || !areaData) return null;
 
@@ -146,7 +146,7 @@ function calculateScoutingGain(areaId, missionId, outcome, exileScoutingBonus = 
     }
 
     // Apply scouting bonus as percentage multiplier
-    const scoutingMultiplier = gameState.exile.stats.scoutingBonus || 1.0;
+    const scoutingMultiplier = 1.0 + (exileScoutingBonus / 100 || 0);
     scoutingGain = Math.floor(scoutingGain * scoutingMultiplier);
 
     // Minimum 1 scouting progress for any attempt
@@ -156,7 +156,7 @@ function calculateScoutingGain(areaId, missionId, outcome, exileScoutingBonus = 
 
 // Add scouting progress to an area and check for unlocks
 function addScoutingProgress(areaId, amount) {
-    const areaState = gameState.worldState.areas[areaId];
+    const areaState = worldState.areas[areaId];
     const areaData = getAreaData(areaId);
     if (!areaState || !areaData) return;
 
@@ -205,14 +205,15 @@ function checkForDiscoveries(areaId, missionId, outcome) {
             }
 
             // Apply scouting bonus as percentage multiplier to discovery chance
-            const scoutingMultiplier = gameState.exile.stats.scoutingBonus || 1.0;
+            // TODO: Pass exile scouting bonus from mission system
+            const scoutingMultiplier = 1.0; // Temporarily disabled until exile info is passed
             const adjustedChance = Math.min(1.0, chance * scoutingMultiplier);
 
             // Roll for discovery
             if (Math.random() < adjustedChance) {
                 if (target.includes('_to_')) {
                     // Handle area connections
-                    const connectionState = gameState.worldState.connections[target];
+                    const connectionState = worldState.connections[target];
                     if (connectionState && !connectionState.discovered) {
                         connectionState.discovered = true;
                         discoveries.push({ type: 'connection', id: target });
@@ -223,9 +224,9 @@ function checkForDiscoveries(areaId, missionId, outcome) {
 
                     if (targetAreaData) {
                         // Handle area discovery
-                        if (!gameState.worldState.areas[target]) {
+                        if (!worldState.areas[target]) {
                             // Initialize the area in game state if it doesn't exist
-                            gameState.worldState.areas[target] = {
+                            worldState.areas[target] = {
                                 discovered: true,
                                 explorationProgress: 0,
                                 totalScoutingProgress: 0,
@@ -240,7 +241,7 @@ function checkForDiscoveries(areaId, missionId, outcome) {
                                     const startDiscovered = missionDef.discovered ||
                                         (targetAreaData.startingMissions && targetAreaData.startingMissions.includes(missionId));
 
-                                    gameState.worldState.areas[target].missions[missionId] = {
+                                    worldState.areas[target].missions[missionId] = {
                                         discovered: startDiscovered,
                                         completions: 0,
                                         firstCompleted: false,
@@ -256,8 +257,8 @@ function checkForDiscoveries(areaId, missionId, outcome) {
                         // Handle mission discovery within current area
                         const areaData = getAreaData(areaId);
                         if (areaData && areaData.missions && areaData.missions[target]) {
-                            if (!gameState.worldState.areas[areaId].missions[target]) {
-                                gameState.worldState.areas[areaId].missions[target] = {
+                                                    if (!worldState.areas[areaId].missions[target]) {
+                            worldState.areas[areaId].missions[target] = {
                                     discovered: false,
                                     completions: 0,
                                     firstCompleted: false,
@@ -265,7 +266,7 @@ function checkForDiscoveries(areaId, missionId, outcome) {
                                     availableAgainOnDay: null
                                 };
                             }
-                            const missionState = gameState.worldState.areas[areaId].missions[target];
+                            const missionState = worldState.areas[areaId].missions[target];
                             if (!missionState.discovered) {
                                 missionState.discovered = true;
                                 discoveries.push({ type: 'mission', areaId: areaId, missionId: target });
@@ -285,7 +286,7 @@ function checkForDiscoveries(areaId, missionId, outcome) {
 // === MISSION COMPLETION TRACKING ===
 // Update mission state after completion
 function completeMission(areaId, missionId, outcome) {
-    const missionState = gameState.worldState.areas[areaId].missions[missionId];
+    const missionState = worldState.areas[areaId].missions[missionId];
     if (!missionState) return;
 
     // Update completion tracking
@@ -294,7 +295,7 @@ function completeMission(areaId, missionId, outcome) {
         if (!missionState.firstCompleted) {
             missionState.firstCompleted = true;
         }
-        missionState.lastCompleted = timeState.currentDay;
+        missionState.lastCompleted = turnState.currentTurn;
 
         // ADD: Update exploration progress
         updateExplorationProgress(areaId, missionId);
@@ -318,7 +319,7 @@ function completeMission(areaId, missionId, outcome) {
 
 // New function to calculate exploration progress
 function updateExplorationProgress(areaId, missionId) {
-    const areaState = gameState.worldState.areas[areaId];
+    const areaState = worldState.areas[areaId];
     const areaData = getAreaData(areaId);
 
     if (!areaState || !areaData) return;
@@ -345,7 +346,7 @@ function randomBetween(min, max) {
 // Get all available missions for an area
 function getAvailableMissions(areaId) {
     const areaData = getAreaData(areaId);
-    const areaState = gameState.worldState.areas[areaId];
+    const areaState = worldState.areas[areaId];
 
     if (!areaData || !areaState) return [];
 
@@ -364,7 +365,7 @@ function getAvailableMissions(areaId) {
 // Get scouting information that has been unlocked for an area
 function getUnlockedScoutingInfo(areaId) {
     const areaData = getAreaData(areaId);
-    const areaState = gameState.worldState.areas[areaId];
+    const areaState = worldState.areas[areaId];
 
     if (!areaData || !areaState) return [];
 
@@ -428,7 +429,7 @@ function testWorldMission(areaId, missionId) {
     console.log("🎯 Completion Result:", completionResult);
 
     // Show updated area state
-    console.log("🗺️ Updated Area State:", gameState.worldState.areas[areaId]);
+    console.log("🗺️ Updated Area State:", worldState.areas[areaId]);
 
     // Check what missions are now available
     const availableMissions = getAvailableMissions(areaId);

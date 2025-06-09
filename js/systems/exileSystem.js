@@ -138,7 +138,16 @@ class ExileSystem {
 
     // Get current assignment for an exile
     getExileAssignment(exileName) {
-        return gameState.assignments.find(a => a.exileName === exileName) || null;
+        // Initialize assignments if needed
+        if (!turnState.assignments) {
+            turnState.assignments = [];
+        }
+        
+        // Find exile by name to get ID
+        const exile = gameState.exiles.find(e => e.name === exileName);
+        if (!exile) return null;
+        
+        return turnState.assignments.find(a => a.exileId === exile.id) || null;
     }
 
     // Assign a mission to an exile
@@ -156,9 +165,21 @@ class ExileSystem {
             this.unassignExile(exileName);
         }
 
-        // Add new assignment
-        gameState.assignments.push({
-            exileName: exileName,
+        // Find exile by name to get ID
+        const exile = gameState.exiles.find(e => e.name === exileName);
+        if (!exile) {
+            uiSystem.log("Exile not found!", "failure");
+            return false;
+        }
+
+        // Initialize assignments if needed
+        if (!turnState.assignments) {
+            turnState.assignments = [];
+        }
+
+        // Add new assignment using exileId
+        turnState.assignments.push({
+            exileId: exile.id,
             areaId: areaId,
             missionId: missionId
         });
@@ -175,7 +196,19 @@ class ExileSystem {
 
     // Unassign an exile from their mission
     unassignExile(exileName) {
-        const assignmentIndex = gameState.assignments.findIndex(a => a.exileName === exileName);
+        // Initialize assignments if needed
+        if (!turnState.assignments) {
+            turnState.assignments = [];
+        }
+
+        // Find exile by name to get ID
+        const exile = gameState.exiles.find(e => e.name === exileName);
+        if (!exile) {
+            uiSystem.log("Exile not found!", "failure");
+            return false;
+        }
+
+        const assignmentIndex = turnState.assignments.findIndex(a => a.exileId === exile.id);
 
         if (assignmentIndex === -1) {
             uiSystem.log(`${exileName} is not assigned to any mission`, "info");  // TEMPORARY
@@ -183,7 +216,7 @@ class ExileSystem {
         }
 
         // Remove assignment
-        gameState.assignments.splice(assignmentIndex, 1);
+        turnState.assignments.splice(assignmentIndex, 1);
         uiSystem.log(`📋 ${exileName} unassigned from mission`, "info");  // TEMPORARY
 
         // Update displays
@@ -239,7 +272,7 @@ class ExileSystem {
 
         // Apply all allocated passives
         exile.passives.allocated.forEach(passiveId => {
-            const passive = passiveTree.passives[passiveId];
+            const passive = passiveDefinitions[passiveId];
             if (passive && passive.stats) {
                 passive.effects.forEach(effect => {
                     switch (effect.type) {

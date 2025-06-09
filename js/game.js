@@ -3,32 +3,79 @@ const game = {
     init() {
         // Load saved game first
         this.loadGame();
-    
+
         // If no exiles exist, create starting exile(s)
         if (gameState.exiles.length === 0) {
             this.initializeStartingExiles();
         }
-    
+
         // debug logs
         console.log("Exiles after init:", gameState.exiles);
         console.log("Selected exile ID:", gameState.selectedExileId);
-    
+
         // Initialize systems
         inventorySystem.initializeItemTooltips();
-    
+
         // Select first exile by default
         if (gameState.exiles.length > 0 && !gameState.selectedExileId) {
             gameState.selectedExileId = gameState.exiles[0].id;
             console.log("Selected first exile:", gameState.selectedExileId);
         }
-    
+
+        // Restore passive choices if any - CRITICAL FOR PREVENTING EXPLOIT
+        if (gameState.currentPassiveChoices && typeof passiveSystem !== 'undefined') {
+            passiveSystem.currentPassiveChoices = gameState.currentPassiveChoices;
+        }
+
         // Add this to refresh the UI
         if (typeof exileRowManager !== 'undefined') {
             console.log("Refreshing exile rows...");
             exileRowManager.refreshAllRows();
         }
-    
+
+        // Initialize world state for discovered areas if needed
+        if (typeof areaDefinitions !== 'undefined') {
+            Object.entries(areaDefinitions).forEach(([areaId, areaDef]) => {
+            if (areaDef.discovered && !worldState.areas[areaId]) {
+                // Initialize the area in world state
+                worldState.areas[areaId] = {
+                    discovered: true,
+                    totalScoutingProgress: 0,
+                    explorationProgress: 0,
+                    missions: {}
+                };
+
+                // Initialize discovered missions
+                Object.entries(areaDef.missions).forEach(([missionId, missionDef]) => {
+                    if (missionDef.discovered) {
+                        worldState.areas[areaId].missions[missionId] = {
+                            discovered: true,
+                            completions: 0,
+                            firstCompleted: false,
+                            lastCompleted: null,
+                            availableAgainOnDay: null
+                        };
+                    }
+                });
+            }
+        });
+        } else {
+            console.log("areaDefinitions not loaded yet - skipping area initialization");
+        }
+
         uiSystem.log("Send exiles on missions. Make them more powerful. Each area has dangers and rewards to discover.", "info");
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Enter key to end turn
+            if (e.key === 'Enter' && !e.target.matches('input, textarea')) {
+                e.preventDefault();
+                const endTurnBtn = document.getElementById('end-turn-btn');
+                if (endTurnBtn && !endTurnBtn.disabled) {
+                    endTurnBtn.click();
+                }
+            }
+        });
     },
 
 
@@ -72,45 +119,24 @@ const game = {
     },
 
 
+    checkLevelUp(exile) {
+        while (exile.experience >= exile.experienceNeeded) {
+            exile.level++;
+            exile.experience -= exile.experienceNeeded;
+            exile.experienceNeeded = exile.level * 100;
 
-
-
-    checkLevelUp() {
-        while (gameState.exile.experience >= gameState.exile.experienceNeeded) {
-            gameState.exile.level++;
-            gameState.exile.experience -= gameState.exile.experienceNeeded;
-            gameState.exile.experienceNeeded = gameState.exile.level * 100;
-
-            // Only give life on level up (no more damage/defense)
-            gameState.exile.baseStats.life += 20;
+            // Only give life on level up
+            exile.baseStats.life += 20;
 
             // Give passive point
-            gameState.exile.passives.pendingPoints++;
+            exile.passives.pendingPoints++;
 
-            uiSystem.log(`🎉 LEVEL UP! ${gameState.exile.name} is now level ${gameState.exile.level}! (+1 Passive Point)`, "legendary");
+            uiSystem.log(`🎉 LEVEL UP! ${exile.name} is now level ${exile.level}!`, "legendary");
 
-            // Immediately offer passive selection
-            passiveSystem.startPassiveSelection();
-
-            // ...inside checkLevelUp, after level up is processed...
-            const summaryEl = document.getElementById('exile-summary-card');
-            if (summaryEl) {
-                summaryEl.classList.remove('levelup-animate'); // Reset if already animating
-                void summaryEl.offsetWidth; // Force reflow to restart animation
-                summaryEl.classList.add('levelup-animate');
-            }
+            // Recalculate stats
+            exileSystem.recalculateStats(exile);
         }
     },
-
-
-
-
-
-
-
-
-
-
 
     applyMoraleEffects(exile) {
         // Reset stats to base + level bonuses
@@ -222,8 +248,8 @@ const game = {
                     delete parsedSave.exile;
                 }
 
-                // Load the save data
-                Object.assign(gameState, parsedSave);
+                // Load the save data - CRITICAL FIX: Use parsedSave.gameState for proper structure
+                Object.assign(gameState, parsedSave.gameState || parsedSave);
 
                 // If we have exiles but no selected one, select the first
                 if (gameState.exiles.length > 0 && !gameState.selectedExileId) {
@@ -322,20 +348,10 @@ const game = {
 
     // === DAY REPORT MODAL METHODS ===
     openDayReport() {
-        // Show the modal
-        document.getElementById('day-report-modal').style.display = 'flex';
-
-        // Update day number
-        document.getElementById('day-report-day').textContent = timeState.currentDay;
-
-        // Clear previous content
-        this.clearDayReportContent();
-
-        // Start the animation sequence
-        this.animateDayReport();
-
-        // Add escape key listener
-        document.addEventListener('keydown', this.handleDayReportKeydown.bind(this));
+        // DISABLED: Day report modal functionality disabled for now
+        // Will be incorporated elsewhere in the UI
+        console.log("Day report modal disabled - data available in this.dayReportData");
+        return;
     },
 
     closeDayReport() {

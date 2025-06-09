@@ -10,6 +10,7 @@ body {
     display: flex;
     height: 100vh;
     background-color: #1a1a1a;
+    padding-top: 40px; /* Add padding instead of margin */
 }
 
 /* Left Panel - Exile Rows */
@@ -19,7 +20,8 @@ body {
     flex-direction: column;
     padding: 10px;
     gap: 10px;
-    overflow: hidden; /* No scrollbars */
+    overflow: hidden;
+    height: calc(100vh - 40px); /* Subtract resource bar height */
 }
 
 /* Individual Exile Row */
@@ -93,6 +95,7 @@ body {
     padding: 10px;
     gap: 10px;
     overflow: hidden;
+    height: calc(100vh - 40px); /* Subtract resource bar height */
 }
 /* DYNAMIC DISPLAY */
 /* Top Right - Dynamic Display */
@@ -159,6 +162,568 @@ body {
     font-size: 0.9em;
     padding: 0;
 }
+
+/* Dynamic Display - Exile Details */
+.exile-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.detail-section {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #333;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.detail-section h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #c9aa71;
+    font-size: 1.1em;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+}
+
+.stat-label {
+    color: #888;
+}
+
+.stat-value {
+    color: #fff;
+    font-weight: bold;
+}
+
+/* Status colors */
+.status-idle { color: #4CAF50; }
+.status-assigned { color: #2196F3; }
+.status-in_mission { color: #FF9800; }
+.status-resting { color: #9C27B0; }
+.status-dead { color: #F44336; }
+
+/* Element colors (reuse existing) */
+.element-fire { color: #ff6b6b; }
+.element-cold { color: #74c0fc; }
+.element-lightning { color: #ffd43b; }
+.element-chaos { color: #da77f2; }
+/* END OF DYNAMIC DISPLAY - Exile Details */
+
+/* DYNAMIC DISPLAY - CURRENT EXILE EQUIPMENT */
+.equipment-container {
+    display: flex;
+    gap: 30px;
+    margin-top: 20px;
+}
+
+.equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    flex: 1;
+}
+
+.equipment-slot {
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid #333;
+    padding: 10px;
+    border-radius: 5px;
+    min-height: 100px;
+}
+
+.equipment-slot.occupied {
+    border-color: #444;
+}
+
+.slot-label {
+    font-weight: bold;
+    color: #c9aa71;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
+.empty-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+    color: #666;
+    font-style: italic;
+}
+
+.item-box {
+    padding: 10px;
+    border-radius: 3px;
+    position: relative;
+}
+
+/* Rarity colors */
+.item-box.common {
+    background: rgba(150, 150, 150, 0.1);
+    border: 1px solid #666;
+}
+
+.item-box.rare {
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid #ffd700;
+}
+
+.item-box.legendary {
+    background: rgba(255, 140, 0, 0.1);
+    border: 1px solid #ff8c00;
+}
+
+.item-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.item-stats {
+    font-size: 0.85em;
+}
+
+.stat-line {
+    color: #aaa;
+    padding: 1px 0;
+}
+
+.implicit-stats {
+    border-bottom: 1px solid #444;
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+}
+
+.stat-line.implicit {
+    color: #6b94ff;
+}
+
+.unequip-btn {
+    margin-top: 8px;
+    padding: 4px 10px;
+    font-size: 0.8em;
+    background: #444;
+    border: 1px solid #666;
+    color: #ccc;
+    cursor: pointer;
+    width: 100%;
+}
+
+.unequip-btn:hover {
+    background: #555;
+    border-color: #888;
+}
+
+.equipment-stats-summary {
+    flex: 0 0 250px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #333;
+    padding: 15px;
+    border-radius: 5px;
+    height: fit-content;
+}
+
+.equipment-stats-summary h3 {
+    margin-top: 0;
+    color: #c9aa71;
+    border-bottom: 1px solid #444;
+    padding-bottom: 10px;
+}
+
+.totals-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.total-category {
+    line-height: 1.6;
+}
+
+.total-category strong {
+    color: #c9aa71;
+    display: block;
+    margin-bottom: 3px;
+}
+/* END OF DYNAMIC DISPLAY - CURRENT EXILE EQUIPMENT */
+
+/* DYNAMIC DISPLAY - Passive Tree */
+/* Passives Display */
+.passives-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #333;
+    border-radius: 5px;
+}
+
+.passive-points {
+    font-size: 1.2em;
+}
+
+.points-value {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.allocate-btn {
+    padding: 8px 20px;
+    background: #4CAF50;
+    border: none;
+    color: white;
+    cursor: pointer;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+.allocate-btn:hover {
+    background: #45a049;
+}
+
+.allocated-passives h3 {
+    color: #c9aa71;
+    margin-bottom: 15px;
+}
+
+/* Compact Passive List */
+.passive-list.compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 5px;
+    max-height: 400px;
+}
+
+.passive-item.compact {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #333;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.passive-item.compact .passive-header {
+    padding: 5px 10px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9em;
+}
+
+.passive-item.compact .passive-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.passive-item.compact .passive-details {
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.2);
+    font-size: 0.85em;
+}
+
+.passive-item.compact .passive-description {
+    color: #aaa;
+    margin: 0;
+}
+
+/* Tier colors */
+.passive-name.normal { color: #aaa; }
+.passive-name.notable { color: #4287f5; }
+.passive-name.keystone { color: #ff8c00; }
+
+.passive-item.compact .expand-icon {
+    font-size: 0.7em;
+    color: #666;
+}
+
+.stack-count {
+    color: #4CAF50;
+    font-size: 0.9em;
+}
+/* END OF DYNAMIC DISPLAY - Passive Tree */
+
+/* Passive Selection Modal */
+/* Passive Selection Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.passive-modal {
+    background: #1a1a1a;
+    border: 2px solid #444;
+    border-radius: 10px;
+    padding: 30px;
+    max-width: 600px;
+    width: 90%;
+}
+
+.passive-modal h2 {
+    color: #c9aa71;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.passive-choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.passive-choice {
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid #333;
+    padding: 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.passive-choice:hover {
+    border-color: #666;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.passive-choice-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.passive-choice-name {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.passive-choice-tier {
+    font-size: 0.9em;
+    padding: 2px 8px;
+    border-radius: 3px;
+}
+
+.passive-choice-tier.normal {
+    color: #aaa;
+    border: 1px solid #aaa;
+}
+
+.passive-choice-tier.notable {
+    color: #4287f5;
+    border: 1px solid #4287f5;
+}
+
+.passive-choice-tier.keystone {
+    color: #ff8c00;
+    border: 1px solid #ff8c00;
+}
+
+.passive-choice-description {
+    color: #ccc;
+    margin: 0;
+    font-size: 0.95em;
+}
+
+.passive-modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.passive-modal-actions button {
+    padding: 10px 20px;
+    font-size: 1em;
+    cursor: pointer;
+    border: none;
+    border-radius: 3px;
+}
+
+#reroll-passive-btn {
+    background: #f39c12;
+    color: white;
+}
+
+#reroll-passive-btn:hover:not(:disabled) {
+    background: #e67e22;
+}
+
+#reroll-passive-btn:disabled {
+    background: #555;
+    color: #999;
+    cursor: not-allowed;
+}
+
+/* Selection state for passive choices */
+.passive-choice.selected {
+    border-color: #4CAF50;
+    background: rgba(76, 175, 80, 0.1);
+}
+
+#confirm-passive-btn {
+    background: #4CAF50;
+    color: white;
+}
+
+#confirm-passive-btn:hover:not(:disabled) {
+    background: #45a049;
+}
+
+#confirm-passive-btn:disabled {
+    background: #555;
+    color: #999;
+    cursor: not-allowed;
+}
+/* End of Passive Selection Modal */
+
+/* WORLD MAP DYNAMIC DISPLAY */
+/* World Map Display */
+.world-map-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.world-map-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 600px;
+    max-height: 400px;
+    margin: 20px auto;
+}
+
+.world-map-cell {
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid #333;
+    border-radius: 5px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    aspect-ratio: 1;
+}
+
+.world-map-cell.discovered {
+    background: rgba(0, 0, 0, 0.7);
+    border-color: #666;
+}
+
+.world-map-cell.discovered:hover {
+    border-color: #c9aa71;
+    background: rgba(201, 170, 113, 0.1);
+}
+
+.world-map-cell.selected {
+    border-color: #c9aa71;
+    background: rgba(201, 170, 113, 0.2);
+}
+
+.world-map-cell.undiscovered {
+    color: #444;
+    cursor: default;
+}
+
+.area-name {
+    font-weight: bold;
+    color: #c9aa71;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.area-level {
+    font-size: 0.9em;
+    color: #888;
+}
+
+/* Mission Panel */
+.area-missions-panel {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.mission-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.mission-item {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #444;
+    padding: 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mission-item:hover:not(.on-cooldown):not(.assigned):not(.no-exile) {
+    border-color: #c9aa71;
+    background: rgba(201, 170, 113, 0.1);
+}
+
+.mission-item.on-cooldown {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.mission-item.assigned {
+    border-color: #4CAF50;
+    background: rgba(76, 175, 80, 0.1);
+}
+
+.mission-item.no-exile {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.mission-name {
+    font-weight: bold;
+    color: #c9aa71;
+}
+
+.mission-type {
+    font-size: 0.9em;
+    color: #888;
+}
+
+.mission-status {
+    font-size: 0.85em;
+    color: #aaa;
+    margin-top: 5px;
+}
+
+.no-missions {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+/* End of WORLD MAP DYNAMIC DISPLAY */
+
+
 /* END OF DYNAMIC DISPLAY */
 
 
@@ -242,32 +807,62 @@ body {
     border-bottom: 2px solid #444;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 0 20px;
     z-index: 100;
 }
 
-/* Adjust main container to account for resource bar */
-.main-container {
-    margin-top: 40px;
-    height: calc(100vh - 40px);
+.resources-left {
+    display: flex;
+    align-items: center;
+    gap: 30px;
 }
 
-/* Mission States for Exile Rows */
-.exile-row.in-mission {
-    background-color: #2a2a3a;
-    border-color: #4169E1;
+.resource-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
-.exile-row.mission-complete {
-    background-color: #2a3a2a;
-    border-color: #4CAF50;
+.resource-label {
+    color: #888;
+    font-size: 0.9em;
 }
 
-/* Responsive adjustments */
-@media (max-width: 1200px) {
-    .exiles-panel {
-        flex: 0 0 50%; /* Shrink to 50% on smaller screens */
-    }
+.resource-value {
+    color: #c9aa71;
+    font-weight: bold;
+}
+
+/* End Turn Button */
+.end-turn-btn {
+    padding: 5px 75px;
+    background-color: #c9aa71;
+    color: #1a1a1a;
+    border: none;
+    border-radius: 3px;
+    font-weight: bold;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    height: 30px;
+}
+
+.end-turn-btn:hover {
+    background-color: #e6c585;
+}
+
+.end-turn-btn:active {
+    transform: scale(0.98);
+}
+
+.end-turn-btn.has-assignments {
+    animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(201, 170, 113, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(201, 170, 113, 0.8); }
 }
 
 

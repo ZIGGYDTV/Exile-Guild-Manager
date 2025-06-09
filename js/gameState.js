@@ -31,6 +31,9 @@ const gameState = {
     // Death tracking
     fallenExiles: [], // Array of dead exiles with full data snapshots
     
+    // Passive selection state
+    currentPassiveChoices: null,
+
     // === SHARED RESOURCES ===
     resources: {
         gold: 0,

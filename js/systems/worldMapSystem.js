@@ -52,7 +52,7 @@ const worldMapSystem = {
         <div id="world-map-modal" class="world-map-overlay" style="display: none;" onclick="worldMapSystem.handleWorldMapClick(event)">
             <div class="world-map-content" onclick="event.stopPropagation()">
                 <div class="world-map-header">
-                    <h2>🗺️ World Map - Day <span id="world-map-day">${timeState.currentDay}</span></h2>
+                    <h2>🗺️ World Map - Day <span id="world-map-day">${turnState.currentTurn}</span></h2>
                     <button class="close-btn" onclick="worldMapSystem.closeWorldMap()">&times;</button>
                 </div>
                 
@@ -86,7 +86,7 @@ const worldMapSystem = {
     
     updateWorldMapDisplay() {
         // Update day display
-        document.getElementById('world-map-day').textContent = timeState.currentDay;
+        document.getElementById('world-map-day').textContent = turnState.currentTurn;
 
         // Update areas list
         this.updateWorldAreasDisplay();
@@ -221,8 +221,8 @@ const worldMapSystem = {
                 const daysUntil = getDaysUntilAvailable(areaId, mission.missionId);
 
                 // Assign Mission from World Map: Check if any exile is assigned to this mission
-                const isAssigned = gameState.assignments.some(a => a.areaId === areaId && a.missionId === mission.missionId);
-                const assignedExile = gameState.assignments.find(a => a.areaId === areaId && a.missionId === mission.missionId);
+                const isAssigned = turnState.assignments?.some(a => a.areaId === areaId && a.missionId === mission.missionId);
+                const assignedExile = turnState.assignments?.find(a => a.areaId === areaId && a.missionId === mission.missionId);
 
                 let buttonText = "Assign Mission";
                 let buttonClass = "assign-mission-btn";

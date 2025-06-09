@@ -6,11 +6,21 @@ class MissionSystem {
         console.log("Mission system initialized");
     }
 
-    runMission(missionKey) {
+    runMission(missionKey, exileId = null) {
         const [areaId, missionId] = missionKey.split('.');
 
         if (!areaId || !missionId) {
             uiSystem.log("Invalid mission format!", "failure");
+            return;
+        }
+
+        // Get the exile - either passed in or currently selected
+        const exile = exileId ?
+            gameState.exiles.find(e => e.id === exileId) :
+            getCurrentExile();
+
+        if (!exile) {
+            uiSystem.log("No exile found!", "failure");
             return;
         }
 
@@ -26,7 +36,6 @@ class MissionSystem {
             return;
         }
 
-        const exile = gameState.exile;
         const missionData = getCompleteMissionData(areaId, missionId);
 
         // capture level before any changes
@@ -50,7 +59,7 @@ class MissionSystem {
 
         if (combatResult.outcome === 'victory') {
             // Calculate rewards using world system
-            const rewards = calculateCompleteMissionRewards(areaId, missionId, combatResult.outcome);
+            rewards = calculateCompleteMissionRewards(areaId, missionId, combatResult.outcome);
 
             goldEarned = rewards.gold;
             expEarned = rewards.experience;
@@ -63,7 +72,7 @@ class MissionSystem {
             gameState.resources.gold += goldEarned;
             gameState.resources.chaosOrbs += rewards.chaosOrbs;
             gameState.resources.exaltedOrbs += rewards.exaltedOrbs;
-            gameState.exile.experience += expEarned;
+            exile.experience += expEarned;  // Update the specific exile's experience
 
             // Log special currency rewards
             if (rewards.chaosOrbs > 0 || rewards.exaltedOrbs > 0) {
@@ -80,29 +89,29 @@ class MissionSystem {
                 const gearIlvl = game.randomBetween(ilvlRange.min, ilvlRange.max);
 
                 // Use updated generateGear method
-                const newGear = this.generateGear(areaId, missionId, gearIlvl);
-                gameState.inventory.backpack.push(newGear);
+                newGear = this.generateGear(areaId, missionId, gearIlvl);
+                gameState.inventory.items.push(newGear);  // Use items instead of backpack
                 uiSystem.log(`⭐ Found ${newGear.name}!`, newGear.rarity === 'rare' ? 'legendary' : 'success');
             }
 
-            game.checkLevelUp();
+            game.checkLevelUp(exile);  // Pass the specific exile
 
             // Calculate and apply morale change (preserve existing system)
             if (combatResult.outcome !== 'death') {
                 moraleResult = exileSystem.calculateMoraleChange(combatResult, exile);
 
                 if (moraleResult.change !== 0) {
-                    gameState.exile.morale = Math.max(0, Math.min(100, gameState.exile.morale + moraleResult.change));
+                    exile.morale = Math.max(0, Math.min(100, exile.morale + moraleResult.change));
                     const moraleIcon = moraleResult.change > 0 ? "🔥" : "😴";
                     const moraleText = moraleResult.change > 0 ? `(+${moraleResult.change} morale)` : `(${moraleResult.change} morale)`;
                     moraleHtml = `<br><span style="font-size:0.65em; color:#aaa;">${moraleIcon} ${exile.name}: "${moraleResult.message}" ${moraleText}</span>`;
                 }
             }
         } else if (combatResult.outcome === 'death') {
-            // Don't call gameOver() - let the day report handle death display
-            // game.gameOver(); // DISABLED
-            // Still continue to process the death and return data
+            // Handle exile death
+            exileSystem.handleExileDeath(exile.id);
         }
+
 
         let mainMessage = "";
         let breakdownHtml = "";
@@ -297,7 +306,7 @@ class MissionSystem {
 
     // Process Day Method: Time passing and what occurs (triggering missions, etc.)
     processDay() {
-        // Clear previous day's data and prepare for new day report (before adding this infinite data report stacking lol)
+        // Clear previous day's data
         game.dayReportData = {
             missionResults: [],
             exileUpdates: [],
@@ -307,47 +316,54 @@ class MissionSystem {
         };
 
         // Check if any assignments exist
-        if (gameState.assignments.length === 0) {
+        if (!turnState.assignments || turnState.assignments.length === 0) {
             uiSystem.log("⚠️ No assignments given! Assign exiles to missions before processing the day.", "failure");
-            return; // Stop processing
+            return;
         }
 
         // Process all assigned missions
-        if (gameState.assignments.length > 0) {
-            uiSystem.log(`🌅 Day ${timeState.currentDay + 1} begins...`, "info");
+        uiSystem.log(`🌅 Day ${turnState.currentTurn + 1} begins...`, "info");
 
-            // Run each assigned mission
-            gameState.assignments.forEach(assignment => {
-                const { exileName, areaId, missionId } = assignment;
+        // Track assignments to remove (avoid modifying array while iterating)
+        const assignmentsToRemove = [];
 
-                // Check if mission is still available (might have gone on cooldown)
-                if (isMissionAvailable(areaId, missionId)) {
-                    const missionData = getMissionData(areaId, missionId);
-                    uiSystem.log(`⚔️ ${exileName} embarks on ${missionData.name}...`, "info");
+        // Run each assigned mission
+        turnState.assignments.forEach((assignment, index) => {
+            const { exileId, areaId, missionId } = assignment;
+            
+            // Find the exile
+            const exile = gameState.exiles.find(e => e.id === exileId);
+            if (!exile || exile.status === 'dead') {
+                console.log(`Exile ${exileId} not found or dead, skipping assignment`);
+                assignmentsToRemove.push(index);
+                return;
+            }
 
-                    // CAPTURE PRE-MISSION STATE for reward tracking
-                    const preMissionResources = {
-                        gold: gameState.resources.gold,
-                        chaosOrbs: gameState.resources.chaosOrbs,
-                        exaltedOrbs: gameState.resources.exaltedOrbs
-                    };
-                    const preMissionInventoryCount = gameState.inventory.backpack.length;
+            // Check if mission is still available
+            if (isMissionAvailable(areaId, missionId)) {
+                const missionData = getMissionData(areaId, missionId);
+                uiSystem.log(`⚔️ ${exile.name} embarks on ${missionData.name}...`, "info");
 
-                    // Run the assigned mission
-                    const missionResult = this.runMission(`${areaId}.${missionId}`);
+                // CAPTURE PRE-MISSION STATE
+                const preMissionResources = {
+                    gold: gameState.resources.gold,
+                    chaosOrbs: gameState.resources.chaosOrbs,
+                    exaltedOrbs: gameState.resources.exaltedOrbs
+                };
+                const preMissionInventoryCount = gameState.inventory.items.length;
 
+                // Run the mission with the specific exile
+                const missionResult = this.runMission(`${areaId}.${missionId}`, exileId);
+
+                if (missionResult) {
                     // CALCULATE ACTUAL REWARDS from game state changes
                     const actualRewards = {
                         gold: gameState.resources.gold - preMissionResources.gold,
                         chaosOrbs: gameState.resources.chaosOrbs - preMissionResources.chaosOrbs,
                         exaltedOrbs: gameState.resources.exaltedOrbs - preMissionResources.exaltedOrbs,
-                        gearFound: gameState.inventory.backpack.length > preMissionInventoryCount ?
-                            gameState.inventory.backpack[gameState.inventory.backpack.length - 1] : null
+                        gearFound: gameState.inventory.items.length > preMissionInventoryCount ?
+                            gameState.inventory.items[gameState.inventory.items.length - 1] : null
                     };
-
-                    // DEBUG: Compare returned vs actual rewards
-                    console.log("Returned rewards:", missionResult.rewards);
-                    console.log("Actual game state rewards:", actualRewards);
 
                     // Update mission result with ACTUAL rewards
                     missionResult.rewards = actualRewards;
@@ -365,45 +381,38 @@ class MissionSystem {
 
                     // Collect discoveries
                     game.dayReportData.discoveries.push(...missionResult.worldProgression.discoveries);
-
-                    // Check if mission went on cooldown - if so, unassign
-                    if (!isMissionAvailable(areaId, missionId)) {
-                        uiSystem.log(`📋 Mission went on cooldown - ${exileName} unassigned`, "info");
-                        // Remove this assignment from the array
-                        const assignmentIndex = gameState.assignments.findIndex(a =>
-                            a.exileName === exileName && a.areaId === areaId && a.missionId === missionId
-                        );
-                        if (assignmentIndex !== -1) {
-                            gameState.assignments.splice(assignmentIndex, 1);
-                        }
-                    }
-                } else {
-                    const missionData = getMissionData(areaId, missionId);
-                    uiSystem.log(`📋 ${missionData.name} unavailable - ${exileName} unassigned`, "info");
-                    // Remove this assignment from the array
-                    const assignmentIndex = gameState.assignments.findIndex(a =>
-                        a.exileName === exileName && a.areaId === areaId && a.missionId === missionId
-                    );
-                    if (assignmentIndex !== -1) {
-                        gameState.assignments.splice(assignmentIndex, 1);
-                    }
                 }
-            });
-        } else {
-            uiSystem.log("⏳ Time passes... No missions assigned.", "info");
-        }
+
+                // Check if mission went on cooldown - if so, mark for removal
+                if (!isMissionAvailable(areaId, missionId)) {
+                    uiSystem.log(`📋 Mission went on cooldown - ${exile.name} unassigned`, "info");
+                    assignmentsToRemove.push(index);
+                }
+            } else {
+                const missionData = getMissionData(areaId, missionId);
+                uiSystem.log(`📋 ${missionData.name} unavailable - ${exile.name} unassigned`, "info");
+                assignmentsToRemove.push(index);
+            }
+        });
+
+        // Remove assignments that are no longer valid (in reverse order to maintain indices)
+        assignmentsToRemove.sort((a, b) => b - a).forEach(index => {
+            const assignment = turnState.assignments[index];
+            const exile = gameState.exiles.find(e => e.id === assignment.exileId);
+            if (exile) exile.status = 'idle';
+            turnState.assignments.splice(index, 1);
+        });
 
         // Advance time
-        timeState.currentDay++;
-
+        turnState.currentTurn++;
 
         // Check for missions coming off cooldown
         let missionsBackOnline = 0;
-        Object.keys(gameState.worldState.areas).forEach(areaId => {
-            const areaState = gameState.worldState.areas[areaId];
+        Object.keys(worldState.areas).forEach(areaId => {
+            const areaState = worldState.areas[areaId];
             Object.keys(areaState.missions).forEach(missionId => {
                 const missionState = areaState.missions[missionId];
-                if (missionState.availableAgainOnDay && timeState.currentDay >= missionState.availableAgainOnDay) {
+                if (missionState.availableAgainOnDay && turnState.currentTurn >= missionState.availableAgainOnDay) {
                     missionState.availableAgainOnDay = null;
                     missionsBackOnline++;
                 }
@@ -423,25 +432,46 @@ class MissionSystem {
         this.runMission(`${areaId}.${missionId}`);
 
         // Close world map
-                    worldMapSystem.closeWorldMap();
+        worldMapSystem.closeWorldMap();
     }
 
     // Mission Assignment Toggle
     toggleMissionAssignment(areaId, missionId) {
-        // Check if mission is already assigned
-        const assignment = gameState.assignments.find(a => a.areaId === areaId && a.missionId === missionId);
+        // Initialize assignments if needed
+        if (!turnState.assignments) {
+            turnState.assignments = [];
+        }
+
+        const assignment = turnState.assignments.find(a => a.areaId === areaId && a.missionId === missionId);
 
         if (assignment) {
             // Unassign the exile
-            exileSystem.unassignExile(assignment.exileName);
+            const exile = gameState.exiles.find(e => e.id === assignment.exileId);
+            if (exile) exile.status = 'idle';
+            // Remove assignment
+            turnState.assignments = turnState.assignments.filter(a => a !== assignment);
         } else {
-            // Assign our main exile (for now - later we'll add exile selection)
-            exileSystem.assignMissionToExile(gameState.exile.name, areaId, missionId);
+            // Assign selected exile
+            const exile = getCurrentExile();
+            if (!exile) {
+                uiSystem.log("No exile selected!", "failure");
+                return;
+            }
+
+            exile.status = 'assigned';
+            turnState.assignments.push({
+                exileId: exile.id,
+                areaId: areaId,
+                missionId: missionId
+            });
         }
 
-        // Update world map display
-        worldMapSystem.updateWorldMapDisplay();
+        // Update displays
+        if (typeof worldMapSystem !== 'undefined') {
+            worldMapSystem.updateWorldMapDisplay();
+        }
     }
+
 }
 
 const missionSystem = new MissionSystem();

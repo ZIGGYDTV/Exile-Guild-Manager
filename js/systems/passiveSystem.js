@@ -6,20 +6,23 @@ const passiveSystem = {
     currentPassiveChoices: null,
 
     // === CORE PASSIVE METHODS ===
-    
+
     selectPassiveForLevelUp(tier) {
+        const exile = getCurrentExile();
+        if (!exile) return null;
+
         // Get weighted passive pool for this class and tier
-        const pool = passiveHelpers.getWeightedPassivePool(gameState.exile.class, tier);
+        const pool = passiveHelpers.getWeightedPassivePool(exile.class, tier);
 
         // Filter out already allocated passives
         const available = pool.filter(passive =>
-            !gameState.exile.passives.allocated.includes(passive.id)
+            !exile.passives.allocated.includes(passive.id)
         );
 
         if (available.length === 0) {
             // Fallback to any tier if this tier is exhausted
             const fallbackPool = Object.keys(passiveDefinitions)
-                .filter(id => !gameState.exile.passives.allocated.includes(id))
+                .filter(id => !exile.passives.allocated.includes(id))
                 .map(id => ({ id, ...passiveDefinitions[id], weight: 1 }));
 
             if (fallbackPool.length === 0) return null;
@@ -50,18 +53,35 @@ const passiveSystem = {
     },
 
     startPassiveSelection() {
-        if (gameState.exile.passives.pendingPoints <= 0) return;
+        const exile = getCurrentExile();
+        if (!exile || exile.passives.pendingPoints <= 0) return;
 
-        const currentLevel = gameState.exile.level;
+        // CRITICAL FIX: Always check gameState first - this prevents the exploit
+        if (gameState.currentPassiveChoices) {
+            if (!this.currentPassiveChoices) {
+                this.currentPassiveChoices = gameState.currentPassiveChoices;
+                console.log("Restored choices from gameState in startPassiveSelection");
+            }
+            console.log("Choices already exist, not generating new ones");
+            return;
+        }
+        
+        // Double-check local state
+        if (this.currentPassiveChoices) {
+            console.log("Already have local passive choices, not generating new ones");
+            return;
+        }
+
+        const currentLevel = exile.level;
         const tier = this.getPassiveTierForLevel(currentLevel);
 
         // Get available passives for this tier
-        let pool = passiveHelpers.getWeightedPassivePool(gameState.exile.class, tier);
+        let pool = passiveHelpers.getWeightedPassivePool(exile.class, tier);
 
         // For normal passives, include already allocated ones (for stacking)
         // For notable/keystone, exclude already allocated
         if (tier !== 'normal') {
-            pool = pool.filter(passive => !gameState.exile.passives.allocated[passive.id]);
+            pool = pool.filter(passive => !exile.passives.allocated.includes(passive.id));
         }
 
         if (pool.length === 0) {
@@ -90,8 +110,12 @@ const passiveSystem = {
             tier: tier,
             choice1: choice1,
             choice2: choice2,
-            rerollCost: this.getRerollCost(tier, gameState.exile.passives.rerollsUsed)
+            rerollCost: this.getRerollCost(tier, exile.passives.rerollsUsed)
         };
+
+        // Save to both places
+        gameState.currentPassiveChoices = this.currentPassiveChoices;
+        game.saveGame();
 
         uiSystem.log(
             pool.length === 1
@@ -112,34 +136,59 @@ const passiveSystem = {
     },
 
     allocatePassive(passiveId) {
+        const exile = getCurrentExile();
+        if (!exile) return false;
+
         const passive = passiveDefinitions[passiveId];
         if (!passive) return false;
 
         // Add to allocated passives
-        gameState.exile.passives.allocated.push(passiveId);
-        gameState.exile.passives.pendingPoints--;
-        gameState.exile.passives.rerollsUsed = 0; // Reset for next level
+        exile.passives.allocated.push(passiveId);
+        exile.passives.pendingPoints--;
+        exile.passives.rerollsUsed = 0; // Reset for next level
 
         uiSystem.log(`🎯 Allocated ${passive.name}: ${passive.description}`, "legendary");
 
-        // Recalculate stats with new passive
-        exileSystem.recalculateStats();
+        // Clear saved choices from BOTH places
+        this.currentPassiveChoices = null;
+        gameState.currentPassiveChoices = null;
+
+        // Recalculate stats with new passive - PASS THE EXILE
+        exileSystem.recalculateStats(exile);
+
+        // Update displays
         uiSystem.updateDisplay();
+
+        // IMPORTANT: Refresh the dynamic display if we're on the passives tab
+        if (typeof dynamicDisplayManager !== 'undefined' && dynamicDisplayManager.currentTab === 'passives') {
+            dynamicDisplayManager.refreshCurrentTab();
+        }
+
         game.saveGame();
 
         return true;
     },
 
     // === PASSIVE UI METHODS ===
-    
+
     openPassiveSelection() {
-        // Make sure we have pending points and choices ready
-        if (gameState.exile.passives.pendingPoints <= 0) {
-            uiSystem.log("No passive points to spend!", "failure");
+        const exile = getCurrentExile();
+        if (!exile) {
+            uiSystem.log("No exile selected!", "failure");
             return;
         }
 
-        // Generate choices if we don't have them
+        if (exile.passives.pendingPoints <= 0) {
+            uiSystem.log("No passive points available!", "failure");
+            return;
+        }
+
+        // CRITICAL: Always prioritize gameState over local state
+        if (gameState.currentPassiveChoices) {
+            this.currentPassiveChoices = gameState.currentPassiveChoices;
+        }
+
+        // Only generate new choices if we don't have any at all
         if (!this.currentPassiveChoices) {
             this.startPassiveSelection();
         }
@@ -215,15 +264,57 @@ const passiveSystem = {
             // Close the modal
             this.closePassiveSelection();
 
-            // Update character screen if open
-            characterScreenSystem.updateCharacterScreenIfOpen();
+            // Update character screen if open (remove this if you don't have it anymore)
+            // characterScreenSystem.updateCharacterScreenIfOpen();
 
             uiSystem.log(`Selected ${selectedPassive.name}!`, "legendary");
         }
     },
 
+    // Add property to track selection
+    selectedChoice: null,
+
+    // New method for selection
+    selectChoice(choiceNumber) {
+        // Visual feedback
+        document.querySelectorAll('.passive-choice').forEach(el => el.classList.remove('selected'));
+        document.getElementById(`passive-choice-${choiceNumber}`).classList.add('selected');
+
+        // Store selection
+        this.selectedChoice = choiceNumber;
+
+        // Enable confirm button
+        document.getElementById('confirm-passive-btn').disabled = false;
+    },
+
+    // New confirm method
+    confirmPassive() {
+        if (!this.selectedChoice || !this.currentPassiveChoices) return;
+
+        this.selectPassive(this.selectedChoice);
+        this.selectedChoice = null;
+    },
+
+    // Update closePassiveSelection to reset
+    closePassiveSelection() {
+        document.getElementById('passive-selection-modal').style.display = 'none';
+
+        // Reset selection
+        this.selectedChoice = null;
+        document.querySelectorAll('.passive-choice').forEach(el => el.classList.remove('selected'));
+        if (document.getElementById('confirm-passive-btn')) {
+            document.getElementById('confirm-passive-btn').disabled = true;
+        }
+
+        // Remove escape key listener
+        document.removeEventListener('keydown', this.handlePassiveModalKeydown.bind(this));
+    },
+
     rerollPassiveChoices() {
         if (!this.currentPassiveChoices) return;
+
+        const exile = getCurrentExile();
+        if (!exile) return;
 
         const { tier, rerollCost } = this.currentPassiveChoices;
 
@@ -235,7 +326,7 @@ const passiveSystem = {
 
         // Spend gold
         gameState.resources.gold -= rerollCost;
-        gameState.exile.passives.rerollsUsed++;
+        exile.passives.rerollsUsed++;
 
         // Generate new choices
         const choice1 = this.selectPassiveForLevelUp(tier);
@@ -251,8 +342,12 @@ const passiveSystem = {
             tier: tier,
             choice1: choice1,
             choice2: choice2,
-            rerollCost: this.getRerollCost(tier, gameState.exile.passives.rerollsUsed)
+            rerollCost: this.getRerollCost(tier, exile.passives.rerollsUsed)
         };
+
+        // Save to gameState and force save
+        gameState.currentPassiveChoices = this.currentPassiveChoices;
+        game.saveGame(); // Save after reroll
 
         // Update display
         this.updatePassiveSelectionDisplay();

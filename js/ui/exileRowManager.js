@@ -65,6 +65,15 @@ const exileRowManager = {
         }
     },
 
+    // Open mission assignment from Exile Row Button
+    openMissionAssignment(rowId) {
+        // Select this row first
+        this.selectRow(rowId);
+
+        // Switch to world map tab
+        dynamicDisplayManager.switchTab('world');
+    },
+
     // Update a specific row's display
     updateRow(rowId, exile = null) {
         const row = document.querySelector(`[data-exile-id="${rowId}"]`);
@@ -145,34 +154,44 @@ const exileRowManager = {
         for (let i = 1; i <= 6; i++) {
             this.rowStates[i] = { state: 'empty', exileId: null };
         }
-        
+
         // Populate rows with exiles from the new system
         gameState.exiles.forEach((exile, index) => {
             if (index < 6) { // Only show first 6 exiles
                 const rowId = index + 1;
                 this.updateRow(rowId, exile);
-                this.rowStates[rowId] = { 
-                    state: exile.status || 'idle', 
-                    exileId: exile.id 
+                this.rowStates[rowId] = {
+                    state: exile.status || 'idle',
+                    exileId: exile.id
                 };
             }
         });
-        
+
         // Clear remaining rows
         for (let i = gameState.exiles.length + 1; i <= 6; i++) {
             this.updateRow(i, null);
         }
     },
 
-    // Placeholder for mission assignment
+    // Update the existing placeholder method
     assignToMission(rowId) {
-        console.log(`Assigning exile in row ${rowId} to mission`);
-        // Will connect to world map / mission selection
+        // Just call the new method - it will handle everything
+        this.openMissionAssignment(rowId);
     },
 
     // Placeholder for unassignment
     unassign(rowId) {
         console.log(`Unassigning exile in row ${rowId}`);
         // Will update exile status
+    },
+
+    // Helper method to find row for an exile
+getRowForExile(exileId) {
+    for (let rowId in this.rowStates) {
+        if (this.rowStates[rowId].exileId === exileId) {
+            return parseInt(rowId);
+        }
     }
+    return null;
+}
 };
