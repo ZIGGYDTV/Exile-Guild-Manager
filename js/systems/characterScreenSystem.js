@@ -149,7 +149,9 @@ const characterScreenSystem = {
                 return;
             }
 
-            const equipped = gameState.inventory.equipped[slot];
+            // Get selected exile's equipment
+            const exile = gameState.exiles?.find(e => e.id === gameState.selectedExileId);
+            const equipped = exile?.equipment?.[slot];
 
             if (equipped) {
                 const displayName = equipped.getDisplayName ? equipped.getDisplayName() : equipped.name;
@@ -192,13 +194,17 @@ Final: ${final}`;
 
     calculateGearBonuses() {
         let life = 0, damage = 0, defense = 0;
-        Object.values(gameState.inventory.equipped).forEach(item => {
-            if (item) {
-                life += item.stats.life || 0;
-                damage += item.stats.damage || 0;
-                defense += item.stats.defense || 0;
-            }
-        });
+        // Get selected exile's equipment
+        const exile = gameState.exiles?.find(e => e.id === gameState.selectedExileId);
+        if (exile?.equipment) {
+            Object.values(exile.equipment).forEach(item => {
+                if (item) {
+                    life += item.stats.life || 0;
+                    damage += item.stats.damage || 0;
+                    defense += item.stats.defense || 0;
+                }
+            });
+        }
         return { life, damage, defense };
     },
 

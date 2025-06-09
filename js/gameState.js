@@ -1,156 +1,232 @@
-// Resistance system constants
+// ===== RESISTANCE SYSTEM CONSTANTS =====
 const RESISTANCE_CAPS = {
     default: 75,        // Normal resistance cap
     hardMax: 90         // Absolute maximum (even with +max res gear)
 };
 
-// Time system - separate for future expansion (seasons, weather, events)
-const timeState = {
-    currentDay: 1
-    // Future: season, weather, special events, etc.
+// ===== TIME/TURN SYSTEM =====
+const turnState = {
+    currentTurn: 1,
+    
+    // Mission assignments for current turn
+    assignments: [
+        // { exileId: 1, areaId: "beach", missionId: "shorelineExploration", encountersRemaining: 3 }
+    ],
+    
+    // Missions currently being processed
+    activeMissions: [],
+    
+    // Pending player decisions (retreat, use flask, etc.)
+    pendingDecisions: []
 };
 
-// Updated gameState with class, passive, and world systems
+// ===== MAIN GAME STATE =====
 const gameState = {
-    exile: {
-        name: "Grimjaw",
-        class: null, // Will be randomized on creation
-        level: 1,
-        experience: 0,
-        experienceNeeded: 100,
-        morale: 75,
-
-        // Passive system
-        passives: {
-            allocated: [], // Starting with no passives (given a random one via game.js)
-            pendingPoints: 0, // Points available to spend
-            rerollsUsed: 0 // Resets each level-up choice
-        },
-
-        stats: {
-            // Current calculated stats (base + gear + passives)
-            life: 105, // Will be recalculated based on class
-            damage: 11,
-            attackSpeed: 1.0,
-            defense: 5,
-
-            // Resistance values
-            fireResist: 0,
-            coldResist: 0,
-            lightningResist: 0,
-            chaosResist: 0,
-
-            // Utility stats
-            moveSpeed: 1.0,
-            goldFindBonus: 0, // Increases gold dropped by monsters
-            escapeChance: 0, // not imtlemented yet
-            moraleResistance: 0, // morale "stability" vs "volatility"
-            moraleGain: 0, // Increases morale gain from missions
-            scoutingBonus: 1.0  // 1.0 = normal, 1.5 = 50% better discovery, etc.
-
-        },
-
-        // Base stats from class (set during exile creation)
-        baseStats: {
-            life: 105, // Will match class baseStats
-            damage: 11,
-            defense: 5
-        }
-    },
-
+    // === EXILE MANAGEMENT ===
+    exiles: [], // Array of all exiles (up to 6)
+    selectedExileId: null, // Currently selected exile for UI context
+    nextExileId: 1, // Auto-incrementing ID generator
+    maxExiles: 6, // Maximum exile slots
+    
+    // Death tracking
+    fallenExiles: [], // Array of dead exiles with full data snapshots
+    
+    // === SHARED RESOURCES ===
     resources: {
         gold: 0,
         chaosOrbs: 0,
-        exaltedOrbs: 0
+        exaltedOrbs: 0,
+        materials: 0, // For future crafting
+        rations: 0    // For future vitality system
     },
-
+    
+    // === INVENTORY ===
     inventory: {
-        equipped: {
-            weapon: null,
-            helmet: null,
-            chest: null,
-            gloves: null,
-            boots: null,
-            shield: null,
-            ring1: null,
-            ring2: null,
-            amulet: null,
-            belt: null
-        },
-        backpack: []
+        items: [], 
     },
-
-    // Exile Death new exile init
-    fallenExiles: [],  // Array to store dead exiles with all their data
-    nextExileId: 1,    // Counter for unique exile IDs
-
-    // NEW: World state tracking for areas, missions, and discoveries
-    worldState: {
-        areas: {
-            beach: {
-                discovered: true,
-                explorationProgress: 0,
-                totalScoutingProgress: 0,        // NEW: Single progress tracker
-                unlockedScoutingInfo: {},        // NEW: Tracks which info is unlocked
-
-                missions: {
-                    shorelineExploration: {
-                        discovered: true,
-                        completions: 0,
-                        firstCompleted: false,
-                        lastCompleted: null,
-                        availableAgainOnDay: null
-                    },
-                    crab_hunting: {
-                        discovered: true,
-                        completions: 0,
-                        firstCompleted: false,
-                        lastCompleted: null,
-                        availableAgainOnDay: null
-                    }
-                }
-            },
-            // Future areas will be added here as they're discovered
-        },
-
-        // Connections between areas and their unlock status
-        connections: {
-            beach_to_swamp: {
-                discovered: false,  // Has the player learned this connection exists?
-                unlocked: false,    // Can the player actually travel there?
-                unlockType: "boss", // What type of requirement: "exploration", "boss", "discovery"
-                unlockRequirement: "tidePoolBoss" // Specific requirement (boss kill, 75% exploration, etc.)
-            }
-            // Future connections will be discovered through gameplay
-        }
-    },
-
-    assignments: [
-    // Will contain: { exileName: "Grimjaw", areaId: "beach", missionId: "shorelineExploration" }
-    // Empty array means no assignments
-],
-
-// PLACEHOLDER exiles for UI testing (will be replaced with real multi-exile system later)
-placeholderExiles: [
-    {
-        name: "TestExile1",
-        level: 3,
-        experience: 150,
-        experienceNeeded: 400,
-        morale: 85,
-        stats: { life: 150, damage: 25, defense: 12 }
-    },
-    {
-        name: "TestExile2", 
-        level: 1,
-        experience: 45,
-        experienceNeeded: 100,
-        morale: 60,
-        stats: { life: 105, damage: 11, defense: 5 }
-    }
-],
-
+    
+    // === SETTINGS ===
     settings: {
-        autoSave: true
+        autoSave: true,
+        combatSpeed: 1, // 1x, 2x, skip
+        pauseOnDecisions: true
     }
 };
+
+// ===== WORLD STATE =====
+const worldState = {
+    // === DISCOVERED AREAS ===
+    areas: {
+        beach: {
+            discovered: true,
+            name: "The Beach",
+            scoutingProgress: 0,
+            totalExploration: 0, // 0-100%
+            
+            missions: {
+                shorelineExploration: {
+                    discovered: true,
+                    completions: 0,
+                    firstCompleted: false,
+                    lastCompleted: null,
+                    cooldownUntil: null, // Turn number when available again
+                    bestTime: null, // Fastest completion in rounds
+                    casualtyCount: 0 // Deaths on this mission
+                },
+                crab_hunting: {
+                    discovered: true,
+                    completions: 0,
+                    firstCompleted: false,
+                    lastCompleted: null,
+                    cooldownUntil: null,
+                    bestTime: null,
+                    casualtyCount: 0
+                }
+                // More missions discovered through play
+            }
+        }
+        // More areas discovered through play
+    },
+    
+    // === AREA CONNECTIONS ===
+    connections: {
+        beach_to_swamp: {
+            discovered: false,  // Has player learned this exists?
+            unlocked: false,    // Can player travel here?
+            from: "beach",
+            to: "swamp",
+            requirements: {
+                type: "mission",  // mission, boss, exploration, item
+                target: "wreckageScavenging",
+                value: 1 // Complete wreckage scavenging once
+            }
+        },
+        beach_to_cliffs: {
+            discovered: false,
+            unlocked: false,
+            from: "beach",
+            to: "cliffs", 
+            requirements: {
+                type: "boss",
+                target: "tideWarden",
+                value: 1
+            }
+        }
+        // More connections discovered through play
+    },
+    
+    // === GLOBAL WORLD EVENTS ===
+    activeEvents: [], // Future: storms, invasions, etc.
+    eventHistory: []  // Track past events
+};
+
+// ===== HELPER FUNCTIONS =====
+
+// Get current exile (for backwards compatibility during transition)
+function getCurrentExile() {
+    if (!gameState.selectedExileId) return null;
+    return gameState.exiles.find(e => e.id === gameState.selectedExileId);
+}
+
+// Get living exiles
+function getLivingExiles() {
+    return gameState.exiles.filter(e => e.status !== 'dead');
+}
+
+// Get available exiles (not on mission or dead)
+function getAvailableExiles() {
+    return gameState.exiles.filter(e => 
+        e.status === 'idle' || e.status === 'resting'
+    );
+}
+
+// Check if an area is accessible
+function isAreaAccessible(areaId) {
+    // Starting area is always accessible
+    if (worldState.areas[areaId]?.discovered) return true;
+    
+    // Check connections
+    for (const connection of Object.values(worldState.connections)) {
+        if (connection.to === areaId && connection.unlocked) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Get accessible areas
+function getAccessibleAreas() {
+    return Object.entries(worldState.areas)
+        .filter(([areaId, area]) => area.discovered || isAreaAccessible(areaId))
+        .map(([areaId, area]) => ({ id: areaId, ...area }));
+}
+
+// Check if mission is available
+function isMissionAvailable(areaId, missionId) {
+    const mission = worldState.areas[areaId]?.missions[missionId];
+    if (!mission || !mission.discovered) return false;
+    
+    // Check cooldown
+    if (mission.cooldownUntil && turnState.currentTurn < mission.cooldownUntil) {
+        return false;
+    }
+    
+    return true;
+}
+
+// Get all available missions across all areas
+function getAllAvailableMissions() {
+    const available = [];
+    
+    for (const [areaId, area] of Object.entries(worldState.areas)) {
+        if (!isAreaAccessible(areaId)) continue;
+        
+        for (const [missionId, mission] of Object.entries(area.missions)) {
+            if (isMissionAvailable(areaId, missionId)) {
+                available.push({
+                    areaId,
+                    missionId,
+                    areaName: area.name,
+                    ...mission
+                });
+            }
+        }
+    }
+    
+    return available;
+}
+
+// Save/Load helpers
+function saveGameState() {
+    if (!gameState.settings.autoSave) return;
+    
+    const saveData = {
+        version: 1,
+        gameState: gameState,
+        worldState: worldState,
+        turnState: turnState,
+        timestamp: Date.now()
+    };
+    
+    localStorage.setItem('exileManagerSave', JSON.stringify(saveData));
+}
+
+function loadGameState() {
+    const savedData = localStorage.getItem('exileManagerSave');
+    if (!savedData) return false;
+    
+    try {
+        const data = JSON.parse(savedData);
+        
+        // Merge loaded data with defaults (in case structure changed)
+        Object.assign(gameState, data.gameState);
+        Object.assign(worldState, data.worldState);
+        Object.assign(turnState, data.turnState);
+        
+        return true;
+    } catch (error) {
+        console.error('Failed to load save:', error);
+        return false;
+    }
+}

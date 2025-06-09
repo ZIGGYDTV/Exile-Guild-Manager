@@ -83,7 +83,6 @@ class MissionSystem {
                 const newGear = this.generateGear(areaId, missionId, gearIlvl);
                 gameState.inventory.backpack.push(newGear);
                 uiSystem.log(`⭐ Found ${newGear.name}!`, newGear.rarity === 'rare' ? 'legendary' : 'success');
-                inventorySystem.updateInventoryDisplay();
             }
 
             game.checkLevelUp();
@@ -161,7 +160,6 @@ class MissionSystem {
                     uiSystem.log(`🗺️ Discovered passage to new area!`, "legendary");
                 }
             });
-            uiSystem.updateCommandCenterDisplay(); // Update mission counts
         }
 
         // Log scouting progress (new world system feature)
@@ -265,7 +263,7 @@ class MissionSystem {
         // The new system already rolls rarity and stats, so we just need to convert
         // it to the format our save system expects
         const itemForSave = {
-            id: Date.now() + Math.random(),
+            id: newItem.id,
             name: newItem.getDisplayName(),
             slot: newItem.slot,
             rarity: newItem.rarity ? newItem.rarity.name.toLowerCase() : 'common',
@@ -398,8 +396,6 @@ class MissionSystem {
         // Advance time
         timeState.currentDay++;
 
-        // Update all displays
-        uiSystem.updateCommandCenterDisplay();
 
         // Check for missions coming off cooldown
         let missionsBackOnline = 0;
@@ -428,9 +424,6 @@ class MissionSystem {
 
         // Close world map
                     worldMapSystem.closeWorldMap();
-
-        // Update displays
-        uiSystem.updateCommandCenterDisplay();
     }
 
     // Mission Assignment Toggle

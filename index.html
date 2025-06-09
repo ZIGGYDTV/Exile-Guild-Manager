@@ -9,741 +9,263 @@
     <link rel="stylesheet" href="css/worldMap.css">
     <link rel="stylesheet" href="css/exileScreen.css">
     <link rel="stylesheet" href="css/inventory.css">
+    <link rel="stylesheet" href="css/mainUI.css">
 </head>
 
 
 <body>
-    <button id="reset-btn" onclick="game.resetGame()">Reset Save</button>
-    <div class="container">
-        <!-- Top Row: Command Center + Resources -->
-        <div class="top-command-row">
-            <!-- Command Center -->
-            <div class="command-center-panel">
-
-                <!-- World Map Access -->
-                <div class="command-section">
-                    <button class="world-map-btn" onclick="worldMapSystem.openWorldMap()">
-                        <div class="btn-icon">🗺️</div>
-                        <div class="btn-content">
-                            <div class="btn-title">Open World Map</div>
-                            <div class="btn-subtitle">Plan missions & explore areas</div>
-                        </div>
-                    </button>
-                </div>
-
-                <!-- Inventory Management -->
-                <div class="command-section">
-                    <button class="inventory-btn" onclick="inventorySystem.openInventoryModal()">
-                        <div class="btn-icon">🎒</div>
-                        <div class="btn-content">
-                            <div class="btn-title">Manage Inventory</div>
-                            <div class="btn-subtitle">View items & craft (<span id="inventory-count-main">0</span>)
-                            </div>
-                        </div>
-                    </button>
-                </div>
-
-                <!-- Day Management -->
-                <div class="command-section">
-                    <button class="process-day-btn" onclick="missionSystem.processDay()">
-                        <div class="btn-icon">⏳</div>
-                        <div class="btn-content">
-                            <div class="btn-title">End Day <span id="current-day-display">(Day 1)</span></div>
-                            <div class="btn-subtitle" id="assigned-missions-count">No missions assigned</div>
-                        </div>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Resources Panel -->
-            <div class="resources-panel">
-                <div class="resource-container">
-                    <div class="resource-day">Day <span id="current-day-main">1</span></div>
-
-                    <div class="resource-item">
-                        <span class="resource-label">Gold:</span>
-                        <span id="gold" class="resource-value">0</span>
-                    </div>
-                    <div class="resource-item">
-                        <span class="resource-label">Chaos Shards:</span>
-                        <span id="chaos-orbs" class="resource-value">0</span>
-                    </div>
-                    <div class="resource-item">
-                        <span class="resource-label">Exalted Shards:</span>
-                        <span id="exalted-orbs" class="resource-value">0</span>
-                    </div>
-                </div>
-            </div>
+    <!-- Resource Bar -->
+    <div class="resource-bar">
+        <div style="color: #c9aa71; margin-right: 30px;">Turn: <span id="turn-number">1</span></div>
+        <div style="color: #888; margin-right: 20px;">Gold: <span id="gold" style="color: #ffd700;">0</span></div>
+        <div style="color: #888; margin-right: 20px;">Chaos: <span id="chaos-orbs" style="color: #ff9800;">0</span>
         </div>
-
-        <!-- Middle Row: Exile Summaries -->
-        <div class="exiles-section">
-            <div class="exiles-grid">
-                <!-- Main Exile -->
-                <div id="exile-summary-card" class="exile-summary-card" onclick="characterScreenSystem.openCharacterScreen()">
-                    <div class="exile-basic-info">
-                        <div class="exile-name-class">
-                            <span id="exile-name-summary">Unnamed Exile</span>
-                            <div class="exile-badges">
-                                <span class="exile-class-badge" id="exile-class-summary">Marauder</span>
-                                <span class="assignment-badge" id="exile-assignment-badge" style="display: none;">
-                                    <span class="badge-icon">⚔️</span>
-                                    <span>Assigned</span>
-                                </span>
-                            </div>
-                        </div>
-                        <div class="exile-level">Lvl <span id="exile-level-summary">1</span></div>
-                    </div>
-                    <div class="exile-quick-stats">
-                        <div class="quick-stat">
-                            <span class="stat-value" id="exile-life-summary">100</span>
-                            <span class="stat-label">Life</span>
-                        </div>
-                        <div class="quick-stat">
-                            <span class="stat-value" id="exile-damage-summary">10</span>
-                            <span class="stat-label">Damage</span>
-                        </div>
-                        <div class="quick-stat">
-                            <span class="stat-value" id="exile-defense-summary">5</span>
-                            <span class="stat-label">Defense</span>
-                        </div>
-                        <div class="quick-stat morale-stat">
-                            <span class="stat-value" id="exile-morale-summary">75</span>
-                            <span class="stat-label">Morale</span>
-                        </div>
-                    </div>
-                    <div class="exp-bar-container">
-                        <div id="exp-bar" class="exp-bar">
-                            <div id="exp-bar-fill" class="exp-bar-fill"></div>
-                            <span id="exp-bar-label" class="exp-bar-label">0 / 100</span>
-                        </div>
-                    </div>
-                    <div class="exile-notifications">
-                        <div id="passive-points-indicator" class="notification-badge" style="display: none;">
-                            (+) Passive Points Available
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Placeholder Exile 1 -->
-                <div class="exile-summary-card placeholder-exile">
-                    <div class="exile-basic-info">
-                        <div class="exile-name-class">
-                            <span>Ironheart</span>
-                            <div class="exile-badges">
-                                <span class="exile-class-badge">Survivalist</span>
-                                <span class="assignment-badge">
-                                    <span class="badge-icon">⚔️</span>
-                                    <span>Assigned</span>
-                                </span>
-                            </div>
-                        </div>
-                        <div class="exile-level">Lvl 3</div>
-                    </div>
-                    <div class="exile-quick-stats">
-                        <div class="quick-stat">
-                            <span class="stat-value">145</span>
-                            <span class="stat-label">Life</span>
-                        </div>
-                        <div class="quick-stat">
-                            <span class="stat-value">18</span>
-                            <span class="stat-label">Damage</span>
-                        </div>
-                        <div class="quick-stat">
-                            <span class="stat-value">22</span>
-                            <span class="stat-label">Defense</span>
-                        </div>
-                        <div class="quick-stat morale-stat">
-                            <span class="stat-value">85</span>
-                            <span class="stat-label">Morale</span>
-                        </div>
-                    </div>
-                    <div class="exp-bar-container">
-                        <div class="exp-bar">
-                            <div class="exp-bar-fill" style="width: 45%"></div>
-                            <span class="exp-bar-label">135 / 300</span>
-                        </div>
-                    </div>
-                    <div class="exile-notifications"></div>
-                </div>
-
-                <!-- Placeholder Exile 2 -->
-                <div class="exile-summary-card placeholder-exile">
-                    <div class="exile-basic-info">
-                        <div class="exile-name-class">
-                            <span>Shadowstrike</span>
-                            <div class="exile-badges">
-                                <span class="exile-class-badge">Rogue</span>
-                            </div>
-                        </div>
-                        <div class="exile-level">Lvl 5</div>
-                    </div>
-                    <div class="exile-quick-stats">
-                        <div class="quick-stat">
-                            <span class="stat-value">120</span>
-                            <span class="stat-label">Life</span>
-                        </div>
-                        <div class="quick-stat">
-                            <span class="stat-value">42</span>
-                            <span class="stat-label">Damage</span>
-                        </div>
-                        <div class="quick-stat">
-                            <span class="stat-value">12</span>
-                            <span class="stat-label">Defense</span>
-                        </div>
-                        <div class="quick-stat morale-stat">
-                            <span class="stat-value">65</span>
-                            <span class="stat-label">Morale</span>
-                        </div>
-                    </div>
-                    <div class="exp-bar-container">
-                        <div class="exp-bar">
-                            <div class="exp-bar-fill" style="width: 72%"></div>
-                            <span class="exp-bar-label">360 / 500</span>
-                        </div>
-                    </div>
-                    <div class="exile-notifications"></div>
-                </div>
-
-                <!-- Placeholder Exile 3 -->
-                <div class="exile-summary-card placeholder-exile">
-                    <div class="exile-basic-info">
-                        <div class="exile-name-class">
-                            <span>Bloodfang</span>
-                            <div class="exile-badges">
-                                <span class="exile-class-badge">Brawler</span>
-                            </div>
-                        </div>
-                        <div class="exile-level">Lvl 2</div>
-                    </div>
-                    <div class="exile-quick-stats">
-                        <div class="quick-stat">
-                            <span class="stat-value">125</span>
-                            <span class="stat-label">Life</span>
-                        </div>
-                        <div class="quick-stat">
-                            <span class="stat-value">24</span>
-                            <span class="stat-label">Damage</span>
-                        </div>
-                        <div class="quick-stat">
-                            <span class="stat-value">8</span>
-                            <span class="stat-label">Defense</span>
-                        </div>
-                        <div class="quick-stat morale-stat">
-                            <span class="stat-value">95</span>
-                            <span class="stat-label">Morale</span>
-                        </div>
-                    </div>
-                    <div class="exp-bar-container">
-                        <div class="exp-bar">
-                            <div class="exp-bar-fill" style="width: 20%"></div>
-                            <span class="exp-bar-label">20 / 200</span>
-                        </div>
-                    </div>
-                    <div class="exile-notifications"></div>
-                </div>
-
-                <!-- Placeholder Exile 4 -->
-                <div class="exile-summary-card placeholder-exile">
-                    <div class="exile-basic-info">
-                        <div class="exile-name-class">
-                            <span>Stormcaller</span>
-                            <div class="exile-badges">
-                                <span class="exile-class-badge">Survivalist</span>
-                                <span class="assignment-badge">
-                                    <span class="badge-icon">⚔️</span>
-                                    <span>Assigned</span>
-                                </span>
-                            </div>
-                        </div>
-                        <div class="exile-level">Lvl 4</div>
-                    </div>
-                    <div class="exile-quick-stats">
-                        <div class="quick-stat">
-                            <span class="stat-value">160</span>
-                            <span class="stat-label">Life</span>
-                        </div>
-                        <div class="quick-stat">
-                            <span class="stat-value">15</span>
-                            <span class="stat-label">Damage</span>
-                        </div>
-                        <div class="quick-stat">
-                            <span class="stat-value">28</span>
-                            <span class="stat-label">Defense</span>
-                        </div>
-                        <div class="quick-stat morale-stat">
-                            <span class="stat-value">70</span>
-                            <span class="stat-label">Morale</span>
-                        </div>
-                    </div>
-                    <div class="exp-bar-container">
-                        <div class="exp-bar">
-                            <div class="exp-bar-fill" style="width: 88%"></div>
-                            <span class="exp-bar-label">352 / 400</span>
-                        </div>
-                    </div>
-                    <div class="exile-notifications"></div>
-                </div>
-
-                <!-- Placeholder Exile 5 -->
-                <div class="exile-summary-card placeholder-exile">
-                    <div class="exile-basic-info">
-                        <div class="exile-name-class">
-                            <span>Deathwhisper</span>
-                            <div class="exile-badges">
-                                <span class="exile-class-badge">Rogue</span>
-                            </div>
-                        </div>
-                        <div class="exile-level">Lvl 1</div>
-                    </div>
-                    <div class="exile-quick-stats">
-                        <div class="quick-stat">
-                            <span class="stat-value">90</span>
-                            <span class="stat-label">Life</span>
-                        </div>
-                        <div class="quick-stat">
-                            <span class="stat-value">12</span>
-                            <span class="stat-label">Damage</span>
-                        </div>
-                        <div class="quick-stat">
-                            <span class="stat-value">4</span>
-                            <span class="stat-label">Defense</span>
-                        </div>
-                        <div class="quick-stat morale-stat">
-                            <span class="stat-value">50</span>
-                            <span class="stat-label">Morale</span>
-                        </div>
-                    </div>
-                    <div class="exp-bar-container">
-                        <div class="exp-bar">
-                            <div class="exp-bar-fill" style="width: 5%"></div>
-                            <span class="exp-bar-label">5 / 100</span>
-                        </div>
-                    </div>
-                    <div class="exile-notifications"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bottom Row: Activity Log -->
-        <div class="game-panel full-width">
-            <h2>Activity Log</h2>
-            <div id="log" class="log-container"></div>
-        </div>
+        <div style="color: #888;">Exalted: <span id="exalted-orbs" style="color: #c9aa71;">0</span></div>
     </div>
 
-
-    <!-- Character Screen Modal -->
-    <div id="character-screen-modal" class="modal-overlay" style="display: none;"
-    onclick="characterScreenSystem.handleModalClick(event)">
-        <div class="modal-content" onclick="event.stopPropagation()">
-
-                            <button class="close-btn" onclick="characterScreenSystem.closeCharacterScreen()">&times;</button>
-
-            <div class="character-screen-layout">
-                <!-- Left Column: Character Info & Stats -->
-                <div class="character-left-column">
-                    <div class="character-info-section">
-                        <div class="character-details">
-                            <div class="detail-row">
-                                <span class="detail-label">Name:</span>
-                                <span id="char-name">-</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Class:</span>
-                                <span id="char-class">-</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Level:</span>
-                                <span id="char-level">-</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Experience:</span>
-                                <span id="char-exp">-</span> / <span id="char-exp-needed">-</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Morale:</span>
-                                <span class="morale-value-with-tooltip" data-tooltip="">
-                                    <span id="char-morale">-</span> (<span id="char-morale-status">-</span>)
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="stats-breakdown-section">
-                        <div class="stat-breakdown">
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Life:</span>
-                                <span class="stat-value-with-tooltip" data-tooltip="Base + Gear + Passives + Morale">
-                                    <span id="final-life" class="final-stat">100</span>
-                                </span>
-                            </div>
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Damage:</span>
-                                <span class="stat-value-with-tooltip" data-tooltip="Base + Gear + Passives + Morale">
-                                    <span id="final-damage" class="final-stat">10</span>
-                                </span>
-                            </div>
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Attack Speed:</span>
-                                <span class="stat-value-with-tooltip" data-tooltip="Base weapon speed × (1 + % increases)">
-                                    <span id="final-attack-speed" class="final-stat">1.00</span>
-                                </span>
-                            </div>
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">DPS:</span>
-                                <span class="stat-value-with-tooltip"
-                                      data-tooltip="DPS (Damage × Attack Speed), affecting the chance of success in each round of combat.">
-                                    <span id="power-rating-calc" class="final-stat">0</span>
-                                </span>
-                            </div>
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Defense:</span>
-                                <span class="stat-value-with-tooltip" data-tooltip="Base + Gear + Passives + Morale">
-                                    <span id="final-defense" class="final-stat">5</span>
-                                </span>
-                            </div>
-
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Resists:</span>
-                                <span id="final-resists-line"></span>
-                            </div>
-
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Gold Find:</span>
-                                <span class="stat-value-with-tooltip" id="final-gold-find"
-                                    data-tooltip="Increases the amount of gold found from missions.">0%</span>
-                            </div>
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Morale:</span>
-                                <span class="stat-value-with-tooltip" id="final-morale-gain"
-                                    data-tooltip="Flat bonuses or penalties to all morale changes from Missions.">0</span>
-                            </div>
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Volatility:</span>
-                                <span class="stat-value-with-tooltip" id="final-morale-resist"
-                                    data-tooltip="Increased (or reduces, if negative) the impact of morale gains and losses.">0%</span>
-                            </div>
-                            <div class="stat-breakdown-row">
-                                <span class="stat-name">Exploration:</span>
-                                <span class="stat-value-with-tooltip" id="final-exploration-bonus"
-                                    data-tooltip="Increases scouting progress and discovery chances from missions.">0%</span>
-                            </div>
-                        </div>
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Left Panel - Exiles -->
+        <div class="exiles-panel">
+            <!-- Exile Row 1 -->
+            <div class="exile-row empty" data-exile-id="1">
+                <div class="exile-status">
+                    <div class="exile-name">Empty Slot</div>
+                    <div class="exile-vitals">
+                        <span>HP: --</span>
+                        <span>Morale: --</span>
                     </div>
                 </div>
+                <div class="exile-main-area">
+                    <div class="idle-message">No exile assigned</div>
+                </div>
+                <div class="exile-actions">
+                    <!-- Action buttons will go here -->
+                </div>
+            </div>
 
-                <!-- Middle Column: Passives -->
-                <div class="character-middle-column">
-                    <div class="passives-section">
-                        <div id="passive-allocation-area">
-                            <button id="allocate-passive-btn" class="allocate-btn" onclick="passiveSystem.openPassiveSelection()"
-                                style="display: none;">
-                                Allocate Passive Skill (1)
-                            </button>
-                        </div>
-                        <div id="allocated-passives-list" class="allocated-passives">
-                            <!-- Will be populated by JavaScript -->
-                        </div>
+            <!-- Exile Row 2 -->
+            <div class="exile-row empty" data-exile-id="2">
+                <div class="exile-status">
+                    <div class="exile-name">Empty Slot</div>
+                    <div class="exile-vitals">
+                        <span>HP: --</span>
+                        <span>Morale: --</span>
                     </div>
                 </div>
-                <!-- Right Column: Equipment & Inventory -->
-                <div class="character-right-column">
-                    <div class="equipment-section">
-                        <div class="character-equipment-grid">
-                            <!-- Top row -->
-                            <div class="char-equip-slot" id="char-helmet-slot">
-                                <div class="slot-label">Helmet</div>
-                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('helmet')">
-                                    <div class="empty-slot">Empty</div>
-                                </div>
-                            </div>
-                            <div class="char-equip-slot" id="char-amulet-slot">
-                                <div class="slot-label">Amulet</div>
-                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('amulet')">
-                                    <div class="empty-slot">Empty</div>
-                                </div>
-                            </div>
-                            <div class="char-equip-slot empty-grid-slot"></div>
+                <div class="exile-main-area">
+                    <div class="idle-message">No exile assigned</div>
+                </div>
+                <div class="exile-actions">
+                    <!-- Action buttons will go here -->
+                </div>
+            </div>
 
-                            <!-- Middle row -->
-                            <div class="char-equip-slot" id="char-gloves-slot">
-                                <div class="slot-label">Gloves</div>
-                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('gloves')">
-                                    <div class="empty-slot">Empty</div>
-                                </div>
-                            </div>
-                            <div class="char-equip-slot" id="char-chest-slot">
-                                <div class="slot-label">Chest</div>
-                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('chest')">
-                                    <div class="empty-slot">Empty</div>
-                                </div>
-                            </div>
-                            <div class="char-equip-slot" id="char-belt-slot">
-                                <div class="slot-label">Belt</div>
-                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('belt')">
-                                    <div class="empty-slot">Empty</div>
-                                </div>
-                            </div>
-
-                            <!-- Bottom row -->
-                            <div class="char-equip-slot" id="char-ring1-slot">
-                                <div class="slot-label">Ring</div>
-                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('ring1')">
-                                    <div class="empty-slot">Empty</div>
-                                </div>
-                            </div>
-                            <div class="char-equip-slot" id="char-boots-slot">
-                                <div class="slot-label">Boots</div>
-                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('boots')">
-                                    <div class="empty-slot">Empty</div>
-                                </div>
-                            </div>
-                            <div class="char-equip-slot" id="char-ring2-slot">
-                                <div class="slot-label">Ring</div>
-                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('ring2')">
-                                    <div class="empty-slot">Empty</div>
-                                </div>
-                            </div>
-
-                            <!-- Weapon row -->
-                            <div class="char-equip-slot" id="char-weapon-slot">
-                                <div class="slot-label">Weapon</div>
-                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('weapon')">
-                                    <div class="empty-slot">Empty</div>
-                                </div>
-                            </div>
-                            <div class="char-equip-slot empty-grid-slot"></div>
-                            <div class="char-equip-slot" id="char-shield-slot">
-                                <div class="slot-label">Shield</div>
-                                <div class="slot-content" onclick="inventorySystem.openEquipmentSelector('shield')">
-                                    <div class="empty-slot">Empty</div>
-                                </div>
-                            </div>
-                        </div>
+            <!-- Exile Row 3 -->
+            <div class="exile-row empty" data-exile-id="3">
+                <div class="exile-status">
+                    <div class="exile-name">Empty Slot</div>
+                    <div class="exile-vitals">
+                        <span>HP: --</span>
+                        <span>Morale: --</span>
                     </div>
+                </div>
+                <div class="exile-main-area">
+                    <div class="idle-message">No exile assigned</div>
+                </div>
+                <div class="exile-actions">
+                    <!-- Action buttons will go here -->
+                </div>
+            </div>
+
+            <!-- Exile Row 4 -->
+            <div class="exile-row empty" data-exile-id="4">
+                <div class="exile-status">
+                    <div class="exile-name">Empty Slot</div>
+                    <div class="exile-vitals">
+                        <span>HP: --</span>
+                        <span>Morale: --</span>
+                    </div>
+                </div>
+                <div class="exile-main-area">
+                    <div class="idle-message">No exile assigned</div>
+                </div>
+                <div class="exile-actions">
+                    <!-- Action buttons will go here -->
+                </div>
+            </div>
+
+            <!-- Exile Row 5 -->
+            <div class="exile-row empty" data-exile-id="5">
+                <div class="exile-status">
+                    <div class="exile-name">Empty Slot</div>
+                    <div class="exile-vitals">
+                        <span>HP: --</span>
+                        <span>Morale: --</span>
+                    </div>
+                </div>
+                <div class="exile-main-area">
+                    <div class="idle-message">No exile assigned</div>
+                </div>
+                <div class="exile-actions">
+                    <!-- Action buttons will go here -->
+                </div>
+            </div>
+
+            <!-- Exile Row 6 -->
+            <div class="exile-row empty" data-exile-id="6">
+                <div class="exile-status">
+                    <div class="exile-name">Empty Slot</div>
+                    <div class="exile-vitals">
+                        <span>HP: --</span>
+                        <span>Morale: --</span>
+                    </div>
+                </div>
+                <div class="exile-main-area">
+                    <div class="idle-message">No exile assigned</div>
+                </div>
+                <div class="exile-actions">
+                    <!-- Action buttons will go here -->
                 </div>
             </div>
         </div>
-    </div>
-    <!-- End of Model Char Popup -->
 
-    <!-- Passive Selection Modal -->
-    <div id="passive-selection-modal" class="modal-overlay" style="display: none;"
-        onclick="passiveSystem.handlePassiveModalClick(event)">
-        <div class="passive-modal-content" onclick="event.stopPropagation()">
-            <div class="passive-modal-header">
-                <h2 id="passive-modal-title">Choose Your Passive Skill</h2>
-                <button class="close-btn" onclick="passiveSystem.closePassiveSelection()">&times;</button>
-            </div>
-
-            <div class="passive-choices-container">
-                <div class="passive-choice" id="passive-choice-1" onclick="passiveSystem.selectPassive(1)">
-                    <div class="passive-choice-header">
-                        <span class="passive-choice-name">Passive Name</span>
-                        <span class="passive-choice-tier">Notable</span>
-                    </div>
-                    <div class="passive-choice-description">
-                        Passive description goes here
-                    </div>
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <!-- Dynamic Display Area -->
+            <div class="dynamic-display" id="dynamic-display">
+                <div class="dynamic-tabs">
+                    <button class="dynamic-tab active" data-tab="overview" title="Overview">🏠</button>
+                    <button class="dynamic-tab" data-tab="world" title="World Map">🗺️</button>
+                    <button class="dynamic-tab" data-tab="exile" title="Exile Details">👤</button>
+                    <button class="dynamic-tab" data-tab="equipment" title="Equipment">⚔️</button>
+                    <button class="dynamic-tab" data-tab="passives" title="Passives">✨</button>
+                    <button class="dynamic-tab" data-tab="log" title="Activity Log">📜</button>
                 </div>
 
-                <div class="passive-choice" id="passive-choice-2" onclick="passiveSystem.selectPassive(2)">
-                    <div class="passive-choice-header">
-                        <span class="passive-choice-name">Passive Name</span>
-                        <span class="passive-choice-tier">Notable</span>
-                    </div>
-                    <div class="passive-choice-description">
-                        Passive description goes here
-                    </div>
-                </div>
-            </div>
-
-            <div class="passive-modal-footer">
-                <button id="reroll-passive-btn" class="reroll-btn" onclick="passiveSystem.rerollPassiveChoices()">
-                    Reroll (50 gold)
-                </button>
-                <div class="passive-help-text">
-                    Click a passive to select it, or reroll for new options
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Passive Screen Modal END -->
-
-    <!-- Day Report Modal -->
-    <div id="day-report-modal" class="modal-overlay" style="display: none;" onclick="game.handleDayReportClick(event)">
-        <div class="day-report-content" onclick="event.stopPropagation()">
-            <div class="day-report-header">
-                <h2>📊 Day Report - Day <span id="day-report-day">1</span></h2>
-                <button class="close-btn" onclick="game.closeDayReport()">&times;</button>
-            </div>
-
-            <div class="day-report-body">
-                <!-- 1. Mission Summaries -->
-                <div class="report-section mission-summaries-section">
-                    <div id="mission-summary-container">
-                        <!-- Mission summary panels fade in here -->
-                    </div>
+                <!-- Equipment Tab -->
+                <div class="dynamic-content-area" id="tab-equipment">
+                    <h2>Equipment</h2>
+                    <p>No exile selected</p>
                 </div>
 
-                <!-- 2. Loot Explosion -->
-                <div class="report-section loot-section">
-                    <div id="loot-container">
-                        <!-- Animated loot appears here -->
-                    </div>
+                <!-- Passives Tab -->
+                <div class="dynamic-content-area" id="tab-passives">
+                    <h2>Passives</h2>
+                    <p>No exile selected</p>
                 </div>
 
-                <!-- 3. Discovery Reports (Collapsible) -->
-                <div class="report-section discovery-section" id="discovery-section" style="display: none;">
-                    <div class="section-toggle" onclick="game.toggleDiscoverySection()">
-                        <span class="triangle">&#x25BC;</span>
-                        <span>Scouting Report</span>
-                        <span class="discovery-count" id="discovery-count"></span>
-                    </div>
-                    <div id="discovery-content" class="collapsible-content">
-                        <!-- Discoveries content -->
-                    </div>
+                <!-- Overview Tab -->
+                <div class="dynamic-content-area active" id="tab-overview">
+                    <h2>Guild Overview</h2>
+                    <p>Select an exile to see details</p>
                 </div>
 
-                <!-- 5. Detailed Combat (Collapsed) -->
-                <div class="report-section detailed-section">
-                    <div class="section-toggle" onclick="game.toggleDetailedSection()">
-                        <span class="triangle">&#x25BC;</span>
-                        <span>Combat Details</span>
-                    </div>
-                    <div id="detailed-content" class="collapsible-content" style="display: none;">
-                        <!-- Detailed combat logs -->
-                    </div>
+                <!-- Exile Details Tab -->
+                <div class="dynamic-content-area" id="tab-exile">
+                    <h2>Exile Details</h2>
+                    <p>No exile selected</p>
+                </div>
+
+                <!-- World Map Tab -->
+                <div class="dynamic-content-area" id="tab-world">
+                    <h2>World Map</h2>
+                    <p>Map content will go here</p>
+                </div>
+
+                <!-- Log Tab -->
+                <div class="dynamic-content-area" id="tab-log">
+                    <div id="log"></div>
                 </div>
             </div>
 
-            <div class="day-report-footer">
-                <button class="continue-btn" onclick="game.closeDayReport()">Continue</button>
-            </div>
-        </div>
-    </div>
-    <!-- Day Report Modal END -->
-
-
-    <!-- Equipment Slot Selector Modal -->
-    <div id="equipment-selector-modal" class="modal-overlay" style="display: none;"
-                    onclick="inventorySystem.handleEquipmentSelectorClick(event)">
-        <div class="equipment-selector-content" onclick="event.stopPropagation()">
-            <div class="equipment-selector-header">
-                <h3 id="equipment-selector-title">Select Equipment</h3>
-                <button class="close-btn" onclick="inventorySystem.closeEquipmentSelector()">&times;</button>
-            </div>
-
-            <div class="equipment-selector-body">
-                <div class="current-equipped-section">
-                    <h4>Currently Equipped</h4>
-                    <div id="current-equipped-item">
-                        <div class="empty-slot">Nothing equipped</div>
-                    </div>
+            <!-- Inventory Panel -->
+            <div class="inventory-panel" id="inventory-panel">
+                <div class="inventory-tabs">
+                    <button class="inventory-tab active" data-tab="items">TAB 1</button>
+                    <button class="inventory-tab" data-tab="materials">TAB 2</button>
+                    <button class="inventory-tab" data-tab="currency">TAB 3</button>
                 </div>
-
-                <div class="available-items-section">
-                    <h4>Available Items</h4>
-                    <div id="available-items-list">
-                        <!-- Items will be populated here -->
+                <div class="inventory-content">
+                    <div class="inventory-grid" id="inventory-grid">
+                        <!-- Item grid will go here -->
+                    </div>
+                    <div class="item-detail-panel" id="item-detail">
+                        <!-- Selected item details will go here -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-
-    <!-- Inventory Management Modal -->
-    <div id="inventory-modal" class="modal-overlay" style="display: none;"
-        onclick="inventorySystem.handleInventoryModalClick(event)">
-        <div class="inventory-modal-content" onclick="event.stopPropagation()">
-
-            <div class="inventory-info-bar">
-                <div class="inventory-capacity">
-                    <strong>Items:</strong> <span id="modal-inventory-count">0</span>
-                </div>
-                <div class="currency-display">
-                    <span class="currency-item">
-                        <strong>Chaos:</strong> <span id="modal-chaos-orbs">0</span>
-                    </span>
-                    <span class="currency-item">
-                        <strong>Exalt:</strong> <span id="modal-exalted-orbs">0</span>
-                    </span>
-                    <span class="currency-item">
-                        <strong>Gold:</strong> <span id="modal-gold">0</span>
-                    </span>
-                </div>
-            </div>
-            <div class="inventory-modal-body">
-                <div id="inventory-items-grid" class="inventory-grid">
-                    <!-- Items will be populated here -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-  <!-- SCRIPTS MUST GO LAST html elements need to be loaded for these to interact with -->
-<script src="js/gameState.js"></script>
-<script src="js/passives.js"></script>
-<script src="js/nameGenerator.js"></script>
-
-<!-- World system data files -->
-<script src="js/data/missionTypes.js"></script>
-<script src="js/data/areas.js"></script>
-
-<!-- World system logic -->
-<script src="js/systems/worldSystem.js"></script>
-
-<!-- New game system modules -->
-<script type="module">
-    // Import data systems
-    import { monsterDB } from './js/data/monsters.js';
+    <!-- SCRIPTS MUST GO LAST html elements need to be loaded for these to interact with -->
+    <script src="js/gameState.js"></script>
+    <script src="js/passives.js"></script>
+    <script src="js/nameGenerator.js"></script>
+    <script src="js/systems/exileFactory.js"></script>
     
-    // Import existing item systems
-    import { itemDB } from './js/systems/itemSystem.js';
-    import { statDB } from './js/systems/statSystem.js';
-    import { rarityDB } from './js/systems/raritySystem.js';
-    
-    // Import new game systems
-    import { exileSystem } from './js/systems/exileSystem.js';
-    import { combatSystem } from './js/systems/combatSystem.js';
-    import { missionSystem } from './js/systems/missionSystem.js';
-    import { inventorySystem } from './js/systems/inventorySystem.js';
-    import { worldMapSystem } from './js/systems/worldMapSystem.js';
-    import { characterScreenSystem } from './js/systems/characterScreenSystem.js';
-    import { passiveSystem } from './js/systems/passiveSystem.js';
-    import { uiSystem } from './js/systems/uiSystem.js';
+    <!-- World system data files -->
+    <script src="js/data/missionTypes.js"></script>
+    <script src="js/data/areas.js"></script>
 
-    // Make them globally available during transition
-    window.monsterDB = monsterDB;
-    window.itemDB = itemDB;
-    window.statDB = statDB;
-    window.rarityDB = rarityDB;
-    window.exileSystem = exileSystem;
-    window.combatSystem = combatSystem;
-    window.missionSystem = missionSystem;
-    window.inventorySystem = inventorySystem; 
-    window.worldMapSystem = worldMapSystem;
-    window.characterScreenSystem = characterScreenSystem;
-    window.passiveSystem = passiveSystem;
-    window.uiSystem = uiSystem;
-    
-    // Log that systems are loaded
-    console.log("Game systems loaded:", {
-        monsters: !!window.monsterDB,
-        items: !!window.itemDB,
-        exile: !!window.exileSystem,
-        combat: !!window.combatSystem,
-        mission: !!window.missionSystem,
-        characterScreen: !!window.characterScreenSystem,
-        passive: !!window.passiveSystem,
-        ui: !!window.uiSystem
-    });
-</script>
+    <!-- World system logic -->
+    <script src="js/systems/worldSystem.js"></script>
 
-<script src="js/game.js"></script>
-<script src="js/main.js"></script>
+    <!-- New game system modules -->
+    <script type="module">
+        // Import data systems
+        import { monsterDB } from './js/data/monsters.js';
+
+        // Import existing item systems
+        import { itemDB } from './js/systems/itemSystem.js';
+        import { statDB } from './js/systems/statSystem.js';
+        import { rarityDB } from './js/systems/raritySystem.js';
+
+        // Import new game systems
+        import { exileSystem } from './js/systems/exileSystem.js';
+        import { combatSystem } from './js/systems/combatSystem.js';
+        import { missionSystem } from './js/systems/missionSystem.js';
+        import { inventorySystem } from './js/systems/inventorySystem.js';
+        import { worldMapSystem } from './js/systems/worldMapSystem.js';
+        import { characterScreenSystem } from './js/systems/characterScreenSystem.js';
+        import { passiveSystem } from './js/systems/passiveSystem.js';
+        import { uiSystem } from './js/systems/uiSystem.js';
+
+        // Make them globally available during transition
+        window.monsterDB = monsterDB;
+        window.itemDB = itemDB;
+        window.statDB = statDB;
+        window.rarityDB = rarityDB;
+        window.exileSystem = exileSystem;
+        window.combatSystem = combatSystem;
+        window.missionSystem = missionSystem;
+        window.inventorySystem = inventorySystem;
+        window.worldMapSystem = worldMapSystem;
+        window.characterScreenSystem = characterScreenSystem;
+        window.passiveSystem = passiveSystem;
+        window.uiSystem = uiSystem;
+
+        // Log that systems are loaded
+        console.log("Game systems loaded:", {
+            monsters: !!window.monsterDB,
+            items: !!window.itemDB,
+            exile: !!window.exileSystem,
+            combat: !!window.combatSystem,
+            mission: !!window.missionSystem,
+            characterScreen: !!window.characterScreenSystem,
+            passive: !!window.passiveSystem,
+            ui: !!window.uiSystem
+        });
+    </script>
+
+    <script src="js/game.js"></script>
+
+    <!-- UI Managers -->
+    <script src="js/ui/exileRowManager.js"></script>
+    <script src="js/ui/dynamicDisplayManager.js"></script>
+
+    <!-- This goes Last -->
+    <script src="js/main.js"></script>
 
 </body>
 

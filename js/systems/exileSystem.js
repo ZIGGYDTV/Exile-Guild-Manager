@@ -80,40 +80,6 @@ class ExileSystem {
     }
 
 
-    initializeExile() {
-        // Randomize class on truly new games
-        const isNewGame = gameState.exile.level === 1 &&
-            gameState.exile.experience === 0 &&
-            gameState.exile.passives.allocated.length <= 1;
-
-        if (isNewGame) {
-            // Create new exile with random class
-            const classes = Object.keys(classDefinitions);
-            const randomClass = classes[Math.floor(Math.random() * classes.length)];
-            this.createNewExile(randomClass);
-
-            // Randomize class if this is a new game
-            this.randomizeExileClass();
-        }
-
-        if (!gameState.exile.id) {
-            gameState.exile.id = gameState.nextExileId++;
-        }
-        // Set base stats from class
-        const classData = classDefinitions[gameState.exile.class];
-        if (classData) {
-            gameState.exile.baseStats = { ...classData.baseStats };
-        }
-
-        // Ensure exile has a starting notable if none allocated
-        if (!gameState.exile.passives || gameState.exile.passives.allocated.length === 0) {
-            this.giveStartingNotable();
-        }
-
-        // Recalculate all stats
-        this.recalculateStats();
-    }
-
     randomizeExileClass() {
         const classes = Object.keys(classDefinitions);
         const randomClass = classes[Math.floor(Math.random() * classes.length)];
@@ -132,58 +98,44 @@ class ExileSystem {
     }
 
 
-    // Current exile is logged, "deleted" and new exile is created
-    handleExileDeath() {
-        console.log("handleExileDeath called!");
-        const fallenExile = gameState.exile;
-        const deathDay = timeState.currentDay;
-
-        // Create a complete snapshot of the fallen exile
-        const fallenRecord = {
-            ...fallenExile,  // Copy all exile properties
-            deathDay: deathDay,
-            deathMission: game.lastDeathMission || "Unknown Mission",  // TEMPORARY - need to track this differently
-            totalDaysAlive: deathDay - (fallenExile.birthDay || 1),
-            equipped: { ...gameState.inventory.equipped }  // Snapshot of what they died wearing
-        };
-
-        // Add to fallen exiles array
-        gameState.fallenExiles.push(fallenRecord);
-
-        // Clear any mission assignments for the dead exile
-        gameState.assignments = gameState.assignments.filter(
-            assignment => assignment.exileName !== fallenExile.name
-        );
-
-        // Update Command Center Display
-        uiSystem.updateCommandCenterDisplay();  // TEMPORARY - will move to uiSystem
-
-        // Delete equipped gear (hardcore death penalty)
-        Object.keys(gameState.inventory.equipped).forEach(slot => {
-            gameState.inventory.equipped[slot] = null;
+    handleExileDeath(exileId = null) {
+        // Default to selected exile if not specified
+        if (!exileId) {
+            exileId = gameState.selectedExileId;
+        }
+        
+        // Find the dying exile
+        const fallenExile = gameState.exiles.find(e => e.id === exileId);
+        if (!fallenExile) {
+            console.error(`Exile ${exileId} not found!`);
+            return;
+        }
+        
+        // Mark as dead
+        fallenExile.status = 'dead';
+        fallenExile.currentHp = 0;
+        
+        // Equipment is LOST - clear it without returning to inventory
+        Object.keys(fallenExile.equipment).forEach(slot => {
+            if (fallenExile.equipment[slot]) {
+                console.log(`Lost item: ${fallenExile.equipment[slot].name}`);
+                fallenExile.equipment[slot] = null;
+            }
         });
-
-        // Generate new exile using existing system
-        const classes = Object.keys(classDefinitions);
-        const randomClass = classes[Math.floor(Math.random() * classes.length)];
-        this.createNewExile(randomClass);  // Now calls exileSystem method
-
-        // Give starting notable (same as original exile)
-        this.giveStartingNotable();  // Now calls exileSystem method
-
-        // Recalculate stats for new exile
-        this.recalculateStats();  // TEMPORARY
-        uiSystem.updateDisplay();     // TEMPORARY
-
-        // Log the transition
-        uiSystem.log(`⚰️ ${fallenRecord.name} has fallen. May they rest in peace.`, "failure");
-        uiSystem.log(`🌟 ${gameState.exile.name} the ${classDefinitions[gameState.exile.class].name} has joined the guild!`, "legendary");
-
-        // Save immediately
-        game.saveGame();  // TEMPORARY
+        
+        // Log the death
+        uiSystem.log(`${fallenExile.name} has fallen in combat! All equipped items were lost.`, "death");
+        
+        // Update displays
+        if (typeof exileRowManager !== 'undefined') {
+            exileRowManager.updateRow(exileRowManager.getRowForExile(exileId), fallenExile);
+        }
+        
+        // Save the game state
+        game.saveGame();
     }
 
-    
+
     // Get current assignment for an exile
     getExileAssignment(exileName) {
         return gameState.assignments.find(a => a.exileName === exileName) || null;
@@ -215,7 +167,6 @@ class ExileSystem {
         uiSystem.log(`📋 ${exileName} assigned to ${missionData.name}`, "info");  // TEMPORARY
 
         // Update displays
-        uiSystem.updateCommandCenterDisplay();  // TEMPORARY
         worldMapSystem.updateWorldMapDisplay();
         game.saveGame();                    // TEMPORARY
 
@@ -236,349 +187,361 @@ class ExileSystem {
         uiSystem.log(`📋 ${exileName} unassigned from mission`, "info");  // TEMPORARY
 
         // Update displays
-        uiSystem.updateCommandCenterDisplay();  // TEMPORARY
         worldMapSystem.updateWorldMapDisplay();
         game.saveGame();                    // TEMPORARY
 
         return true;
     }
 
-// Calculate total passive bonuses
-calculatePassiveEffects() {
     // Calculate total passive bonuses
-    const effects = {
-        // Increased (additive)
-        increasedLife: 0,
-        increasedDamage: 0,
-        increasedDefense: 0,
-        increasedAttackSpeed: 0,
+    calculatePassiveEffects(exile = null) {
+        // If no exile provided, use the current selected exile
+        if (!exile) {
+            exile = getCurrentExile();
+            if (!exile) return {};
+        }
 
-        // More (multiplicative)
-        moreLife: 0,
-        moreDamage: 0,
-        moreDefense: 0,
-        moreAttackSpeed: 0,
+        // Calculate total passive bonuses
+        const effects = {
+            // Increased (additive)
+            increasedLife: 0,
+            increasedDamage: 0,
+            increasedDefense: 0,
+            increasedAttackSpeed: 0,
 
-        // Flat bonuses
-        flatLife: 0,
-        flatDamage: 0,
-        flatDefense: 0,
+            // More (multiplicative)
+            moreLife: 0,
+            moreDamage: 0,
+            moreDefense: 0,
+            moreAttackSpeed: 0,
 
-        // Resistances
-        fireResist: 0,
-        coldResist: 0,
-        lightningResist: 0,
-        chaosResist: 0,
-        maxFireResist: 0,
-        maxColdResist: 0,
-        maxLightningResist: 0,
-        maxChaosResist: 0,
+            // Flat bonuses
+            flatLife: 0,
+            flatDamage: 0,
+            flatDefense: 0,
 
-        // Special stats
-        goldFindBonus: 0,
-        escapeChance: 0,
-        moraleResistance: 0,
-        moraleGain: 0
-    };
+            // Resistances
+            fireResist: 0,
+            coldResist: 0,
+            lightningResist: 0,
+            chaosResist: 0,
+            maxFireResist: 0,
+            maxColdResist: 0,
+            maxLightningResist: 0,
+            maxChaosResist: 0,
 
-    // Apply all allocated passives
-    gameState.exile.passives.allocated.forEach(passiveId => {
-        const passive = passiveDefinitions[passiveId];
-        if (passive) {
-            passive.effects.forEach(effect => {
-                switch (effect.type) {
-                    case passiveTypes.INCREASED_ATTACK_SPEED:
-                        effects.increasedAttackSpeed += effect.value;
-                        break;
-                    case passiveTypes.MORE_ATTACK_SPEED:
-                        effects.moreAttackSpeed += effect.value;
-                        break;
-                    case passiveTypes.INCREASED_LIFE:
-                        effects.increasedLife += effect.value;
-                        break;
-                    case passiveTypes.INCREASED_DAMAGE:
-                        effects.increasedDamage += effect.value;
-                        break;
-                    case passiveTypes.INCREASED_DEFENSE:
-                        effects.increasedDefense += effect.value;
-                        break;
-                    case passiveTypes.MORE_LIFE:
-                        effects.moreLife += effect.value;
-                        break;
-                    case passiveTypes.MORE_DAMAGE:
-                        effects.moreDamage += effect.value;
-                        break;
-                    case passiveTypes.MORE_DEFENSE:
-                        effects.moreDefense += effect.value;
-                        break;
-                    case passiveTypes.FLAT_LIFE:
-                        effects.flatLife += effect.value;
-                        break;
-                    case passiveTypes.FLAT_DAMAGE:
-                        effects.flatDamage += effect.value;
-                        break;
-                    case passiveTypes.FLAT_DEFENSE:
-                        effects.flatDefense += effect.value;
-                        break;
-                    case passiveTypes.FIRE_RESISTANCE:
-                        effects.fireResist += effect.value;
-                        break;
-                    case passiveTypes.COLD_RESISTANCE:
-                        effects.coldResist += effect.value;
-                        break;
-                    case passiveTypes.LIGHTNING_RESISTANCE:
-                        effects.lightningResist += effect.value;
-                        break;
-                    case passiveTypes.CHAOS_RESISTANCE:
-                        effects.chaosResist += effect.value;
-                        break;
-                    case passiveTypes.MAX_FIRE_RESISTANCE:
-                        effects.maxFireResist += effect.value;
-                        break;
-                    case passiveTypes.MAX_COLD_RESISTANCE:
-                        effects.maxColdResist += effect.value;
-                        break;
-                    case passiveTypes.MAX_LIGHTNING_RESISTANCE:
-                        effects.maxLightningResist += effect.value;
-                        break;
-                    case passiveTypes.MAX_CHAOS_RESISTANCE:
-                        effects.maxChaosResist += effect.value;
-                        break;
-                    case passiveTypes.GOLD_FIND:
-                        effects.goldFindBonus += effect.value;
-                        break;
-                    case passiveTypes.ESCAPE_CHANCE:
-                        effects.escapeChance += effect.value;
-                        break;
-                    case passiveTypes.MORALE_RESISTANCE:
-                        effects.moraleResistance += effect.value;
-                        break;
-                    case passiveTypes.MORALE_GAIN:
-                        effects.moraleGain += effect.value;
-                        break;
+            // Special stats
+            goldFindBonus: 0,
+            escapeChance: 0,
+            moraleResistance: 0,
+            moraleGain: 0
+        };
+
+        // Apply all allocated passives
+        exile.passives.allocated.forEach(passiveId => {
+            const passive = passiveTree.passives[passiveId];
+            if (passive && passive.stats) {
+                passive.effects.forEach(effect => {
+                    switch (effect.type) {
+                        case passiveTypes.INCREASED_ATTACK_SPEED:
+                            effects.increasedAttackSpeed += effect.value;
+                            break;
+                        case passiveTypes.MORE_ATTACK_SPEED:
+                            effects.moreAttackSpeed += effect.value;
+                            break;
+                        case passiveTypes.INCREASED_LIFE:
+                            effects.increasedLife += effect.value;
+                            break;
+                        case passiveTypes.INCREASED_DAMAGE:
+                            effects.increasedDamage += effect.value;
+                            break;
+                        case passiveTypes.INCREASED_DEFENSE:
+                            effects.increasedDefense += effect.value;
+                            break;
+                        case passiveTypes.MORE_LIFE:
+                            effects.moreLife += effect.value;
+                            break;
+                        case passiveTypes.MORE_DAMAGE:
+                            effects.moreDamage += effect.value;
+                            break;
+                        case passiveTypes.MORE_DEFENSE:
+                            effects.moreDefense += effect.value;
+                            break;
+                        case passiveTypes.FLAT_LIFE:
+                            effects.flatLife += effect.value;
+                            break;
+                        case passiveTypes.FLAT_DAMAGE:
+                            effects.flatDamage += effect.value;
+                            break;
+                        case passiveTypes.FLAT_DEFENSE:
+                            effects.flatDefense += effect.value;
+                            break;
+                        case passiveTypes.FIRE_RESISTANCE:
+                            effects.fireResist += effect.value;
+                            break;
+                        case passiveTypes.COLD_RESISTANCE:
+                            effects.coldResist += effect.value;
+                            break;
+                        case passiveTypes.LIGHTNING_RESISTANCE:
+                            effects.lightningResist += effect.value;
+                            break;
+                        case passiveTypes.CHAOS_RESISTANCE:
+                            effects.chaosResist += effect.value;
+                            break;
+                        case passiveTypes.MAX_FIRE_RESISTANCE:
+                            effects.maxFireResist += effect.value;
+                            break;
+                        case passiveTypes.MAX_COLD_RESISTANCE:
+                            effects.maxColdResist += effect.value;
+                            break;
+                        case passiveTypes.MAX_LIGHTNING_RESISTANCE:
+                            effects.maxLightningResist += effect.value;
+                            break;
+                        case passiveTypes.MAX_CHAOS_RESISTANCE:
+                            effects.maxChaosResist += effect.value;
+                            break;
+                        case passiveTypes.GOLD_FIND:
+                            effects.goldFindBonus += effect.value;
+                            break;
+                        case passiveTypes.ESCAPE_CHANCE:
+                            effects.escapeChance += effect.value;
+                            break;
+                        case passiveTypes.MORALE_RESISTANCE:
+                            effects.moraleResistance += effect.value;
+                            break;
+                        case passiveTypes.MORALE_GAIN:
+                            effects.moraleGain += effect.value;
+                            break;
+                    }
+                });
+            }
+        });
+
+        return effects;
+    }
+
+    // Calculate morale change from combat results
+    calculateMoraleChange(combatResult, exile) {
+        // Get morale resistance (can be negative)
+        const moraleResist = (exile.stats.moraleResistance || 0) / 100;
+        const moraleGain = exile.stats.moraleGain || 0; // NEW: flat morale gain
+
+        let result;
+        if (combatResult.outcome === 'victory') {
+            const lifePercent = (exile.stats.life - combatResult.totalDamageTaken) / exile.stats.life;
+            if (lifePercent <= 0.05) {
+                result = { change: -4, message: "Nah... that was too bloody close it aint fun no more." };
+            } else if (lifePercent <= 0.15) {
+                result = { change: +6, message: "My heart races, I feel... ALIVE!" };
+            } else if (lifePercent <= 0.3) {
+                result = { change: +4, message: "Hah! A good challenge!" };
+            } else if (lifePercent >= 0.95 && combatResult.winChancePerRound >= 0.30) {
+                result = { change: -4, message: "This is beneath me..." };
+            } else if (lifePercent >= 0.90) {
+                result = { change: -2, message: "This is too easy, I need a real challenge!" };
+            } else {
+                result = { change: +1, message: "A fair and reasonable fight." };
+            }
+        } else if (combatResult.outcome === 'retreat') {
+            if (combatResult.rounds >= 8) {
+                result = { change: +3, message: "Phew that was a close one, but I did it!" };
+            } else if (combatResult.rounds >= 5) {
+                result = { change: -2, message: "Ah, I'm not on my game today..." };
+            } else {
+                result = { change: -4, message: "This is just embarrassing..." };
+            }
+        } else {
+            // Death - no morale change since exile is dead
+            return { change: 0, message: "" };
+        }
+
+        // Apply morale resistance scaling (works both positive and negative)
+        let adjustedChange = result.change;
+        if (adjustedChange !== 0 && moraleResist !== 0) {
+            adjustedChange = Math.round(adjustedChange * (1 + moraleResist));
+            if (adjustedChange === 0 && result.change !== 0) {
+                adjustedChange = result.change > 0 ? 1 : -1;
+            }
+        }
+
+        // Apply flat morale gain/penalty
+        adjustedChange += moraleGain;
+
+        return { change: adjustedChange, message: result.message };
+    }
+
+
+    // GEAR + PASSIVES + LEVELS MATH AND SCALING
+    recalculateStats(exile = null) {
+
+        // If no exile provided, use the current selected exile (for backwards compatibility)
+        if (!exile) {
+            exile = getCurrentExile();
+            if (!exile) return;
+        }
+
+        // Start with base stats (class + levels)
+        const baseLife = exile.baseStats.life;
+        const baseDamage = exile.baseStats.damage;
+        const baseDefense = exile.baseStats.defense;
+
+        // Calculate gear bonuses including implicits AND weapon damage multipliers
+        let gearLife = 0, gearDamage = 0, gearDefense = 0;
+        Object.values(exile.equipment || {}).forEach(item => {
+            if (item) {
+                // Add implicit stats
+                if (item.implicitStats) {
+                    gearLife += item.implicitStats.life || 0;
+                    gearDefense += item.implicitStats.defense || 0;
+
+                    // Handle weapon damage with multiplier
+                    if (item.slot === 'weapon' && item.damageMultiplier) {
+                        const weaponImplicitDamage = (item.implicitStats.damage || 0) * item.damageMultiplier;
+                        gearDamage += weaponImplicitDamage;
+                    } else {
+                        gearDamage += item.implicitStats.damage || 0;
+                    }
                 }
-            });
-        }
-    });
 
-    return effects;
-}
-
-// Calculate morale change from combat results
-calculateMoraleChange(combatResult, exile) {
-    // Get morale resistance (can be negative)
-    const moraleResist = (exile.stats.moraleResistance || 0) / 100;
-    const moraleGain = exile.stats.moraleGain || 0; // NEW: flat morale gain
-
-    let result;
-    if (combatResult.outcome === 'victory') {
-        const lifePercent = (exile.stats.life - combatResult.totalDamageTaken) / exile.stats.life;
-        if (lifePercent <= 0.05) {
-            result = { change: -4, message: "Nah... that was too bloody close it aint fun no more." };
-        } else if (lifePercent <= 0.15) {
-            result = { change: +6, message: "My heart races, I feel... ALIVE!" };
-        } else if (lifePercent <= 0.3) {
-            result = { change: +4, message: "Hah! A good challenge!" };
-        } else if (lifePercent >= 0.95 && combatResult.winChancePerRound >= 0.30) {
-            result = { change: -4, message: "This is beneath me..." };
-        } else if (lifePercent >= 0.90) {
-            result = { change: -2, message: "This is too easy, I need a real challenge!" };
-        } else {
-            result = { change: +1, message: "A fair and reasonable fight." };
-        }
-    } else if (combatResult.outcome === 'retreat') {
-        if (combatResult.rounds >= 8) {
-            result = { change: +3, message: "Phew that was a close one, but I did it!" };
-        } else if (combatResult.rounds >= 5) {
-            result = { change: -2, message: "Ah, I'm not on my game today..." };
-        } else {
-            result = { change: -4, message: "This is just embarrassing..." };
-        }
-    } else {
-        // Death - no morale change since exile is dead
-        return { change: 0, message: "" };
-    }
-
-    // Apply morale resistance scaling (works both positive and negative)
-    let adjustedChange = result.change;
-    if (adjustedChange !== 0 && moraleResist !== 0) {
-        adjustedChange = Math.round(adjustedChange * (1 + moraleResist));
-        if (adjustedChange === 0 && result.change !== 0) {
-            adjustedChange = result.change > 0 ? 1 : -1;
-        }
-    }
-
-    // Apply flat morale gain/penalty
-    adjustedChange += moraleGain;
-
-    return { change: adjustedChange, message: result.message };
-}
-
-
-// GEAR + PASSIVES + LEVELS MATH AND SCALING
-recalculateStats() {
-    // Start with base stats (class + levels)
-    const baseLife = gameState.exile.baseStats.life;
-    const baseDamage = gameState.exile.baseStats.damage;
-    const baseDefense = gameState.exile.baseStats.defense;
-
-    // Calculate gear bonuses including implicits AND weapon damage multipliers
-    let gearLife = 0, gearDamage = 0, gearDefense = 0;
-    Object.values(gameState.inventory.equipped).forEach(item => {
-        if (item) {
-            // Add implicit stats
-            if (item.implicitStats) {
-                gearLife += item.implicitStats.life || 0;
-                gearDefense += item.implicitStats.defense || 0;
+                // Add regular stats
+                gearLife += item.stats.life || 0;
+                gearDefense += item.stats.defense || 0;
 
                 // Handle weapon damage with multiplier
                 if (item.slot === 'weapon' && item.damageMultiplier) {
-                    const weaponImplicitDamage = (item.implicitStats.damage || 0) * item.damageMultiplier;
-                    gearDamage += weaponImplicitDamage;
+                    const weaponRolledDamage = (item.stats.damage || 0) * item.damageMultiplier;
+                    gearDamage += weaponRolledDamage;
                 } else {
-                    gearDamage += item.implicitStats.damage || 0;
+                    gearDamage += item.stats.damage || 0;
                 }
             }
+        });
 
-            // Add regular stats
-            gearLife += item.stats.life || 0;
-            gearDefense += item.stats.defense || 0;
+        // Get passive effects
+        const passiveEffects = this.calculatePassiveEffects();  // Now uses exileSystem method
 
-            // Handle weapon damage with multiplier
-            if (item.slot === 'weapon' && item.damageMultiplier) {
-                const weaponRolledDamage = (item.stats.damage || 0) * item.damageMultiplier;
-                gearDamage += weaponRolledDamage;
-            } else {
-                gearDamage += item.stats.damage || 0;
-            }
+        // === Add flat passives BEFORE scaling ===
+        const flatLife = baseLife + gearLife + (passiveEffects.flatLife || 0);
+        const flatDamage = baseDamage + gearDamage + (passiveEffects.flatDamage || 0);
+        const flatDefense = baseDefense + gearDefense + (passiveEffects.flatDefense || 0);
+
+        // Apply increased bonuses (additive)
+        const increasedLife = flatLife * (1 + (passiveEffects.increasedLife || 0) / 100);
+        const increasedDamage = flatDamage * (1 + (passiveEffects.increasedDamage || 0) / 100);
+        const increasedDefense = flatDefense * (1 + (passiveEffects.increasedDefense || 0) / 100);
+
+        // Apply more bonuses (multiplicative)
+        const finalLife = increasedLife * (1 + (passiveEffects.moreLife || 0) / 100);
+        const finalDamage = increasedDamage * (1 + (passiveEffects.moreDamage || 0) / 100);
+        const finalDefense = increasedDefense * (1 + (passiveEffects.moreDefense || 0) / 100);
+
+        // === Assign final values directly (no flat bonuses after scaling) ===
+        exile.stats.life = Math.floor(finalLife);
+        exile.stats.damage = Math.floor(finalDamage);
+        exile.stats.defense = Math.floor(finalDefense);
+
+        // Start with base attack speed from weapon (or 1.0 if no weapon)
+        let baseAttackSpeed = 1.0;
+        const equippedWeapon = exile.equipment.weapon;
+        if (equippedWeapon && equippedWeapon.attackSpeed) {
+            baseAttackSpeed = equippedWeapon.attackSpeed;
         }
-    });
 
-    // Get passive effects
-    const passiveEffects = this.calculatePassiveEffects();  // Now uses exileSystem method
+        // Collect attack speed bonuses from gear
+        let gearAttackSpeedBonus = 0;
+        Object.values(exile.equipment).forEach(item => {
+            if (item && item.stats) {
+                gearAttackSpeedBonus += item.stats.attackSpeed || 0;
+            }
+        });
 
-    // === Add flat passives BEFORE scaling ===
-    const flatLife = baseLife + gearLife + (passiveEffects.flatLife || 0);
-    const flatDamage = baseDamage + gearDamage + (passiveEffects.flatDamage || 0);
-    const flatDefense = baseDefense + gearDefense + (passiveEffects.flatDefense || 0);
+        // Get passive attack speed increases (additive)
+        const passiveAttackSpeedIncrease = passiveEffects.increasedAttackSpeed || 0;
 
-    // Apply increased bonuses (additive)
-    const increasedLife = flatLife * (1 + (passiveEffects.increasedLife || 0) / 100);
-    const increasedDamage = flatDamage * (1 + (passiveEffects.increasedDamage || 0) / 100);
-    const increasedDefense = flatDefense * (1 + (passiveEffects.increasedDefense || 0) / 100);
+        // Apply increased modifiers (additive)
+        const increasedAttackSpeed = baseAttackSpeed * (1 + (gearAttackSpeedBonus + passiveAttackSpeedIncrease) / 100);
 
-    // Apply more bonuses (multiplicative)
-    const finalLife = increasedLife * (1 + (passiveEffects.moreLife || 0) / 100);
-    const finalDamage = increasedDamage * (1 + (passiveEffects.moreDamage || 0) / 100);
-    const finalDefense = increasedDefense * (1 + (passiveEffects.moreDefense || 0) / 100);
+        // Apply more modifiers (multiplicative)
+        const finalAttackSpeed = increasedAttackSpeed * (1 + (passiveEffects.moreAttackSpeed || 0) / 100);
 
-    // === Assign final values directly (no flat bonuses after scaling) ===
-    gameState.exile.stats.life = Math.floor(finalLife);
-    gameState.exile.stats.damage = Math.floor(finalDamage);
-    gameState.exile.stats.defense = Math.floor(finalDefense);
+        exile.stats.attackSpeed = finalAttackSpeed;
 
-    // Start with base attack speed from weapon (or 1.0 if no weapon)
-    let baseAttackSpeed = 1.0;
-    const equippedWeapon = gameState.inventory.equipped.weapon;
-    if (equippedWeapon && equippedWeapon.attackSpeed) {
-        baseAttackSpeed = equippedWeapon.attackSpeed;
+        // Apply formula: (Base AS) × (1 + % Increases/100)
+        const totalAttackSpeedIncrease = gearAttackSpeedBonus + passiveAttackSpeedIncrease;
+        exile.stats.attackSpeed = baseAttackSpeed * (1 + totalAttackSpeedIncrease / 100);
+
+        // Apply special stats
+        exile.stats.goldFindBonus = passiveEffects.goldFindBonus;
+        exile.stats.escapeChance = passiveEffects.escapeChance;
+        exile.stats.moraleResistance = passiveEffects.moraleResistance;
+        exile.stats.moraleGain = passiveEffects.moraleGain;
+
+        // Calculate resistances from gear + passives
+        let gearFireResist = 0, gearColdResist = 0, gearLightningResist = 0, gearChaosResist = 0;
+        Object.values(exile.equipment).forEach(item => {
+            if (item) {
+                // Check IMPLICIT stats for resistances
+                if (item.implicitStats) {
+                    gearFireResist += item.implicitStats.fireResist || 0;
+                    gearColdResist += item.implicitStats.coldResist || 0;
+                    gearLightningResist += item.implicitStats.lightningResist || 0;
+                    gearChaosResist += item.implicitStats.chaosResist || 0;
+                }
+
+                // Check REGULAR stats for resistances
+                gearFireResist += item.stats.fireResist || 0;
+                gearColdResist += item.stats.coldResist || 0;
+                gearLightningResist += item.stats.lightningResist || 0;
+                gearChaosResist += item.stats.chaosResist || 0;
+            }
+        });
+
+        // Add passives
+        const totalFireResist = gearFireResist + (passiveEffects.fireResist || 0);
+        const totalColdResist = gearColdResist + (passiveEffects.coldResist || 0);
+        const totalLightningResist = gearLightningResist + (passiveEffects.lightningResist || 0);
+        const totalChaosResist = gearChaosResist + (passiveEffects.chaosResist || 0);
+
+        // Calculate max resist caps (default + passives)
+        const maxFireResist = (RESISTANCE_CAPS.default + (passiveEffects.maxFireResist || 0));
+        const maxColdResist = (RESISTANCE_CAPS.default + (passiveEffects.maxColdResist || 0));
+        const maxLightningResist = (RESISTANCE_CAPS.default + (passiveEffects.maxLightningResist || 0));
+        const maxChaosResist = (RESISTANCE_CAPS.default + (passiveEffects.maxChaosResist || 0));
+
+        // Apply resistance caps
+        exile.stats.fireResist = Math.min(totalFireResist, maxFireResist);
+        exile.stats.coldResist = Math.min(totalColdResist, maxColdResist);
+        exile.stats.lightningResist = Math.min(totalLightningResist, maxLightningResist);
+        exile.stats.chaosResist = Math.min(totalChaosResist, maxChaosResist);
+
+        // Calculate light radius effects AND movement speed on scouting and exploration from gear + passives
+        // Get light radius from equipped gear
+        let gearLightRadius = 0;
+        let gearMoveSpeed = 0;
+        Object.values(exile.equipment).forEach(item => {
+            if (item) {
+                gearLightRadius += item.stats.lightRadius || 0;
+                gearMoveSpeed += item.stats.moveSpeed || 0;
+            }
+        });
+
+        // Get bonuses from passives
+        const passiveLightRadius = passiveEffects.lightRadius || 0;
+        const passiveMoveSpeed = passiveEffects.moveSpeed || 0;
+
+        // Calculate totals
+        const totalLightRadius = gearLightRadius + passiveLightRadius;
+        const totalMoveSpeed = gearMoveSpeed + passiveMoveSpeed;
+
+        // Apply to scouting bonus (base 1.0 + bonuses)
+        exile.stats.scoutingBonus = 1.0 + (totalLightRadius / 100) + (totalMoveSpeed / 200);
+        // End of light radius effects on scouting and exploration from gear + passives
+
+        // Ensure minimum values
+        exile.stats.life = Math.max(1, exile.stats.life);
+        exile.stats.damage = Math.max(1, exile.stats.damage);
+        exile.stats.defense = Math.max(1, exile.stats.defense);
     }
-
-    // Collect attack speed bonuses from gear
-    let gearAttackSpeedBonus = 0;
-    Object.values(gameState.inventory.equipped).forEach(item => {
-        if (item && item.stats) {
-            gearAttackSpeedBonus += item.stats.attackSpeed || 0;
-        }
-    });
-
-    // Get passive attack speed increases (additive)
-    const passiveAttackSpeedIncrease = passiveEffects.increasedAttackSpeed || 0;
-
-    // Apply increased modifiers (additive)
-    const increasedAttackSpeed = baseAttackSpeed * (1 + (gearAttackSpeedBonus + passiveAttackSpeedIncrease) / 100);
-
-    // Apply more modifiers (multiplicative)
-    const finalAttackSpeed = increasedAttackSpeed * (1 + (passiveEffects.moreAttackSpeed || 0) / 100);
-
-    gameState.exile.stats.attackSpeed = finalAttackSpeed;
-
-    // Apply formula: (Base AS) × (1 + % Increases/100)
-    const totalAttackSpeedIncrease = gearAttackSpeedBonus + passiveAttackSpeedIncrease;
-    gameState.exile.stats.attackSpeed = baseAttackSpeed * (1 + totalAttackSpeedIncrease / 100);
-
-    // Apply special stats
-    gameState.exile.stats.goldFindBonus = passiveEffects.goldFindBonus;
-    gameState.exile.stats.escapeChance = passiveEffects.escapeChance;
-    gameState.exile.stats.moraleResistance = passiveEffects.moraleResistance;
-    gameState.exile.stats.moraleGain = passiveEffects.moraleGain;
-
-    // Calculate resistances from gear + passives
-    let gearFireResist = 0, gearColdResist = 0, gearLightningResist = 0, gearChaosResist = 0;
-    Object.values(gameState.inventory.equipped).forEach(item => {
-        if (item) {
-            // Check IMPLICIT stats for resistances
-            if (item.implicitStats) {
-                gearFireResist += item.implicitStats.fireResist || 0;
-                gearColdResist += item.implicitStats.coldResist || 0;
-                gearLightningResist += item.implicitStats.lightningResist || 0;
-                gearChaosResist += item.implicitStats.chaosResist || 0;
-            }
-
-            // Check REGULAR stats for resistances
-            gearFireResist += item.stats.fireResist || 0;
-            gearColdResist += item.stats.coldResist || 0;
-            gearLightningResist += item.stats.lightningResist || 0;
-            gearChaosResist += item.stats.chaosResist || 0;
-        }
-    });
-
-    // Add passives
-    const totalFireResist = gearFireResist + (passiveEffects.fireResist || 0);
-    const totalColdResist = gearColdResist + (passiveEffects.coldResist || 0);
-    const totalLightningResist = gearLightningResist + (passiveEffects.lightningResist || 0);
-    const totalChaosResist = gearChaosResist + (passiveEffects.chaosResist || 0);
-
-    // Calculate max resist caps (default + passives)
-    const maxFireResist = (RESISTANCE_CAPS.default + (passiveEffects.maxFireResist || 0));
-    const maxColdResist = (RESISTANCE_CAPS.default + (passiveEffects.maxColdResist || 0));
-    const maxLightningResist = (RESISTANCE_CAPS.default + (passiveEffects.maxLightningResist || 0));
-    const maxChaosResist = (RESISTANCE_CAPS.default + (passiveEffects.maxChaosResist || 0));
-
-    // Apply resistance caps
-    gameState.exile.stats.fireResist = Math.min(totalFireResist, maxFireResist);
-    gameState.exile.stats.coldResist = Math.min(totalColdResist, maxColdResist);
-    gameState.exile.stats.lightningResist = Math.min(totalLightningResist, maxLightningResist);
-    gameState.exile.stats.chaosResist = Math.min(totalChaosResist, maxChaosResist);
-
-    // Calculate light radius effects AND movement speed on scouting and exploration from gear + passives
-    // Get light radius from equipped gear
-    let gearLightRadius = 0;
-    let gearMoveSpeed = 0;
-    Object.values(gameState.inventory.equipped).forEach(item => {
-        if (item) {
-            gearLightRadius += item.stats.lightRadius || 0;
-            gearMoveSpeed += item.stats.moveSpeed || 0;
-        }
-    });
-
-    // Get bonuses from passives
-    const passiveLightRadius = passiveEffects.lightRadius || 0;
-    const passiveMoveSpeed = passiveEffects.moveSpeed || 0;
-
-    // Calculate totals
-    const totalLightRadius = gearLightRadius + passiveLightRadius;
-    const totalMoveSpeed = gearMoveSpeed + passiveMoveSpeed;
-
-    // Apply to scouting bonus (base 1.0 + bonuses)
-    gameState.exile.stats.scoutingBonus = 1.0 + (totalLightRadius / 100) + (totalMoveSpeed / 200);
-    // End of light radius effects on scouting and exploration from gear + passives
-
-    // Ensure minimum values
-    gameState.exile.stats.life = Math.max(1, gameState.exile.stats.life);
-    gameState.exile.stats.damage = Math.max(1, gameState.exile.stats.damage);
-    gameState.exile.stats.defense = Math.max(1, gameState.exile.stats.defense);
-}
 
 
     // More methods will be added here...

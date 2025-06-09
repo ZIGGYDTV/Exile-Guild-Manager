@@ -3,17 +3,74 @@ const game = {
     init() {
         // Load saved game first
         this.loadGame();
-
-        // Initialize exile with class system and passives
-        exileSystem.initializeExile();
+    
+        // If no exiles exist, create starting exile(s)
+        if (gameState.exiles.length === 0) {
+            this.initializeStartingExiles();
+        }
+    
+        // debug logs
+        console.log("Exiles after init:", gameState.exiles);
+        console.log("Selected exile ID:", gameState.selectedExileId);
+    
+        // Initialize systems
         inventorySystem.initializeItemTooltips();
-        uiSystem.updateDisplay();
-        inventorySystem.updateInventoryDisplay();
-        uiSystem.updateCommandCenterDisplay();
+    
+        // Select first exile by default
+        if (gameState.exiles.length > 0 && !gameState.selectedExileId) {
+            gameState.selectedExileId = gameState.exiles[0].id;
+            console.log("Selected first exile:", gameState.selectedExileId);
+        }
+    
+        // Add this to refresh the UI
+        if (typeof exileRowManager !== 'undefined') {
+            console.log("Refreshing exile rows...");
+            exileRowManager.refreshAllRows();
+        }
+    
         uiSystem.log("Send exiles on missions. Make them more powerful. Each area has dangers and rewards to discover.", "info");
     },
 
- 
+
+    initializeStartingExiles() {
+        // Safety check
+        if (typeof exileFactory === 'undefined') {
+            console.error("exileFactory not loaded! Make sure exileFactory.js is included before game.js");
+            return;
+        }
+
+        // Create one starting exile (we can adjust this number)
+        const startingExile = exileFactory.createExile({
+            name: "Grimjaw" // Keep the classic name for first exile
+        });
+
+        // Give them a random starting notable
+        const notables = passiveHelpers.getPassivesByTier('notable');
+        if (notables.length > 0) {
+            const randomNotable = notables[Math.floor(Math.random() * notables.length)];
+            startingExile.passives.allocated.push(randomNotable.id);
+            startingExile.passives.pendingPoints--;
+        }
+
+        // Apply the passive effects
+        exileSystem.recalculateStats(startingExile);
+
+
+        // Add to game state
+        gameState.exiles.push(startingExile);
+
+        uiSystem.log(`${startingExile.name} the ${classDefinitions[startingExile.class].name} joins your guild!`, "legendary");
+
+        // Optional: Add a second test exile for development
+        const ADD_TEST_EXILE = true; // Change to false for production
+        if (ADD_TEST_EXILE) {
+            const testExile = exileFactory.createTestExile(3);
+            exileSystem.recalculateStats(startingExile);
+            gameState.exiles.push(testExile);
+            uiSystem.log(`${testExile.name} the ${classDefinitions[testExile.class].name} joins for testing!`, "info");
+        }
+    },
+
 
 
 
@@ -97,7 +154,7 @@ const game = {
         exile.stats.defense = Math.max(1, exile.stats.defense);
     },
 
-    
+
     gameOver() {
         // Disable mission buttons
         document.querySelectorAll('.mission-btn').forEach(btn => {
@@ -123,8 +180,11 @@ const game = {
     saveGame() {
         if (gameState.settings.autoSave) {
             const saveData = {
+                version: 2, // Increment version for new format
                 gameState: gameState,
-                timeState: timeState  // ADD: Include time state in saves
+                worldState: worldState,
+                turnState: turnState,
+                timestamp: Date.now()
             };
             localStorage.setItem('exileManagerSave', JSON.stringify(saveData));
         }
@@ -133,21 +193,54 @@ const game = {
     loadGame() {
         const savedGame = localStorage.getItem('exileManagerSave');
         if (savedGame) {
-            const loadedData = JSON.parse(savedGame);
+            try {
+                const parsedSave = JSON.parse(savedGame);
 
-            // Handle both old saves (just gameState) and new saves (with timeState)
-            if (loadedData.gameState) {
-                Object.assign(gameState, loadedData.gameState);
-                if (loadedData.timeState) {
-                    Object.assign(timeState, loadedData.timeState);
+                // Check if this is an old save format (has exile instead of exiles)
+                if (parsedSave.exile && !parsedSave.exiles) {
+                    console.log("Converting old save format to new multi-exile format...");
+
+                    // Convert old format to new
+                    parsedSave.exiles = [];
+                    parsedSave.nextExileId = 2; // Start at 2 since we'll give the old exile ID 1
+
+                    // Only proceed if exileFactory is available
+                    if (typeof exileFactory !== 'undefined') {
+                        const convertedExile = exileFactory.restoreExile({
+                            ...parsedSave.exile,
+                            id: 1,
+                            status: 'idle',
+                            currentAssignment: null
+                        });
+                        parsedSave.exiles.push(convertedExile);
+                        parsedSave.selectedExileId = 1;
+                    } else {
+                        console.error("exileFactory not loaded yet!");
+                    }
+
+                    // Remove old exile property
+                    delete parsedSave.exile;
                 }
-            } else {
-                // Old save format - just gameState
-                Object.assign(gameState, loadedData);
-            }
 
-            uiSystem.log("Game loaded!", "info");
-            uiSystem.updateDisplay();
+                // Load the save data
+                Object.assign(gameState, parsedSave);
+
+                // If we have exiles but no selected one, select the first
+                if (gameState.exiles.length > 0 && !gameState.selectedExileId) {
+                    gameState.selectedExileId = gameState.exiles[0].id;
+                }
+
+                uiSystem.log("Game loaded successfully.", "success");
+
+                // Refresh displays
+                if (typeof exileRowManager !== 'undefined') {
+                    exileRowManager.refreshAllRows();
+                }
+
+            } catch (error) {
+                console.error("Failed to load save:", error);
+                uiSystem.log("Failed to load save. Starting fresh.", "error");
+            }
         }
     },
 
@@ -222,7 +315,7 @@ const game = {
     // End of Additional Helper Functions
 
 
-    
+
 
 
 

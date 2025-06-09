@@ -30,9 +30,6 @@ const worldMapSystem = {
 
         // Remove escape key listener
         document.removeEventListener('keydown', this.handleWorldMapKeydown.bind(this));
-
-        // Update main screen status
-        uiSystem.updateCommandCenterDisplay();
     },
 
     handleWorldMapKeydown(event) {

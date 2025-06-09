@@ -5,85 +5,153 @@ const inventorySystem = {
     currentEquipmentSlot: null, // For equipment selector modal
 
     // === EQUIPMENT MANAGEMENT ===
-    
-    equipItem(itemId) {
-        const item = gameState.inventory.backpack.find(i => i.id === itemId);
-        if (!item) return;
-
-        console.log("Equipping item:", item.name, "to slot:", item.slot);
-
-        // Map new slots to old display categories
-        let displaySlot = item.slot;
-        if (['helmet', 'chest', 'gloves', 'boots', 'shield'].includes(item.slot)) {
-            displaySlot = 'armor';
-        } else if (['ring', 'amulet', 'belt'].includes(item.slot)) {
-            displaySlot = 'jewelry';
+    // Equipment management for multi-exile system
+    equipItem(itemId, exileId = null, targetSlot = null) {
+        // Default to selected exile if not specified
+        if (!exileId) {
+            exileId = gameState.selectedExileId;
         }
 
-        // Unequip current item in that display slot if any
-        const currentEquipped = gameState.inventory.equipped[displaySlot];
-        if (currentEquipped) {
-            currentEquipped.equipped = false;
-            gameState.inventory.backpack.push(currentEquipped);
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        if (!exile) {
+            console.error(`Exile ${exileId} not found!`);
+            return false;
         }
 
-        // Equip new item
-        gameState.inventory.equipped[displaySlot] = item;
-        item.equipped = true;
+        // Find item in inventory
+        const itemIndex = gameState.inventory.items.findIndex(i => i.id === itemId);
+        if (itemIndex === -1) {
+            console.error(`Item ${itemId} not found in inventory!`);
+            return false;
+        }
 
-        // Remove from backpack
-        gameState.inventory.backpack = gameState.inventory.backpack.filter(i => i.id !== itemId);
+        const item = gameState.inventory.items[itemIndex];
 
-        exileSystem.recalculateStats();
-        uiSystem.updateDisplay();
-        this.updateInventoryDisplay();
-        characterScreenSystem.updateCharacterScreenIfOpen();
+        // Determine slot
+        let slot = targetSlot || item.slot;
+
+        // Handle ring slots
+        if (item.slot === 'ring' && !targetSlot) {
+            if (!exile.equipment.ring1) {
+                slot = 'ring1';
+            } else if (!exile.equipment.ring2) {
+                slot = 'ring2';
+            } else {
+                slot = 'ring1'; // Default to replacing ring1
+            }
+        }
+
+        // Unequip current item if any
+        if (exile.equipment[slot]) {
+            this.unequipItem(slot, exileId);
+        }
+
+        // Remove from inventory
+        gameState.inventory.items.splice(itemIndex, 1);
+
+        // Equip to exile
+        exile.equipment[slot] = item;
+
+        // Recalculate stats
+        exileSystem.recalculateStats(exile);
+
+        // Update displays
+        if (typeof exileRowManager !== 'undefined') {
+            exileRowManager.updateRow(exileRowManager.getRowForExile(exileId), exile);
+        }
+
+        console.log(`Equipped ${item.name} to ${exile.name}'s ${slot}`);
         game.saveGame();
+        return true;
     },
 
-    equipItemToSlot(itemId, targetSlot) {
-        console.log("Looking for item with ID:", itemId);
-        const item = gameState.inventory.backpack.find(i => i.id === itemId);
-        console.log("Found item:", item);
+    unequipItem(slot, exileId = null) {
+        // Default to selected exile
+        if (!exileId) {
+            exileId = gameState.selectedExileId;
+        }
 
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        if (!exile) {
+            console.error(`Exile ${exileId} not found!`);
+            return false;
+        }
+
+        const item = exile.equipment[slot];
         if (!item) {
-            console.error("Item not found!");
-            return;
-        }
-        // Unequip current item in that slot if any
-        const currentEquipped = gameState.inventory.equipped[targetSlot];
-        if (currentEquipped) {
-            currentEquipped.equipped = false;
-            gameState.inventory.backpack.push(currentEquipped);
+            console.log(`No item in ${slot} for ${exile.name}`);
+            return false;
         }
 
-        // Equip new item
-        gameState.inventory.equipped[targetSlot] = item;
-        item.equipped = true;
+        // Remove from exile
+        exile.equipment[slot] = null;
 
-        // Remove from backpack
-        gameState.inventory.backpack = gameState.inventory.backpack.filter(i => i.id !== itemId);
+        // Add back to inventory
+        gameState.inventory.items.push(item);
 
-        exileSystem.recalculateStats();
-        uiSystem.updateDisplay();
-        this.updateInventoryDisplay();
-        characterScreenSystem.updateCharacterScreenIfOpen();
+        // Recalculate stats
+        exileSystem.recalculateStats(exile);
+
+        // Update displays
+        if (typeof exileRowManager !== 'undefined') {
+            exileRowManager.updateRow(exileRowManager.getRowForExile(exileId), exile);
+        }
+
+        console.log(`Unequipped ${item.name} from ${exile.name}`);
         game.saveGame();
+        return true;
     },
 
-    unequipItem(slot) {
-        const item = gameState.inventory.equipped[slot];
-        if (!item) return;
 
-        item.equipped = false;
-        gameState.inventory.backpack.push(item);
-        gameState.inventory.equipped[slot] = null;
+    // DUPE PROTECTION
+    // Check for item duplication across all exiles and inventory
+    checkForDuplicateItems() {
+        const seenIds = new Set();
+        const duplicates = [];
 
-        exileSystem.recalculateStats();
-        uiSystem.updateDisplay();
-        this.updateInventoryDisplay();
-        characterScreenSystem.updateCharacterScreenIfOpen();
-        game.saveGame();
+        // Check inventory
+        gameState.inventory.items.forEach(item => {
+            if (item.id) {
+                if (seenIds.has(item.id)) {
+                    duplicates.push({ location: 'inventory', item });
+                }
+                seenIds.add(item.id);
+            }
+        });
+
+        // Check all exiles' equipment
+        gameState.exiles.forEach(exile => {
+            Object.entries(exile.equipment).forEach(([slot, item]) => {
+                if (item && item.id) {
+                    if (seenIds.has(item.id)) {
+                        duplicates.push({
+                            location: `${exile.name}'s ${slot}`,
+                            item
+                        });
+                    }
+                    seenIds.add(item.id);
+                }
+            });
+        });
+
+        if (duplicates.length > 0) {
+            console.error('DUPLICATE ITEMS FOUND:', duplicates);
+            return duplicates;
+        }
+
+        return null;
+    },
+
+    // Clean up any duplicates by assigning new IDs
+    fixDuplicateItems() {
+        const duplicates = this.checkForDuplicateItems();
+        if (!duplicates) return;
+
+        duplicates.forEach(({ location, item }) => {
+            const oldId = item.id;
+            item.id = Date.now() + Math.random();
+            console.log(`Fixed duplicate: ${item.name} at ${location}, changed ID from ${oldId} to ${item.id}`);
+        });
     },
 
     // === INVENTORY MANAGEMENT ===

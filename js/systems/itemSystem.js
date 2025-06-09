@@ -716,6 +716,9 @@ class ItemDatabase {
         const newItem = Object.create(baseItem);
         Object.assign(newItem, baseItem);
 
+        // Step 4.5: Assign a unique ID
+        newItem.id = Date.now() + Math.random();
+
         // Step 5: Roll stats based on item level and difficulty
         newItem.rollStats(targetIlvl, difficultyBonus, missionThemes);
 

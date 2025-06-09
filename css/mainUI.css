@@ -1,0 +1,312 @@
+/* Main UI Layout - Three Panel Structure */
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100vh;
+}
+
+.main-container {
+    display: flex;
+    height: 100vh;
+    background-color: #1a1a1a;
+}
+
+/* Left Panel - Exile Rows */
+.exiles-panel {
+    flex: 0 0 50%; 
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 10px;
+    overflow: hidden; /* No scrollbars */
+}
+
+/* Individual Exile Row */
+.exile-row {
+    flex: 1; /* Each row takes equal height */
+    background-color: #2a2a2a;
+    border: 2px solid #444;
+    border-radius: 5px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 0; /* Allows shrinking */
+}
+
+.exile-row:hover {
+    border-color: #666;
+}
+
+.exile-row.selected {
+    border-color: #c9aa71;
+    background-color: #3a3a3a;
+}
+
+.exile-row.empty {
+    opacity: 0.3;
+    cursor: default;
+}
+
+/* Exile Row Content Areas */
+.exile-status {
+    flex: 0 0 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.exile-name {
+    font-weight: bold;
+    color: #c9aa71;
+}
+
+.exile-vitals {
+    display: flex;
+    gap: 15px;
+    font-size: 0.9em;
+}
+
+.exile-main-area {
+    flex: 1;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0; /* Allows content to shrink */
+}
+
+.exile-actions {
+    flex: 0 0 150px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* Right Panel Container */
+.right-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 10px;
+    overflow: hidden;
+}
+/* DYNAMIC DISPLAY */
+/* Top Right - Dynamic Display */
+/* Dynamic Display with Tabs */
+.dynamic-display {
+    flex: 1;
+    background-color: #2a2a2a;
+    border: 2px solid #444;
+    border-radius: 5px;
+    overflow: hidden;
+    display: flex;
+}
+
+/* Dynamic Display Tabs - Vertical on left side */
+.dynamic-tabs {
+    flex: 0 0 40px;
+    background-color: #1a1a1a;
+    border-right: 1px solid #444;
+    display: flex;
+    flex-direction: column;
+    padding: 5px 0;
+}
+
+.dynamic-tab {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: #888;
+    transition: all 0.2s ease;
+}
+
+.dynamic-tab:hover {
+    background-color: #3a3a3a;
+    color: #c9aa71;
+}
+
+.dynamic-tab.active {
+    background-color: #2a2a2a;
+    color: #c9aa71;
+    border-left: 3px solid #c9aa71;
+}
+
+/* Dynamic Content Area */
+.dynamic-content-area {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: none;
+}
+
+.dynamic-content-area.active {
+    display: block;
+}
+
+/* Log specific styling */
+#log {
+    height: 100%;
+    font-family: monospace;
+    font-size: 0.9em;
+    padding: 0;
+}
+/* END OF DYNAMIC DISPLAY */
+
+
+/* INVENTORY */
+/* Bottom Right - Inventory */
+.inventory-panel {
+    height: 300px;
+    background-color: #2a2a2a;
+    border: 2px solid #444;
+    border-radius: 5px;
+    overflow: hidden;
+    display: flex;
+}
+
+/* Inventory Tabs - Vertical on left side */
+.inventory-tabs {
+    flex: 0 0 40px;
+    background-color: #1a1a1a;
+    border-right: 1px solid #444;
+    display: flex;
+    flex-direction: column;
+    padding: 5px 0;
+}
+
+.inventory-tab {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: #888;
+    transition: all 0.2s ease;
+}
+
+.inventory-tab:hover {
+    background-color: #3a3a3a;
+    color: #c9aa71;
+}
+
+.inventory-tab.active {
+    background-color: #2a2a2a;
+    color: #c9aa71;
+    border-left: 3px solid #c9aa71;
+}
+
+/* Inventory Content Area */
+.inventory-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+/* Inventory Grid */
+.inventory-grid {
+    flex: 0 0 75%;
+    padding: 10px;
+    overflow-y: auto;
+    border-right: 1px solid #444;
+}
+
+/* Selected Item Detail */
+.item-detail-panel {
+    flex: 1;
+    padding: 10px;
+    background-color: #1a1a1a;
+    overflow-y: auto;
+}
+/* END OF INVENTORY */
+
+/* Resource Bar (spans full width at top) */
+.resource-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background-color: #1a1a1a;
+    border-bottom: 2px solid #444;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 100;
+}
+
+/* Adjust main container to account for resource bar */
+.main-container {
+    margin-top: 40px;
+    height: calc(100vh - 40px);
+}
+
+/* Mission States for Exile Rows */
+.exile-row.in-mission {
+    background-color: #2a2a3a;
+    border-color: #4169E1;
+}
+
+.exile-row.mission-complete {
+    background-color: #2a3a2a;
+    border-color: #4CAF50;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .exiles-panel {
+        flex: 0 0 50%; /* Shrink to 50% on smaller screens */
+    }
+}
+
+
+/* Exile Manager Row UI */
+/* Button Styles */
+.btn-small {
+    padding: 5px 10px;
+    background-color: #c9aa71;
+    color: #1a1a1a;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.btn-small:hover {
+    background-color: #e6c585;
+}
+
+/* Exile Row State Styles */
+.exile-row.idle {
+    border-color: #444;
+}
+
+.exile-row.assigned {
+    border-color: #c9aa71;
+    background-color: #3a3a2a;
+}
+
+.exile-row.in_mission {
+    border-color: #4169E1;
+    background-color: #2a2a3a;
+}
+
+/* Message Styles */
+.idle-message, .assigned-message, .mission-progress {
+    text-align: center;
+    color: #888;
+    font-style: italic;
+}
+/* END OF Exile Manager Row UI */
