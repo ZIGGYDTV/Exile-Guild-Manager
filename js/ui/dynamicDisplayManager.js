@@ -300,11 +300,11 @@ const dynamicDisplayManager = {
             return;
         }
 
-        // Create equipment slots display
+        // Create equipment slots display (no main title)
         let equipmentHTML = `
-            <h2>${exile.name}'s Equipment</h2>
             <div class="equipment-container">
-                <div class="equipment-grid">
+                <div class="equipment-grid-wrapper">
+                    <div class="equipment-grid-compact">
         `;
 
         // Define equipment slots in display order
@@ -321,58 +321,62 @@ const dynamicDisplayManager = {
             { slot: 'belt', display: 'Belt' }
         ];
 
+        // Check if there's an item selected for click-to-equip
+        const selectedForEquipping = (typeof inventoryGridManager !== 'undefined') ? 
+            inventoryGridManager.selectedItemForEquipping : null;
+        const validSlots = selectedForEquipping ? 
+            inventoryGridManager.getValidSlotsForSelectedItem() : [];
+
         // Generate each equipment slot
         equipmentSlots.forEach(({ slot, display }) => {
             const item = exile.equipment[slot];
+            const isValidSlot = validSlots.includes(slot);
+            const slotClasses = ['equipment-slot'];
+            
+            if (item) {
+                slotClasses.push('occupied');
+            } else {
+                slotClasses.push('empty');
+            }
+            
+            if (isValidSlot) {
+                slotClasses.push('valid-drop-slot');
+            }
 
             if (item) {
-                // Slot has an item
+                // Slot has an item - compact display
                 const rarity = item.rarity || 'common';
+                const rarityColors = {
+                    'common': '#808080',
+                    'magic': '#4169E1', 
+                    'rare': '#FFD700',
+                    'unique': '#FF4500'
+                };
+                const backgroundColor = rarityColors[rarity] || '#808080';
 
+                const clickHandler = isValidSlot ? `onclick="inventoryGridManager.equipItemToSlot('${slot}')"` : 
+                                    `onclick="dynamicDisplayManager.selectEquippedItem('${slot}', ${exile.id})"`;
+                
                 equipmentHTML += `
-                    <div class="equipment-slot occupied" data-slot="${slot}">
-                        <div class="slot-label">${display}</div>
-                        <div class="item-box ${rarity}">
-                            <div class="item-name">${item.name || 'Unknown Item'}</div>
-                            <div class="item-stats">
-                `;
-
-                // Show implicit stats if any
-                if (item.implicitStats && Object.keys(item.implicitStats).length > 0) {
-                    equipmentHTML += '<div class="implicit-stats">';
-                    for (const [stat, value] of Object.entries(item.implicitStats)) {
-                        equipmentHTML += `<div class="stat-line implicit">${formatStatName(stat)}: ${value}</div>`;
-                    }
-                    equipmentHTML += '</div>';
-                }
-
-                // Show rolled stats
-                if (item.stats && Object.keys(item.stats).length > 0) {
-                    for (const [stat, value] of Object.entries(item.stats)) {
-                        equipmentHTML += `<div class="stat-line">${formatStatName(stat)}: ${value}</div>`;
-                    }
-                }
-
-                // Show weapon-specific properties
-                if (slot === 'weapon' && item.attackSpeed) {
-                    equipmentHTML += `<div class="stat-line">Attack Speed: ${item.attackSpeed}</div>`;
-                }
-
-                equipmentHTML += `
-                            </div>
-                            <button class="unequip-btn" onclick="inventorySystem.unequipItem('${slot}', ${exile.id})">
-                                Unequip
-                            </button>
+                    <div class="${slotClasses.join(' ')} compact-slot" data-slot="${slot}" ${clickHandler}
+                         onmouseenter="dynamicDisplayManager.showEquippedItemTooltip(event, '${slot}', ${exile.id})"
+                         onmouseleave="dynamicDisplayManager.hideEquippedItemTooltip()">
+                        <div class="slot-label-compact">${display}</div>
+                        <div class="item-box-compact" style="background-color: ${backgroundColor};">
+                            <div class="item-name-compact">${item.name || 'Unknown Item'}</div>
                         </div>
                     </div>
                 `;
             } else {
-                // Empty slot
+                // Empty slot - compact display
+                const clickHandler = isValidSlot ? `onclick="inventoryGridManager.equipItemToSlot('${slot}')"` : '';
+                const emptyText = isValidSlot ? 'Click to equip' : 'Empty';
+                
                 equipmentHTML += `
-                    <div class="equipment-slot empty" data-slot="${slot}">
-                        <div class="slot-label">${display}</div>
-                        <div class="empty-slot">
-                            <span class="empty-text">Empty</span>
+                    <div class="${slotClasses.join(' ')} compact-slot" data-slot="${slot}" ${clickHandler}>
+                        <div class="slot-label-compact">${display}</div>
+                        <div class="empty-slot-compact">
+                            <span class="empty-text-compact">${emptyText}</span>
                         </div>
                     </div>
                 `;
@@ -380,11 +384,15 @@ const dynamicDisplayManager = {
         });
 
         equipmentHTML += `
+                    </div>
                 </div>
                 
                 <div class="equipment-stats-summary">
-                    <h3>Total Equipment Bonuses</h3>
-                    ${calculateEquipmentTotals(exile)}
+                    <h2>${exile.name}</h2>
+                    <h4>Current Equipment Bonuses</h4>
+                    <div class="equipment-bonuses-content">
+                        ${calculateEquipmentTotals(exile)}
+                    </div>
                 </div>
             </div>
         `;
@@ -461,6 +469,147 @@ const dynamicDisplayManager = {
         } else {
             details.style.display = 'none';
             icon.textContent = '▼';
+        }
+    },
+
+    // Show tooltip for equipped item on hover
+    showEquippedItemTooltip(event, slot, exileId) {
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        if (!exile || !exile.equipment[slot]) return;
+
+        const item = exile.equipment[slot];
+        
+        // Use the same tooltip system as inventory
+        if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.showTooltip) {
+            inventoryGridManager.showTooltip(item);
+        }
+    },
+
+    // Hide equipped item tooltip
+    hideEquippedItemTooltip() {
+        if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.hideTooltip) {
+            inventoryGridManager.hideTooltip();
+        }
+    },
+
+    // Handle clicking on equipped items to show in detail panel
+    selectEquippedItem(slot, exileId) {
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        if (!exile || !exile.equipment[slot]) return;
+
+        const item = exile.equipment[slot];
+        
+        // Show in inventory detail panel with unequip button
+        this.updateItemDetailPanelForEquipped(item, slot, exileId);
+        
+        // Clear any selected inventory item
+        if (typeof inventoryGridManager !== 'undefined') {
+            inventoryGridManager.selectedItem = null;
+            inventoryGridManager.clearSelectedItemForEquipping();
+            inventoryGridManager.updateDisplay();
+        }
+    },
+
+    // Update item detail panel for equipped items
+    updateItemDetailPanelForEquipped(item, slot, exileId) {
+        const detailContent = document.getElementById('item-detail-content');
+        if (!detailContent) return;
+
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        if (!exile) return;
+
+        // Get item properties with fallbacks
+        const itemName = item.name || 'Unknown Item';
+        const itemType = item.type || (item.slot ? item.slot.charAt(0).toUpperCase() + item.slot.slice(1) : 'Unknown');
+        const itemRarity = item.rarity || 'common';
+        const itemLevel = item.ilvl || item.level || 1;
+
+        // Get rarity color
+        const rarityColors = {
+            'common': '#808080',
+            'magic': '#4169E1',
+            'rare': '#FFD700',
+            'unique': '#FF4500'
+        };
+        const color = rarityColors[itemRarity.toLowerCase()] || '#808080';
+
+        let html = `
+            <div class="item-detail-header">
+                <div class="item-name" style="color: ${color}; font-weight: bold; margin-bottom: 2px;">
+                    ${itemName} (Equipped)
+                </div>
+                <div class="item-level" style="color: #666; font-size: 0.75em; margin-bottom: 8px;">
+                    Item Level: ${itemLevel}
+                </div>
+            </div>
+        `;
+
+        // Combined weapon stats and implicits section
+        let hasWeaponStats = item.slot === 'weapon' && item.attackSpeed;
+        let hasImplicits = item.implicitStats && Object.keys(item.implicitStats).length > 0;
+        
+        if (hasWeaponStats || hasImplicits) {
+            html += '<div class="weapon-implicit-section" style="margin-bottom: 5px; padding: 6px; background:rgb(32, 32, 36); border-radius: 3px; border-bottom: 2px solid #444;">';
+            
+            // Weapon stats
+            if (hasWeaponStats) {
+                html += `<div style="color: #888; font-size: 0.85em; font-style: italic; margin-bottom: 3px;">Attack Speed: ${item.attackSpeed.toFixed(2)}</div>`;
+                if (item.damageMultiplier) {
+                    html += `<div style="color: #888; font-size: 0.85em; font-style: italic; margin-bottom: 3px;">Damage Multiplier: ${item.damageMultiplier.toFixed(2)}</div>`;
+                }
+            }
+            
+            // Implicit stats
+            if (hasImplicits) {
+                for (const [stat, value] of Object.entries(item.implicitStats)) {
+                    if (value > 0) {
+                        html += `<div style="color: #9a9aaa; font-size: 0.85em; font-style: italic;">+${value} ${stat}</div>`;
+                    }
+                }
+            }
+            
+            html += '</div>';
+        }
+
+        // Show rolled stats
+        if (item.stats && Object.keys(item.stats).length > 0) {
+            html += '<div class="rolled-stats" style="margin-bottom: 8px; padding: 6px; background: #252525; border-radius: 3px;">';
+            html += '<div style="color: #aaa; font-size: 0.9em; margin-bottom: 5px;">Rolled Stats:</div>';
+            for (const [stat, value] of Object.entries(item.stats)) {
+                if (value > 0) {
+                    html += `<div style="color: #ddd;">+${value} ${stat}</div>`;
+                }
+            }
+            html += '</div>';
+        }
+
+        detailContent.innerHTML = html;
+
+        // Update item actions for equipped items
+        const actionsContainer = document.getElementById('item-actions');
+        if (actionsContainer) {
+            actionsContainer.style.display = 'flex';
+            actionsContainer.innerHTML = `
+                <button onclick="inventorySystem.unequipItem('${slot}', ${exileId})" 
+                        title="Unequip from ${exile.name}" 
+                        class="square-action-btn unequip-btn">
+                    ⤢
+                </button>
+                                 <div style="display: flex; gap: 3px;">
+                     <button onclick="inventorySystem.useChaosOrb(${item.id})" 
+                             title="Use Chaos Orb" 
+                             class="square-action-btn craft-btn"
+                             ${!gameState.resources.chaosOrbs || gameState.resources.chaosOrbs < 1 ? 'disabled' : ''}>
+                         🌀
+                     </button>
+                     <button onclick="inventorySystem.useExaltedOrb(${item.id})" 
+                             title="Use Exalted Orb" 
+                             class="square-action-btn craft-btn"
+                             ${!gameState.resources.exaltedOrbs || gameState.resources.exaltedOrbs < 1 ? 'disabled' : ''}>
+                         ✦
+                     </button>
+                 </div>
+            `;
         }
     },
 

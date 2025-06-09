@@ -13,7 +13,7 @@ body {
     padding-top: 40px; /* Add padding instead of margin */
 }
 
-/* Left Panel - Exile Rows */
+/* ===== LEFT PANEL - EXILE ROWS ===== */
 .exiles-panel {
     flex: 0 0 50%; 
     display: flex;
@@ -87,7 +87,28 @@ body {
     justify-content: flex-end;
 }
 
-/* Right Panel Container */
+/* Exile Status States */
+.exile-row.idle {
+    border-left: 4px solid #4CAF50;
+}
+
+.exile-row.assigned {
+    border-left: 4px solid #2196F3;
+}
+
+.exile-row.in_mission {
+    border-left: 4px solid #FF9800;
+    animation: pulse-glow 2s infinite;
+}
+
+.idle-message, .assigned-message, .mission-progress {
+    font-size: 0.9em;
+    color: #aaa;
+    text-align: center;
+    padding: 20px;
+}
+
+/* ===== RIGHT PANEL CONTAINER ===== */
 .right-panel {
     flex: 1;
     display: flex;
@@ -97,9 +118,8 @@ body {
     overflow: hidden;
     height: calc(100vh - 40px); /* Subtract resource bar height */
 }
-/* DYNAMIC DISPLAY */
-/* Top Right - Dynamic Display */
-/* Dynamic Display with Tabs */
+
+/* ===== DYNAMIC DISPLAY WITH TABS ===== */
 .dynamic-display {
     flex: 1;
     background-color: #2a2a2a;
@@ -146,7 +166,7 @@ body {
 /* Dynamic Content Area */
 .dynamic-content-area {
     flex: 1;
-    padding: 20px;
+    padding: 3px;
     overflow-y: auto;
     display: none;
 }
@@ -163,7 +183,12 @@ body {
     padding: 0;
 }
 
-/* Dynamic Display - Exile Details */
+#tab-equipment {
+    height: 100%;
+    overflow: hidden;
+}
+
+/* ===== EXILE DETAILS GRID ===== */
 .exile-details-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -202,27 +227,43 @@ body {
     font-weight: bold;
 }
 
-/* Status colors */
+/* ===== STATUS AND ELEMENT COLORS ===== */
 .status-idle { color: #4CAF50; }
 .status-assigned { color: #2196F3; }
 .status-in_mission { color: #FF9800; }
 .status-resting { color: #9C27B0; }
 .status-dead { color: #F44336; }
 
-/* Element colors (reuse existing) */
 .element-fire { color: #ff6b6b; }
 .element-cold { color: #74c0fc; }
 .element-lightning { color: #ffd43b; }
 .element-chaos { color: #da77f2; }
-/* END OF DYNAMIC DISPLAY - Exile Details */
 
-/* DYNAMIC DISPLAY - CURRENT EXILE EQUIPMENT */
+/* ===== EQUIPMENT DISPLAY SYSTEM ===== */
+
+/* Equipment Container Layout */
 .equipment-container {
     display: flex;
-    gap: 30px;
-    margin-top: 20px;
+    gap: 5px;
+    padding: 5px;
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    overflow: hidden; /* Prevent overflow */
 }
 
+/* Equipment grid wrapper - takes remaining space */
+.equipment-grid-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Allow shrinking */
+    max-width: calc(100% - 260px); /* Ensure it doesn't overlap stats panel */
+    overflow: hidden; /* Prevent overflow */
+}
+
+/* OLD Equipment Grid (for legacy compatibility) */
 .equipment-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -235,13 +276,231 @@ body {
     border: 2px solid #333;
     padding: 10px;
     border-radius: 5px;
-    min-height: 100px;
+    min-height: 50px;
 }
 
 .equipment-slot.occupied {
     border-color: #444;
 }
 
+/* Click-to-equip valid slot styling */
+.equipment-slot.valid-drop-slot {
+    border-color: #4CAF50 !important;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.6);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    animation: slot-pulse 2s infinite;
+}
+
+.equipment-slot.valid-drop-slot:hover {
+    border-color: #66BB6A !important;
+    box-shadow: 0 0 25px rgba(76, 175, 80, 0.8);
+    transform: scale(1.02);
+}
+
+.equipment-slot.valid-drop-slot .empty-text {
+    color: #4CAF50 !important;
+    font-weight: bold;
+    animation: text-pulse 2s infinite;
+}
+
+/* ===== COMPACT EQUIPMENT DISPLAY ===== */
+
+/* Compact Equipment Grid */
+.equipment-grid-compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(50px, 140px)); /* Flexible column size */
+    grid-template-rows: repeat(auto-fit, minmax(50px, 140px)); /* Flexible row size with max rows */
+    gap: 4px;
+    width: 100%;
+    height: 100%; /* Use full wrapper height */
+    max-height: 100%; /* Don't exceed wrapper */
+    background: #1a1a1a;
+    border: 2px solid #444;
+    padding: 8px;
+    border-radius: 5px;
+    box-sizing: border-box;
+    overflow: hidden;
+    align-content: center; /* Center vertically within the container */
+    justify-content: center;
+}
+
+.compact-slot {
+    border: 2px solid #555;
+    border-radius: 4px;
+    padding: 4px;
+    background: #2a2a2a;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    box-sizing: border-box;
+    overflow: hidden;
+    /* Let grid control sizing completely */
+    min-width: 50px;
+    min-height: 50px;
+    max-width: 250px;
+    max-height: 150px;
+}
+
+.compact-slot:hover {
+    border-color: #888;
+    background: #333;
+}
+
+.compact-slot.valid-drop-slot {
+    border-color: #4CAF50;
+    background: rgba(76, 175, 80, 0.1);
+    animation: pulse-green 1.5s infinite;
+}
+
+.compact-slot.valid-drop-slot:hover {
+    background: rgba(76, 175, 80, 0.2);
+}
+
+.slot-label-compact {
+    font-size: 0.6em;
+    color: #888;
+    text-align: center;
+    margin-bottom: 2px;
+    margin-top: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    position: absolute;
+    top: 3px;
+    left: 0;
+    right: 0;
+    width: 100%;
+}
+
+/* Hide label when slot has an item */
+.compact-slot.occupied .slot-label-compact {
+    display: none;
+}
+
+.item-box-compact {
+    flex: 1;
+    border-radius: 3px;
+    padding: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    min-height: 0;
+    box-sizing: border-box;
+}
+
+.item-name-compact {
+    font-size: clamp(0.45em, 1.5vw, 0.7em); /* Dynamic font size that scales with viewport */
+    color: #fff;
+    text-align: center;
+    line-height: 1.1;
+    font-weight: 500;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    padding: 1px;
+    word-wrap: break-word;
+    hyphens: auto;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* Allow up to 3 lines */
+    -webkit-box-orient: vertical;
+}
+
+.empty-slot-compact {
+    flex: 1;
+    background: transparent;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 18px; /* Leave space for the label */
+    min-height: 0;
+    box-sizing: border-box;
+}
+
+.empty-text-compact {
+    font-size: 0.6em;
+    color: #666;
+    text-align: center;
+}
+
+.compact-slot.valid-drop-slot .empty-text-compact {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+/* ===== EQUIPMENT STATS SUMMARY ===== */
+.equipment-stats-summary {
+    flex: 0 0 250px; /* Fixed width, won't shrink or grow */
+    width: 250px;
+    max-width: 250px;
+    min-width: 250px;
+    height: 100%;
+    box-sizing: border-box;
+    overflow: hidden; /* Prevent content overflow */
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.equipment-stats-summary h2 {
+    margin: 0;
+    color: #c9aa71;
+    font-size: 1.2em;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #444;
+}
+
+.equipment-stats-summary h3 {
+    margin-top: 0;
+    color: #c9aa71;
+    border-bottom: 1px solid #444;
+    padding-bottom: 10px;
+}
+
+.equipment-stats-summary h4 {
+    margin: -10px 0 0 0;
+    font-size: 0.8em;
+    color: #aaa;
+    font-style: italic;
+}
+
+/* Equipment bonuses content area */
+.equipment-bonuses-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Make equipment bonuses text smaller */
+.equipment-stats-summary .stat-line {
+    font-size: 0.85em;
+    line-height: 1.4;
+    margin-bottom: 2px;
+}
+
+.totals-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.total-category {
+    line-height: 1.6;
+}
+
+.total-category strong {
+    color: #c9aa71;
+    display: block;
+    margin-bottom: 3px;
+}
+
+/* ===== ITEM STYLING ===== */
 .slot-label {
     font-weight: bold;
     color: #c9aa71;
@@ -308,53 +567,20 @@ body {
     margin-top: 8px;
     padding: 4px 10px;
     font-size: 0.8em;
-    background: #444;
+    background: #d32f2f !important;
     border: 1px solid #666;
-    color: #ccc;
+    color: white !important;
     cursor: pointer;
     width: 100%;
+    border: none !important;
 }
 
 .unequip-btn:hover {
-    background: #555;
+    background: #f44336 !important;
     border-color: #888;
 }
 
-.equipment-stats-summary {
-    flex: 0 0 250px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid #333;
-    padding: 15px;
-    border-radius: 5px;
-    height: fit-content;
-}
-
-.equipment-stats-summary h3 {
-    margin-top: 0;
-    color: #c9aa71;
-    border-bottom: 1px solid #444;
-    padding-bottom: 10px;
-}
-
-.totals-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.total-category {
-    line-height: 1.6;
-}
-
-.total-category strong {
-    color: #c9aa71;
-    display: block;
-    margin-bottom: 3px;
-}
-/* END OF DYNAMIC DISPLAY - CURRENT EXILE EQUIPMENT */
-
-/* DYNAMIC DISPLAY - Passive Tree */
-/* Passives Display */
+/* ===== PASSIVES DISPLAY ===== */
 .passives-header {
     display: flex;
     justify-content: space-between;
@@ -447,10 +673,8 @@ body {
     color: #4CAF50;
     font-size: 0.9em;
 }
-/* END OF DYNAMIC DISPLAY - Passive Tree */
 
-/* Passive Selection Modal */
-/* Passive Selection Modal */
+/* ===== PASSIVE SELECTION MODAL ===== */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -519,56 +743,54 @@ body {
 }
 
 .passive-choice-tier.normal {
+    background: rgba(170, 170, 170, 0.2);
     color: #aaa;
-    border: 1px solid #aaa;
 }
 
 .passive-choice-tier.notable {
+    background: rgba(66, 135, 245, 0.2);
     color: #4287f5;
-    border: 1px solid #4287f5;
 }
 
 .passive-choice-tier.keystone {
+    background: rgba(255, 140, 0, 0.2);
     color: #ff8c00;
-    border: 1px solid #ff8c00;
 }
 
 .passive-choice-description {
-    color: #ccc;
-    margin: 0;
-    font-size: 0.95em;
+    color: #aaa;
+    font-size: 0.9em;
 }
 
 .passive-modal-actions {
     display: flex;
-    justify-content: center;
     gap: 15px;
+    justify-content: center;
 }
 
 .passive-modal-actions button {
     padding: 10px 20px;
-    font-size: 1em;
-    cursor: pointer;
     border: none;
-    border-radius: 3px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
 }
 
 #reroll-passive-btn {
-    background: #f39c12;
+    background: #FF9800;
     color: white;
 }
 
 #reroll-passive-btn:hover:not(:disabled) {
-    background: #e67e22;
+    background: #F57C00;
 }
 
 #reroll-passive-btn:disabled {
-    background: #555;
-    color: #999;
+    background: #666;
     cursor: not-allowed;
+    opacity: 0.5;
 }
 
-/* Selection state for passive choices */
 .passive-choice.selected {
     border-color: #4CAF50;
     background: rgba(76, 175, 80, 0.1);
@@ -584,135 +806,133 @@ body {
 }
 
 #confirm-passive-btn:disabled {
-    background: #555;
-    color: #999;
+    background: #666;
     cursor: not-allowed;
+    opacity: 0.5;
 }
-/* End of Passive Selection Modal */
 
-/* WORLD MAP DYNAMIC DISPLAY */
-/* World Map Display */
+/* ===== WORLD MAP DISPLAY ===== */
 .world-map-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
     height: 100%;
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
 }
 
 .world-map-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(3, 1fr);
     gap: 10px;
-    max-width: 600px;
-    max-height: 400px;
-    margin: 20px auto;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #333;
+    padding: 15px;
+    border-radius: 5px;
 }
 
 .world-map-cell {
-    background: rgba(0, 0, 0, 0.5);
-    border: 2px solid #333;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid #444;
     border-radius: 5px;
-    padding: 20px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    aspect-ratio: 1;
+    text-align: center;
 }
 
 .world-map-cell.discovered {
-    background: rgba(0, 0, 0, 0.7);
     border-color: #666;
+    background: rgba(0, 0, 0, 0.4);
 }
 
 .world-map-cell.discovered:hover {
-    border-color: #c9aa71;
-    background: rgba(201, 170, 113, 0.1);
+    border-color: #888;
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .world-map-cell.selected {
     border-color: #c9aa71;
-    background: rgba(201, 170, 113, 0.2);
+    background: rgba(201, 170, 113, 0.1);
 }
 
 .world-map-cell.undiscovered {
-    color: #444;
+    opacity: 0.3;
     cursor: default;
 }
 
 .area-name {
     font-weight: bold;
     color: #c9aa71;
-    text-align: center;
     margin-bottom: 5px;
+    font-size: 0.9em;
 }
 
 .area-level {
-    font-size: 0.9em;
     color: #888;
+    font-size: 0.8em;
 }
 
-/* Mission Panel */
 .area-missions-panel {
     background: rgba(0, 0, 0, 0.3);
-    border: 1px solid #444;
+    border: 1px solid #333;
     border-radius: 5px;
     padding: 15px;
-    margin-top: 20px;
+    overflow-y: auto;
 }
 
 .mission-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-top: 10px;
+    margin-top: 15px;
 }
 
 .mission-item {
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.4);
     border: 1px solid #444;
-    padding: 10px;
     border-radius: 3px;
+    padding: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .mission-item:hover:not(.on-cooldown):not(.assigned):not(.no-exile) {
-    border-color: #c9aa71;
-    background: rgba(201, 170, 113, 0.1);
+    border-color: #666;
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .mission-item.on-cooldown {
     opacity: 0.5;
-    cursor: not-allowed;
+    cursor: default;
 }
 
 .mission-item.assigned {
-    border-color: #4CAF50;
-    background: rgba(76, 175, 80, 0.1);
+    border-color: #2196F3;
+    background: rgba(33, 150, 243, 0.1);
 }
 
 .mission-item.no-exile {
     opacity: 0.7;
-    cursor: not-allowed;
+    cursor: default;
 }
 
 .mission-name {
     font-weight: bold;
-    color: #c9aa71;
+    margin-bottom: 5px;
 }
 
 .mission-type {
-    font-size: 0.9em;
     color: #888;
+    font-size: 0.9em;
 }
 
 .mission-status {
-    font-size: 0.85em;
-    color: #aaa;
+    color: #666;
+    font-size: 0.8em;
     margin-top: 5px;
 }
 
@@ -720,39 +940,35 @@ body {
     text-align: center;
     color: #666;
     font-style: italic;
+    padding: 20px;
 }
-/* End of WORLD MAP DYNAMIC DISPLAY */
 
-
-/* END OF DYNAMIC DISPLAY */
-
-
-/* Resource Bar (spans full width at top) */
+/* ===== RESOURCE BAR ===== */
 .resource-bar {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     height: 40px;
-    background-color: #1a1a1a;
+    background-color: #333;
     border-bottom: 2px solid #444;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 0 20px;
     z-index: 100;
+    gap: 30px;
 }
 
 .resources-left {
     display: flex;
-    align-items: center;
     gap: 30px;
+    flex: 1;
 }
 
 .resource-item {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
 }
 
 .resource-label {
@@ -761,78 +977,180 @@ body {
 }
 
 .resource-value {
-    color: #c9aa71;
+    color: #fff;
     font-weight: bold;
+    font-size: 1em;
 }
 
-/* End Turn Button */
 .end-turn-btn {
-    padding: 5px 75px;
-    background-color: #c9aa71;
-    color: #1a1a1a;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
     border: none;
-    border-radius: 3px;
-    font-weight: bold;
-    font-size: 0.9em;
+    padding: 8px 20px;
+    border-radius: 5px;
     cursor: pointer;
+    font-weight: bold;
     transition: all 0.3s ease;
-    height: 30px;
 }
 
 .end-turn-btn:hover {
-    background-color: #e6c585;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
 .end-turn-btn:active {
-    transform: scale(0.98);
+    transform: translateY(0);
 }
 
 .end-turn-btn.has-assignments {
     animation: pulse-glow 2s infinite;
 }
 
+/* ===== ANIMATIONS ===== */
 @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 5px rgba(201, 170, 113, 0.5); }
-    50% { box-shadow: 0 0 20px rgba(201, 170, 113, 0.8); }
+    0%, 100% { 
+        box-shadow: 0 0 5px rgba(76, 175, 80, 0.7);
+    }
+    50% { 
+        box-shadow: 0 0 20px rgba(76, 175, 80, 1), 0 0 30px rgba(76, 175, 80, 0.8);
+    }
 }
 
+@keyframes slot-pulse {
+    0% { 
+        box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+        border-color: #4CAF50;
+    }
+    50% { 
+        box-shadow: 0 0 25px rgba(76, 175, 80, 0.9);
+        border-color: #66BB6A;
+    }
+    100% { 
+        box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+        border-color: #4CAF50;
+    }
+}
 
-/* Exile Manager Row UI */
-/* Button Styles */
+@keyframes text-pulse {
+    0% { opacity: 0.8; }
+    50% { opacity: 1; }
+    100% { opacity: 0.8; }
+}
+
+/* ===== UTILITY BUTTONS ===== */
 .btn-small {
-    padding: 5px 10px;
-    background-color: #c9aa71;
-    color: #1a1a1a;
-    border: none;
-    border-radius: 3px;
+    padding: 4px 8px;
+    font-size: 0.8em;
+    background: #444;
+    border: 1px solid #666;
+    color: #ccc;
     cursor: pointer;
-    font-size: 0.9em;
+    border-radius: 3px;
     transition: all 0.2s ease;
 }
 
 .btn-small:hover {
-    background-color: #e6c585;
+    background: #555;
+    border-color: #888;
 }
 
-/* Exile Row State Styles */
-.exile-row.idle {
-    border-color: #444;
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Medium-large screens */
+@media (max-width: 1400px) {
+    .equipment-stats-summary {
+        flex: 0 0 250px; /* Slightly smaller on medium-large screens */
+        width: 250px;
+        max-width: 250px;
+        min-width: 220px;
+    }
 }
 
-.exile-row.assigned {
-    border-color: #c9aa71;
-    background-color: #3a3a2a;
+/* Medium screens */
+@media (max-width: 1200px) {
+    .equipment-grid-compact {
+        grid-template-columns: repeat(4, 1fr); /* 4 columns for medium screens */
+        grid-template-rows: repeat(3, 1fr); /* Adjust rows accordingly */
+    }
+    
+    .equipment-stats-summary {
+        flex: 0 0 220px; /* Even smaller on smaller screens */
+        width: 220px;
+        max-width: 220px;
+        min-width: 200px;
+    }
 }
 
-.exile-row.in_mission {
-    border-color: #4169E1;
-    background-color: #2a2a3a;
+/* Small-medium screens - stack layout */
+@media (max-width: 1000px) {
+    .equipment-container {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .equipment-grid-compact {
+        grid-template-columns: repeat(5, 1fr); /* Back to 5 columns when stacked */
+        grid-template-rows: repeat(2, 1fr);
+        max-width: 100%;
+        width: 100%;
+        flex: none; /* Don't flex when stacked vertically */
+        height: auto;
+        min-height: 280px; /* Ensure minimum usable height */
+    }
+    
+    .compact-slot {
+        min-height: 50px;
+    }
+    
+    .equipment-stats-summary {
+        width: 100%;
+        max-width: 100%;
+        min-width: 100%;
+        flex: none;
+        height: auto;
+        min-height: 200px;
+    }
 }
 
-/* Message Styles */
-.idle-message, .assigned-message, .mission-progress {
-    text-align: center;
-    color: #888;
-    font-style: italic;
+/* Small screens */
+@media (max-width: 600px) {
+    .equipment-grid-compact {
+        grid-template-columns: repeat(3, 1fr); /* 3 columns for smaller screens */
+        grid-template-rows: repeat(4, 1fr); /* 4 rows to accommodate 10 slots */
+        gap: 3px;
+        padding: 5px;
+    }
+    
+    .compact-slot {
+        min-height: 45px;
+        padding: 2px;
+    }
+    
+    .item-name-compact {
+        font-size: clamp(0.4em, 1.2vw, 0.55em);
+    }
+    
+    .slot-label-compact {
+        font-size: clamp(0.35em, 1vw, 0.5em);
+    }
 }
-/* END OF Exile Manager Row UI */
+
+/* Very small screens */
+@media (max-width: 400px) {
+    .equipment-grid-compact {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns for very small screens */
+        grid-template-rows: repeat(5, 1fr); /* 5 rows to accommodate 10 slots */
+        padding: 3px;
+        gap: 2px;
+    }
+    
+    .compact-slot {
+        min-height: 40px;
+        padding: 1px;
+    }
+    
+    .item-name-compact {
+        font-size: clamp(0.35em, 1vw, 0.5em);
+        -webkit-line-clamp: 2; /* Reduce to 2 lines on very small screens */
+    }
+}

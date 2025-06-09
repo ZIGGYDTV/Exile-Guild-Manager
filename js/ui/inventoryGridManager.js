@@ -47,6 +47,7 @@ const inventoryGridManager = {
     tabs: new Map(),
     activeTab: 'tab1',
     selectedItem: null,
+    selectedItemForEquipping: null, // Track item selected for click-to-equip
     draggedItem: null,
     tooltipElement: null,
     gridContainer: null,
@@ -90,6 +91,26 @@ const inventoryGridManager = {
     setupEventListeners() {
         // Keyboard events
         document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+        
+        // Ctrl key state tracking for visual feedback
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && this.gridContainer) {
+                this.gridContainer.classList.add('ctrl-held');
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (!e.ctrlKey && this.gridContainer) {
+                this.gridContainer.classList.remove('ctrl-held');
+            }
+        });
+        
+        // Clear Ctrl state when window loses focus
+        window.addEventListener('blur', () => {
+            if (this.gridContainer) {
+                this.gridContainer.classList.remove('ctrl-held');
+            }
+        });
 
         // Mouse move for tooltip positioning
         document.addEventListener('mousemove', (e) => this.updateTooltipPosition(e));
@@ -108,7 +129,7 @@ const inventoryGridManager = {
                 cell.className = 'grid-cell';
                 cell.dataset.x = x;
                 cell.dataset.y = y;
-                cell.addEventListener('click', () => this.handleCellClick(x, y));
+                cell.addEventListener('click', (e) => this.handleCellClick(x, y, e));
                 cell.addEventListener('mouseenter', (e) => this.handleCellHover(e, x, y));
                 cell.addEventListener('mouseleave', () => this.hideTooltip());
                 container.appendChild(cell);
@@ -437,32 +458,79 @@ const inventoryGridManager = {
         if (item) {
             // Update the item detail panel
             this.updateItemDetailPanel(item);
+            
+            // Auto-enter click-to-equip mode for equipable items
+            if (item.slot && gameState.selectedExileId && this.canExileEquipItem(gameState.selectedExileId)) {
+                this.selectItemForEquipping(itemId);
+            } else {
+                // Clear click-to-equip selection if item is not equipable
+                this.clearSelectedItemForEquipping();
+            }
         } else {
             // Clear item detail panel
             this.clearItemDetailPanel();
+            this.clearSelectedItemForEquipping();
         }
 
+        // Update inventory display first, then refresh any active equipment display
         this.updateDisplay();
+        
+        // Extra refresh to ensure equipment display updates
+        if (typeof dynamicDisplayManager !== 'undefined') {
+            // Small delay to ensure inventory update completes first
+            setTimeout(() => {
+                dynamicDisplayManager.refreshCurrentTab();
+            }, 50);
+        }
     },
 
     // Handle cell click
-    handleCellClick(x, y) {
+    handleCellClick(x, y, event) {
         const tab = this.tabs.get(this.activeTab);
         if (!tab) return;
 
         const clickedItemId = tab.grid[y][x];
 
-        if (this.selectedItem && clickedItemId !== this.selectedItem) {
-            // Try to move selected item here
+        // Check for Ctrl+Click quick equip
+        if (event && event.ctrlKey && clickedItemId) {
+            // Find the item
+            let item = null;
+            for (const [_, tabData] of this.tabs) {
+                if (tabData.items.has(clickedItemId)) {
+                    item = tabData.items.get(clickedItemId).item;
+                    break;
+                }
+            }
+
+            if (item && item.slot) {
+                // Try to equip directly
+                const success = this.equipItem(clickedItemId);
+                if (success) {
+                    uiSystem.log(`⚡ Quick-equipped ${item.name}`, 'success');
+                } else {
+                    // Fall back to normal selection if equipping failed
+                    this.selectItem(clickedItemId);
+                }
+                this.updateDisplay();
+                return;
+            }
+        }
+
+        // Normal click behavior
+        if (clickedItemId) {
+            // Always select the clicked item (single-click selection)
+            this.selectItem(clickedItemId);
+        } else if (this.selectedItem) {
+            // Try to move selected item to empty space
             this.moveItem(this.selectedItem, x, y, this.activeTab);
             this.selectedItem = null;
-        } else if (clickedItemId) {
-            // Select the clicked item
-            this.selectItem(clickedItemId);
+            this.clearItemDetailPanel();
+            this.clearSelectedItemForEquipping();
         } else {
-            // Deselect
+            // Clear selection when clicking empty space
             this.selectedItem = null;
             this.clearItemDetailPanel();
+            this.clearSelectedItemForEquipping();
         }
 
         this.updateDisplay();
@@ -552,6 +620,18 @@ const inventoryGridManager = {
         if (e.key.toLowerCase() === 'r' && this.selectedItem) {
             this.rotateItem(this.selectedItem);
         }
+        
+        // Cancel click-to-equip mode with Escape
+        if (e.key === 'Escape' && this.selectedItemForEquipping) {
+            this.clearSelectedItemForEquipping();
+            uiSystem.log('Click-to-equip cancelled', 'info');
+        }
+        
+        // Show help for keyboard shortcuts (F1 is universal help key)
+        if (e.key === 'F1') {
+            e.preventDefault(); // Prevent browser's F1 help
+            uiSystem.log('💡 Shortcuts: R=Rotate, Escape=Cancel, Ctrl+Click=Quick Equip, F1=Help', 'info');
+        }
     },
 
     // Switch tab
@@ -559,6 +639,8 @@ const inventoryGridManager = {
         if (this.tabs.has(tabId)) {
             this.activeTab = tabId;
             this.selectedItem = null;
+            // Clear click-to-equip selection when switching inventory tabs (but keep it when switching to equipment)
+            this.clearSelectedItemForEquipping();
             this.updateDisplay();
         }
     },
@@ -590,12 +672,15 @@ const inventoryGridManager = {
 
         // Render items
         tab.items.forEach((itemData, itemId) => {
-            this.renderItem(itemData, itemId === this.selectedItem);
+            const isSelected = itemId === this.selectedItem;
+            const isSelectedForEquipping = this.selectedItemForEquipping && 
+                                          this.selectedItemForEquipping.itemId === itemId;
+            this.renderItem(itemData, isSelected, isSelectedForEquipping);
         });
     },
 
     // Render individual item
-    renderItem(itemData, isSelected) {
+    renderItem(itemData, isSelected, isSelectedForEquipping = false) {
         const { item, x, y, rotation, locked } = itemData;
         const dims = this.getItemDimensions(item, rotation);
         const shape = this.getItemShape(item, rotation);
@@ -660,6 +745,15 @@ const inventoryGridManager = {
                             if (borders.right) cell.style.setProperty('border-right', '3px solid #c9aa71', 'important');
                             if (borders.bottom) cell.style.setProperty('border-bottom', '3px solid #c9aa71', 'important');
                             if (borders.left) cell.style.setProperty('border-left', '3px solid #c9aa71', 'important');
+                        }
+                        
+                        // Highlight if selected for equipping
+                        if (isSelectedForEquipping) {
+                            cell.classList.add('selected-for-equipping');
+                            if (borders.top) cell.style.setProperty('border-top', '3px solid #FF9800', 'important');
+                            if (borders.right) cell.style.setProperty('border-right', '3px solid #FF9800', 'important');
+                            if (borders.bottom) cell.style.setProperty('border-bottom', '3px solid #FF9800', 'important');
+                            if (borders.left) cell.style.setProperty('border-left', '3px solid #FF9800', 'important');
                         }
                     }
                 }
@@ -730,15 +824,15 @@ const inventoryGridManager = {
             // Armor pieces (from item names)
             'Stone Ring': '💍',
             'Wooden Ring': '💍',
-            'Bonecharm Amulet': '🔶',
+            'Bonecharm Amulet': '📿',
             'Pukashell Necklace': '📿',
             'Nail-studded Leather Belt': '▬',
             'Cord Belt': '▬',
             'Rawhide Mittens': '🧤',
-            'Single Leather Glove': '🥊',
-            'Rag Handwraps': '🥋',
+            'Single Leather Glove': '🧤',
+            'Rag Handwraps': '🧤',
             'PatchLeather Footwraps': '🥾',
-            'Gobletcapped Boots': '👢',
+            'Gobletcapped Boots': '🥾',
             'Rag Tunic': '🎽',
             'Patchleather Cap': '🎩',
             'Rag and Chain Cowl': '👑',
@@ -750,8 +844,8 @@ const inventoryGridManager = {
             'Axe': '⛏',
             'Mace': '⚒',
             'Dagger': '🗡',
-            'Wand': '🔮',
-            'Staff': '🏒',
+            'Wand': 'i',
+            'Staff': '|',
             'Bow': '🏹',
             'Two-Handed Sword': '⚔',
             'Two-Handed Axe': '⛏',
@@ -787,7 +881,7 @@ const inventoryGridManager = {
             if (name.includes('sword') || name.includes('blade')) icon = '⚔';
             else if (name.includes('axe') || name.includes('hatchet')) icon = '⛏';
             else if (name.includes('mace') || name.includes('hammer') || name.includes('bar')) icon = '⚒';
-            else if (name.includes('staff') || name.includes('quarterstaff')) icon = '🏒';
+            else if (name.includes('staff') || name.includes('quarterstaff')) icon = '|';
             else if (name.includes('wand')) icon = 'i';
             else if (name.includes('bow')) icon = '🏹';
             else if (name.includes('ring')) icon = '💍';
@@ -795,7 +889,7 @@ const inventoryGridManager = {
             else if (name.includes('necklace')) icon = '📿';
             else if (name.includes('belt')) icon = '▬';
             else if (name.includes('glove') || name.includes('mitten')) icon = '🧤';
-            else if (name.includes('handwrap')) icon = '🥋';
+            else if (name.includes('handwrap')) icon = '🧤';
             else if (name.includes('boot')) icon = '🥾';
             else if (name.includes('footwrap')) icon = '🥾';
             else if (name.includes('tunic') || name.includes('chest') || name.includes('armor')) icon = '🎽';
@@ -849,6 +943,13 @@ const inventoryGridManager = {
         uiSystem.updateDisplay();
         game.saveGame();
 
+        // Clear selection if we sold the selected item
+        if (this.selectedItem === itemId) {
+            this.selectedItem = null;
+            this.clearItemDetailPanel();
+            this.clearSelectedItemForEquipping();
+        }
+
         // Update display
         this.updateDisplay();
         return true;
@@ -873,6 +974,236 @@ const inventoryGridManager = {
         });
 
         console.log(`Sold ${itemsToSell.length} ${rarity} items`);
+    },
+
+    // Check if exile can equip items (must be "in town")
+    canExileEquipItem(exileId) {
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        if (!exile) return false;
+        
+        // Exile must be idle, resting, or assigned (but not in_mission)
+        const allowedStatuses = ['idle', 'resting', 'assigned'];
+        return allowedStatuses.includes(exile.status);
+    },
+
+    // Equip item to currently selected exile
+    equipItem(itemId) {
+        // Check if there's a selected exile
+        if (!gameState.selectedExileId) {
+            uiSystem.log('No exile selected', 'error');
+            return false;
+        }
+
+        const exile = gameState.exiles.find(e => e.id === gameState.selectedExileId);
+        if (!exile) {
+            uiSystem.log('Selected exile not found', 'error');
+            return false;
+        }
+
+        // Check if exile can equip items (must be in town)
+        if (!this.canExileEquipItem(gameState.selectedExileId)) {
+            uiSystem.log(`${exile.name} cannot equip items while ${exile.status}`, 'error');
+            return false;
+        }
+
+        // Find the item in the grid
+        let item = null;
+        let tabId = null;
+        for (const [tid, tab] of this.tabs) {
+            if (tab.items.has(itemId)) {
+                item = tab.items.get(itemId).item;
+                tabId = tid;
+                break;
+            }
+        }
+
+        if (!item) {
+            uiSystem.log('Item not found', 'error');
+            return false;
+        }
+
+        // Check if item has a valid slot
+        if (!item.slot) {
+            uiSystem.log('Item cannot be equipped', 'error');
+            return false;
+        }
+
+        // Remove item from grid first
+        this.removeItemFromGrid(itemId, tabId);
+
+        // Use the existing equipment system to handle the equipping
+        const success = inventorySystem.equipItem(itemId, gameState.selectedExileId);
+        
+        if (success) {
+            // Clear selection after successful equip
+            this.selectedItem = null;
+            this.clearSelectedItemForEquipping();
+            this.clearItemDetailPanel();
+            
+            // Switch to equipment tab to show the player
+            if (typeof dynamicDisplayManager !== 'undefined') {
+                dynamicDisplayManager.switchTab('equipment');
+            }
+            
+            // Update displays
+            this.updateDisplay();
+            uiSystem.log(`Equipped ${item.name} to ${exile.name}`, 'success');
+            return true;
+        } else {
+            // If equipping failed, add the item back to inventory grid
+            this.addNewItemToInventory(item);
+            uiSystem.log('Failed to equip item', 'error');
+            return false;
+        }
+    },
+
+    // Select item for click-to-equip mode
+    selectItemForEquipping(itemId) {
+        // Find the item
+        let item = null;
+        for (const [_, tab] of this.tabs) {
+            if (tab.items.has(itemId)) {
+                item = tab.items.get(itemId).item;
+                break;
+            }
+        }
+
+        if (!item || !item.slot) {
+            uiSystem.log('Item cannot be equipped', 'error');
+            return;
+        }
+
+        // Check if we can equip to selected exile
+        if (!gameState.selectedExileId || !this.canExileEquipItem(gameState.selectedExileId)) {
+            const exile = gameState.exiles.find(e => e.id === gameState.selectedExileId);
+            const statusMsg = exile ? `${exile.name} cannot equip (${exile.status})` : 'No exile selected';
+            uiSystem.log(statusMsg, 'error');
+            return;
+        }
+
+        // Set the item for equipping
+        this.selectedItemForEquipping = { itemId, item };
+        
+        // Refresh the equipment display if it's currently active
+        if (typeof dynamicDisplayManager !== 'undefined') {
+            dynamicDisplayManager.refreshCurrentTab();
+        }
+        
+        // Show feedback (but don't auto-switch tabs)
+        const exile = gameState.exiles.find(e => e.id === gameState.selectedExileId);
+        uiSystem.log(`${item.name} ready to equip - check Equipment tab for glowing slots`, 'info');
+    },
+
+    // Clear the selected item for equipping
+    clearSelectedItemForEquipping() {
+        if (this.selectedItemForEquipping) {
+            this.selectedItemForEquipping = null;
+            // Refresh equipment display to remove glow effects
+            if (typeof dynamicDisplayManager !== 'undefined') {
+                dynamicDisplayManager.refreshCurrentTab();
+            }
+        }
+    },
+
+    // Get valid slots for the currently selected item
+    getValidSlotsForSelectedItem() {
+        if (!this.selectedItemForEquipping) return [];
+
+        const item = this.selectedItemForEquipping.item;
+        if (!item.slot) return [];
+
+        // Handle ring slots (can go in ring1 or ring2)
+        if (item.slot === 'ring') {
+            return ['ring1', 'ring2'];
+        }
+
+        // All other items have a single slot
+        return [item.slot];
+    },
+
+    // Equip item to specific slot (called from equipment slot click)
+    equipItemToSlot(targetSlot) {
+        if (!this.selectedItemForEquipping) return false;
+
+        const { itemId, item } = this.selectedItemForEquipping;
+        
+        // Validate the slot
+        const validSlots = this.getValidSlotsForSelectedItem();
+        if (!validSlots.includes(targetSlot)) {
+            uiSystem.log('Invalid slot for this item', 'error');
+            return false;
+        }
+
+        // Clear the click-to-equip selection first
+        this.clearSelectedItemForEquipping();
+        
+        // Use the existing equip logic but with specific target slot
+        return this.equipItemToSpecificSlot(itemId, targetSlot);
+    },
+
+    // Modified version of equipItem that allows specifying target slot
+    equipItemToSpecificSlot(itemId, targetSlot) {
+        // Check if there's a selected exile
+        if (!gameState.selectedExileId) {
+            uiSystem.log('No exile selected', 'error');
+            return false;
+        }
+
+        const exile = gameState.exiles.find(e => e.id === gameState.selectedExileId);
+        if (!exile) {
+            uiSystem.log('Selected exile not found', 'error');
+            return false;
+        }
+
+        // Check if exile can equip items (must be in town)
+        if (!this.canExileEquipItem(gameState.selectedExileId)) {
+            uiSystem.log(`${exile.name} cannot equip items while ${exile.status}`, 'error');
+            return false;
+        }
+
+        // Find the item in the grid
+        let item = null;
+        let tabId = null;
+        for (const [tid, tab] of this.tabs) {
+            if (tab.items.has(itemId)) {
+                item = tab.items.get(itemId).item;
+                tabId = tid;
+                break;
+            }
+        }
+
+        if (!item) {
+            uiSystem.log('Item not found', 'error');
+            return false;
+        }
+
+        // Remove item from grid first
+        this.removeItemFromGrid(itemId, tabId);
+
+        // Use the existing equipment system with specific target slot
+        const success = inventorySystem.equipItem(itemId, gameState.selectedExileId, targetSlot);
+        
+        if (success) {
+            // Clear selection after successful equip
+            this.selectedItem = null;
+            this.clearItemDetailPanel();
+            
+            // Update displays
+            this.updateDisplay();
+            
+            // Force refresh equipment display if currently viewing it
+            if (typeof dynamicDisplayManager !== 'undefined') {
+                dynamicDisplayManager.refreshCurrentTab();
+            }
+            
+            uiSystem.log(`Equipped ${item.name} to ${exile.name}'s ${targetSlot}`, 'success');
+            return true;
+        } else {
+            // If equipping failed, add the item back to inventory grid
+            this.addNewItemToInventory(item);
+            uiSystem.log('Failed to equip item', 'error');
+            return false;
+        }
     },
 
     // Toggle item lock
@@ -1010,6 +1341,24 @@ const inventoryGridManager = {
         // Update item actions
         const actionsContainer = document.getElementById('item-actions');
         if (actionsContainer) {
+            // Determine if this item can be equipped
+            const canEquip = item.slot && gameState.selectedExileId && this.canExileEquipItem(gameState.selectedExileId);
+            
+            // Get selected exile name for button text
+            let equipTitle = 'Equip item';
+            
+            if (gameState.selectedExileId) {
+                const exile = gameState.exiles.find(e => e.id === gameState.selectedExileId);
+                if (exile) {
+                    equipTitle = `Equip to ${exile.name}`;
+                    if (!this.canExileEquipItem(gameState.selectedExileId)) {
+                        equipTitle = `${exile.name} cannot equip (${exile.status})`;
+                    }
+                }
+            } else {
+                equipTitle = 'No exile selected';
+            }
+
             actionsContainer.style.display = 'flex';
             actionsContainer.innerHTML = `
                 <button onclick="inventoryGridManager.toggleItemLock(${item.id})" 
@@ -1017,6 +1366,11 @@ const inventoryGridManager = {
                         class="square-action-btn">
                     🔒
                 </button>
+                ${canEquip ? `<button onclick="inventoryGridManager.equipItem(${item.id})" 
+                        title="${equipTitle}" 
+                        class="square-action-btn equip-btn">
+                    ⤣
+                </button>` : ''}
                 <div style="display: flex; gap: 3px;">
                     <button onclick="inventorySystem.useChaosOrb(${item.id})" 
                             title="Use Chaos Orb" 

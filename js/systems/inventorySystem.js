@@ -102,6 +102,11 @@ const inventorySystem = {
             exileRowManager.updateRow(exileRowManager.getRowForExile(exileId), exile);
         }
 
+        // Update dynamic display if it's showing equipment
+        if (typeof dynamicDisplayManager !== 'undefined') {
+            dynamicDisplayManager.refreshCurrentTab();
+        }
+
         console.log(`Unequipped ${item.name} from ${exile.name}`);
         game.saveGame();
         return true;
@@ -327,10 +332,30 @@ const inventorySystem = {
 
     // === CRAFTING METHODS ===
 
+    // Helper function to find item anywhere (inventory or equipped)
+    findItemAnywhere(itemId) {
+        // First check inventory
+        let item = gameState.inventory.items.find(i => i.id === itemId);
+        if (item) return { item, location: 'inventory' };
+        
+        // Then check all exiles' equipment
+        for (const exile of gameState.exiles) {
+            for (const [slot, equippedItem] of Object.entries(exile.equipment)) {
+                if (equippedItem && equippedItem.id === itemId) {
+                    return { item: equippedItem, location: 'equipped', exile, slot };
+                }
+            }
+        }
+        
+        return null;
+    },
+
     // USE CHAOS ORB
     useChaosOrb(itemId) {
-        const item = gameState.inventory.items.find(i => i.id === itemId);
-        if (!item || gameState.resources.chaosOrbs < 1) return false;
+        const itemResult = this.findItemAnywhere(itemId);
+        if (!itemResult || gameState.resources.chaosOrbs < 1) return false;
+        
+        const { item, location, exile } = itemResult;
 
         // Get only non-implicit stats
         const currentStatKeys = Object.keys(item.stats);
@@ -394,11 +419,31 @@ const inventorySystem = {
         uiSystem.updateResourceDisplay();
 
         // Update displays
-        if (item.equipped) {
-            exileSystem.recalculateStats();
+        if (location === 'equipped') {
+            exileSystem.recalculateStats(exile);
             uiSystem.updateDisplay();
         }
         this.updateInventoryDisplay();
+        
+        // Update inventory grid manager if it exists
+        if (typeof inventoryGridManager !== 'undefined') {
+            // If this is the selected item, refresh the detail panel
+            if (inventoryGridManager.selectedItem === itemId) {
+                inventoryGridManager.updateItemDetailPanel(item);
+            }
+            inventoryGridManager.updateDisplay();
+        }
+        
+        // Update equipment display and detail panel for equipped items
+        if (typeof dynamicDisplayManager !== 'undefined') {
+            dynamicDisplayManager.refreshCurrentTab();
+            
+            // If this was an equipped item, refresh the detail panel too
+            if (location === 'equipped') {
+                dynamicDisplayManager.updateItemDetailPanelForEquipped(item, itemResult.slot, exile.id);
+            }
+        }
+        
         game.saveGame();
         characterScreenSystem.updateCharacterScreenIfOpen();
 
@@ -407,8 +452,10 @@ const inventorySystem = {
 
     // USE Exalt
     useExaltedOrb(itemId) {
-        const item = gameState.inventory.items.find(i => i.id === itemId);
-        if (!item || gameState.resources.exaltedOrbs < 1) return false;
+        const itemResult = this.findItemAnywhere(itemId);
+        if (!itemResult || gameState.resources.exaltedOrbs < 1) return false;
+        
+        const { item, location, exile } = itemResult;
 
         // Get current stat count (excluding implicits)
         const currentStatCount = Object.keys(item.stats).length;
@@ -513,11 +560,31 @@ const inventorySystem = {
         uiSystem.updateResourceDisplay();
 
         // Update displays
-        if (item.equipped) {
-            exileSystem.recalculateStats();
+        if (location === 'equipped') {
+            exileSystem.recalculateStats(exile);
             uiSystem.updateDisplay();
         }
         this.updateInventoryDisplay();
+        
+        // Update inventory grid manager if it exists
+        if (typeof inventoryGridManager !== 'undefined') {
+            // If this is the selected item, refresh the detail panel
+            if (inventoryGridManager.selectedItem === itemId) {
+                inventoryGridManager.updateItemDetailPanel(item);
+            }
+            inventoryGridManager.updateDisplay();
+        }
+        
+        // Update equipment display and detail panel for equipped items
+        if (typeof dynamicDisplayManager !== 'undefined') {
+            dynamicDisplayManager.refreshCurrentTab();
+            
+            // If this was an equipped item, refresh the detail panel too
+            if (location === 'equipped') {
+                dynamicDisplayManager.updateItemDetailPanelForEquipped(item, itemResult.slot, exile.id);
+            }
+        }
+        
         game.saveGame();
         characterScreenSystem.updateCharacterScreenIfOpen();
 

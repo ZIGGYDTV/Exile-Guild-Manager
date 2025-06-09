@@ -115,6 +115,29 @@
     z-index: 1;
 }
 
+.grid-cell.selected-for-equipping {
+    box-shadow: 0 0 15px rgba(255, 152, 0, 0.7) !important;
+    animation: equip-glow 1.5s infinite;
+    z-index: 2;
+}
+
+@keyframes equip-glow {
+    0% { box-shadow: 0 0 15px rgba(255, 152, 0, 0.7) !important; }
+    50% { box-shadow: 0 0 25px rgba(255, 152, 0, 0.9) !important; }
+    100% { box-shadow: 0 0 15px rgba(255, 152, 0, 0.7) !important; }
+}
+
+/* Ctrl-held visual feedback */
+.inventory-grid.ctrl-held .grid-cell.occupied {
+    cursor: crosshair !important;
+    transition: all 0.2s ease !important;
+}
+
+.inventory-grid.ctrl-held .grid-cell.occupied:hover {
+    transform: scale(1.05) !important;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.6) !important;
+}
+
 /* Adjust item icon positioning */
 .item-icon {
     position: absolute;
@@ -246,6 +269,20 @@
     border-color: #CD853F !important;
     background: #3a2a1a !important;
 }
+
+/* Equip button styling */
+.equip-btn {
+    border-color: #4CAF50 !important;
+    color: #4CAF50 !important;
+}
+
+.equip-btn:hover {
+    border-color: #66BB6A !important;
+    background: #1a3a1a !important;
+    color: #66BB6A !important;
+}
+
+
 
 /* Inventory Controls */
 .inventory-controls {
