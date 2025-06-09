@@ -74,7 +74,7 @@ const uiSystem = {
     //     document.getElementById('current-day-main').textContent = timeState.currentDay;
 
     //     // Update inventory count on main screen
-    //     const inventoryCount = gameState.inventory.backpack.length;
+    //     const inventoryCount = gameState.inventory.items.length;
     //     const countElement = document.getElementById('inventory-count-main');
     //     if (countElement) {
     //         countElement.textContent = `${inventoryCount}`;

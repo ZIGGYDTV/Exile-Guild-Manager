@@ -36,29 +36,29 @@ const game = {
         // Initialize world state for discovered areas if needed
         if (typeof areaDefinitions !== 'undefined') {
             Object.entries(areaDefinitions).forEach(([areaId, areaDef]) => {
-            if (areaDef.discovered && !worldState.areas[areaId]) {
-                // Initialize the area in world state
-                worldState.areas[areaId] = {
-                    discovered: true,
-                    totalScoutingProgress: 0,
-                    explorationProgress: 0,
-                    missions: {}
-                };
+                if (areaDef.discovered && !worldState.areas[areaId]) {
+                    // Initialize the area in world state
+                    worldState.areas[areaId] = {
+                        discovered: true,
+                        totalScoutingProgress: 0,
+                        explorationProgress: 0,
+                        missions: {}
+                    };
 
-                // Initialize discovered missions
-                Object.entries(areaDef.missions).forEach(([missionId, missionDef]) => {
-                    if (missionDef.discovered) {
-                        worldState.areas[areaId].missions[missionId] = {
-                            discovered: true,
-                            completions: 0,
-                            firstCompleted: false,
-                            lastCompleted: null,
-                            availableAgainOnDay: null
-                        };
-                    }
-                });
-            }
-        });
+                    // Initialize discovered missions
+                    Object.entries(areaDef.missions).forEach(([missionId, missionDef]) => {
+                        if (missionDef.discovered) {
+                            worldState.areas[areaId].missions[missionId] = {
+                                discovered: true,
+                                completions: 0,
+                                firstCompleted: false,
+                                lastCompleted: null,
+                                availableAgainOnDay: null
+                            };
+                        }
+                    });
+                }
+            });
         } else {
             console.log("areaDefinitions not loaded yet - skipping area initialization");
         }
@@ -76,6 +76,29 @@ const game = {
                 }
             }
         });
+
+        // Initialize inventory grid
+        inventoryGridManager.init();
+
+        // Since inventory is always shown, initialize it immediately
+        const gridContainer = document.getElementById('inventory-grid');
+        if (gridContainer && !inventoryGridManager.gridContainer) {
+            inventoryGridManager.createGrid(gridContainer);
+        }
+
+        // Set up inventory tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+                inventoryGridManager.switchTab(button.dataset.tab);
+            });
+        });
+
+        // Initialize dynamic display manager
+        if (typeof dynamicDisplayManager !== 'undefined') {
+            dynamicDisplayManager.init();
+        }
     },
 
 
@@ -248,8 +271,23 @@ const game = {
                     delete parsedSave.exile;
                 }
 
-                // Load the save data - CRITICAL FIX: Use parsedSave.gameState for proper structure
-                Object.assign(gameState, parsedSave.gameState || parsedSave);
+                // Load the save data - CRITICAL FIX: Load all three state objects
+                if (parsedSave.gameState) {
+                    Object.assign(gameState, parsedSave.gameState);
+                } else {
+                    // Handle older save format that didn't separate states
+                    Object.assign(gameState, parsedSave);
+                }
+
+                // Load world state if present
+                if (parsedSave.worldState) {
+                    Object.assign(worldState, parsedSave.worldState);
+                }
+
+                // Load turn state if present
+                if (parsedSave.turnState) {
+                    Object.assign(turnState, parsedSave.turnState);
+                }
 
                 // If we have exiles but no selected one, select the first
                 if (gameState.exiles.length > 0 && !gameState.selectedExileId) {
@@ -262,6 +300,9 @@ const game = {
                 if (typeof exileRowManager !== 'undefined') {
                     exileRowManager.refreshAllRows();
                 }
+
+                // Update UI to show loaded resources, turn counter, etc.
+                uiSystem.updateDisplay();
 
             } catch (error) {
                 console.error("Failed to load save:", error);

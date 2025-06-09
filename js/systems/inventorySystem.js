@@ -88,6 +88,11 @@ const inventorySystem = {
 
         // Add back to inventory
         gameState.inventory.items.push(item);
+        
+        // Update inventory grid if it exists
+        if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.gridContainer) {
+            inventoryGridManager.addNewItemToInventory(item);
+        }
 
         // Recalculate stats
         exileSystem.recalculateStats(exile);
@@ -177,7 +182,7 @@ const inventorySystem = {
     },
 
     equipItemFromModal(itemId) {
-        const item = gameState.inventory.backpack.find(i => i.id === itemId);
+        const item = gameState.inventory.items.find(i => i.id === itemId);
         if (!item) return;
 
         // Determine the correct slot
@@ -201,19 +206,19 @@ const inventorySystem = {
 
     deleteItem(itemId) {
         if (confirm("Are you sure you want to delete this item?")) {
-            gameState.inventory.backpack = gameState.inventory.backpack.filter(i => i.id !== itemId);
+            gameState.inventory.items = gameState.inventory.items.filter(i => i.id !== itemId);
             this.updateInventoryModalDisplay();
             game.saveGame();
 
             // Update counts
-            const count = gameState.inventory.backpack.length;
+            const count = gameState.inventory.items.length;
             document.getElementById('modal-inventory-count').textContent = `${count}`;
             document.getElementById('inventory-count-main').textContent = `${count}`;
         }
     },
 
     sellItem(itemId) {
-        const item = gameState.inventory.backpack.find(i => i.id === itemId);
+        const item = gameState.inventory.items.find(i => i.id === itemId);
         if (!item) return;
 
         const sellValue = this.calculateItemSellValue(item);
@@ -248,8 +253,8 @@ const inventorySystem = {
     },
 
     completeSellItem(itemId, item, sellValue) {
-        // Remove item from backpack
-        gameState.inventory.backpack = gameState.inventory.backpack.filter(i => i.id !== itemId);
+        // Remove item from inventory
+        gameState.inventory.items = gameState.inventory.items.filter(i => i.id !== itemId);
 
         // Add gold
         gameState.resources.gold += sellValue;
@@ -280,7 +285,7 @@ const inventorySystem = {
         game.saveGame();
 
         // Update counts
-        const count = gameState.inventory.backpack.length;
+        const count = gameState.inventory.items.length;
         document.getElementById('modal-inventory-count').textContent = `${count}`;
         document.getElementById('inventory-count-main').textContent = `${count}`;
     },
@@ -324,7 +329,7 @@ const inventorySystem = {
 
     // USE CHAOS ORB
     useChaosOrb(itemId) {
-        const item = gameState.inventory.backpack.find(i => i.id === itemId);
+        const item = gameState.inventory.items.find(i => i.id === itemId);
         if (!item || gameState.resources.chaosOrbs < 1) return false;
 
         // Get only non-implicit stats
@@ -402,7 +407,7 @@ const inventorySystem = {
 
     // USE Exalt
     useExaltedOrb(itemId) {
-        const item = gameState.inventory.backpack.find(i => i.id === itemId);
+        const item = gameState.inventory.items.find(i => i.id === itemId);
         if (!item || gameState.resources.exaltedOrbs < 1) return false;
 
         // Get current stat count (excluding implicits)
@@ -570,14 +575,14 @@ const inventorySystem = {
         const inventoryCount = document.getElementById('inventory-count');
 
         if (inventoryCount) {
-            inventoryCount.textContent = `(${gameState.inventory.backpack.length})`;
+            inventoryCount.textContent = `(${gameState.inventory.items.length})`;
         }
 
         if (inventoryElement) {
-            if (gameState.inventory.backpack.length === 0) {
+            if (gameState.inventory.items.length === 0) {
                 inventoryElement.innerHTML = '<div style="color: #666; text-align: center;">No items in inventory</div>';
             } else {
-                inventoryElement.innerHTML = gameState.inventory.backpack.map(item => `
+                inventoryElement.innerHTML = gameState.inventory.items.map(item => `
         <div class="inventory-item ${item.rarity}">
             <div class="item-name ${item.rarity}">${item.name}</div>
             <div class="item-type">${item.slot}</div>
@@ -607,12 +612,12 @@ const inventorySystem = {
     updateInventoryModalDisplay() {
         const container = document.getElementById('inventory-items-grid');
 
-        if (gameState.inventory.backpack.length === 0) {
+        if (gameState.inventory.items.length === 0) {
             container.innerHTML = '<div style="color: #666; text-align: center; grid-column: 1/-1;">No items in inventory</div>';
             return;
         }
 
-        container.innerHTML = gameState.inventory.backpack.map(item => {
+        container.innerHTML = gameState.inventory.items.map(item => {
             const displayName = item.name;
             const displayColor = rarityDB.getRarity(item.rarity)?.color || '#888';
             const sellValue = this.calculateItemSellValue(item);
@@ -772,7 +777,7 @@ const inventorySystem = {
         // Handle ring slots
         const itemSlot = (slot === 'ring1' || slot === 'ring2') ? 'ring' : slot;
 
-        return gameState.inventory.backpack.filter(item => {
+        return gameState.inventory.items.filter(item => {
             return item.slot === itemSlot;
         });
     },
@@ -809,7 +814,7 @@ const inventorySystem = {
         }
 
         // Update inventory count
-        const count = gameState.inventory.backpack.length;
+        const count = gameState.inventory.items.length;
         document.getElementById('modal-inventory-count').textContent = `${count}`;
         document.getElementById('inventory-count-main').textContent = `${count}`;
 

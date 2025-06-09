@@ -179,19 +179,44 @@ const exileRowManager = {
         this.openMissionAssignment(rowId);
     },
 
-    // Placeholder for unassignment
     unassign(rowId) {
-        console.log(`Unassigning exile in row ${rowId}`);
-        // Will update exile status
+        const rowState = this.rowStates[rowId];
+        if (!rowState || !rowState.exileId) return;
+
+        const exile = gameState.exiles.find(e => e.id === rowState.exileId);
+        if (!exile) return;
+
+        // Find and remove assignment
+        if (turnState.assignments) {
+            const assignmentIndex = turnState.assignments.findIndex(a => a.exileId === exile.id);
+            if (assignmentIndex !== -1) {
+                turnState.assignments.splice(assignmentIndex, 1);
+                uiSystem.log(`${exile.name} unassigned from mission`, "info");
+            }
+        }
+
+        // Update exile status
+        exile.status = 'idle';
+
+        // Update the row display
+        this.updateRow(rowId, exile);
+
+        // Refresh dynamic display if on world tab
+        if (typeof dynamicDisplayManager !== 'undefined' && dynamicDisplayManager.currentTab === 'world') {
+            dynamicDisplayManager.refreshCurrentTab();
+        }
+
+        // Save game state
+        game.saveGame();
     },
 
     // Helper method to find row for an exile
-getRowForExile(exileId) {
-    for (let rowId in this.rowStates) {
-        if (this.rowStates[rowId].exileId === exileId) {
-            return parseInt(rowId);
+    getRowForExile(exileId) {
+        for (let rowId in this.rowStates) {
+            if (this.rowStates[rowId].exileId === exileId) {
+                return parseInt(rowId);
+            }
         }
+        return null;
     }
-    return null;
-}
 };

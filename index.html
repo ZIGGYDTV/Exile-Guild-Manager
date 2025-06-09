@@ -14,32 +14,32 @@
 
 
 <body>
- <!-- Resource Bar (spans full width at top) -->
-<div class="resource-bar">
-    <div class="resources-left">
-        <div class="resource-item">
-            <span class="resource-label">Gold:</span>
-            <span class="resource-value" id="gold">0</span>
+    <!-- Resource Bar (spans full width at top) -->
+    <div class="resource-bar">
+        <div class="resources-left">
+            <div class="resource-item">
+                <span class="resource-label">Gold:</span>
+                <span class="resource-value" id="gold">0</span>
+            </div>
+            <div class="resource-item">
+                <span class="resource-label">Chaos Orbs:</span>
+                <span class="resource-value" id="chaos-orbs">0</span>
+            </div>
+            <div class="resource-item">
+                <span class="resource-label">Exalted Orbs:</span>
+                <span class="resource-value" id="exalted-orbs">0</span>
+            </div>
+            <div class="resource-item">
+                <span class="resource-label">Turn:</span>
+                <span class="resource-value" id="current-turn">1</span>
+            </div>
         </div>
-        <div class="resource-item">
-            <span class="resource-label">Chaos Orbs:</span>
-            <span class="resource-value" id="chaos-orbs">0</span>
-        </div>
-        <div class="resource-item">
-            <span class="resource-label">Exalted Orbs:</span>
-            <span class="resource-value" id="exalted-orbs">0</span>
-        </div>
-        <div class="resource-item">
-            <span class="resource-label">Turn:</span>
-            <span class="resource-value" id="current-turn">1</span>
-        </div>
+
+        <!-- End Turn Button -->
+        <button class="end-turn-btn" id="end-turn-btn" onclick="missionSystem.processDay()">
+            End Turn (Enter)
+        </button>
     </div>
-    
-    <!-- End Turn Button -->
-    <button class="end-turn-btn" id="end-turn-btn" onclick="missionSystem.processDay()">
-        End Turn (Enter)
-    </button>
-</div>
 
     <!-- Main Container -->
     <div class="main-container">
@@ -197,129 +197,165 @@
                 </div>
             </div>
 
-            <!-- Inventory Panel -->
-            <div class="inventory-panel" id="inventory-panel">
+            <!-- Inventory Panel (separate from dynamic display) -->
+            <div id="inventory-panel" class="panel">
+                <!-- Vertical tabs on the left -->
                 <div class="inventory-tabs">
-                    <button class="inventory-tab active" data-tab="items">TAB 1</button>
-                    <button class="inventory-tab" data-tab="materials">TAB 2</button>
-                    <button class="inventory-tab" data-tab="currency">TAB 3</button>
+                    <button class="tab-button active" data-tab="tab1">1</button>
+                    <button class="tab-button" data-tab="tab2">2</button>
+                    <button class="tab-button" data-tab="tab3">3</button>
+                    <button class="tab-button" data-tab="tab4">4</button>
                 </div>
-                <div class="inventory-content">
-                    <div class="inventory-grid" id="inventory-grid">
-                        <!-- Item grid will go here -->
+
+                <!-- Main inventory container -->
+                <div class="inventory-container">
+                    <!-- Left side: Grid -->
+                    <div class="inventory-grid-wrapper">
+                        <div id="inventory-grid">
+                            <!-- Grid cells will be generated here -->
+                        </div>
+
+                        <!-- Sell controls -->
+                        <div class="inventory-controls">
+                            <button onclick="inventoryGridManager.sellAllByRarity('Common')">Sell All Common</button>
+                            <button onclick="inventoryGridManager.sellAllByRarity('Magic')">Sell All Magic</button>
+                            <button onclick="inventoryGridManager.sellAllByRarity('Rare')">Sell All Rare</button>
+                        </div>
                     </div>
-                    <div class="item-detail-panel" id="item-detail">
-                        <!-- Selected item details will go here -->
+
+                    <!-- Right side: Item details -->
+                    <div class="item-detail-panel">
+                        <div id="item-detail-content">
+                            <p class="no-item-selected">Select an item to view details</p>
+                        </div>
+
+                        <!-- Item actions -->
+                        <div id="item-actions" style="display: none;">
+                            <button id="lock-item-button"
+                                onclick="inventoryGridManager.toggleItemLock(inventoryGridManager.selectedItem)">
+                                🔒 Lock Item
+                            </button>
+                            <button id="sell-item-button"
+                                onclick="inventoryGridManager.sellItem(inventoryGridManager.selectedItem)">
+                                💰 Sell Item
+                            </button>
+                            <button id="craft-item-button" onclick="game.craftItem(inventoryGridManager.selectedItem)">
+                                🔨 Craft Item
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Modal Support -->
-    <!-- Passive Selection Modal -->
-    <div id="passive-selection-modal" class="modal-overlay" style="display: none;" onclick="passiveSystem.handlePassiveModalClick(event)">
-        <div class="modal-content passive-modal">
-            <h2 id="passive-modal-title">Choose Your Passive</h2>
-            
-            <div class="passive-choices">
-                <!-- Choice 1 -->
-                <div class="passive-choice" id="passive-choice-1" onclick="passiveSystem.selectChoice(1)">
-                    <div class="passive-choice-header">
-                        <span class="passive-choice-name">Loading...</span>
-                        <span class="passive-choice-tier">normal</span>
+        <!-- Modal Support -->
+        <!-- Passive Selection Modal -->
+        <div id="passive-selection-modal" class="modal-overlay" style="display: none;"
+            onclick="passiveSystem.handlePassiveModalClick(event)">
+            <div class="modal-content passive-modal">
+                <h2 id="passive-modal-title">Choose Your Passive</h2>
+
+                <div class="passive-choices">
+                    <!-- Choice 1 -->
+                    <div class="passive-choice" id="passive-choice-1" onclick="passiveSystem.selectChoice(1)">
+                        <div class="passive-choice-header">
+                            <span class="passive-choice-name">Loading...</span>
+                            <span class="passive-choice-tier">normal</span>
+                        </div>
+                        <p class="passive-choice-description">Loading...</p>
                     </div>
-                    <p class="passive-choice-description">Loading...</p>
-                </div>
-                
-                <!-- Choice 2 -->
-                <div class="passive-choice" id="passive-choice-2" onclick="passiveSystem.selectChoice(2)">
-                    <div class="passive-choice-header">
-                        <span class="passive-choice-name">Loading...</span>
-                        <span class="passive-choice-tier">normal</span>
+
+                    <!-- Choice 2 -->
+                    <div class="passive-choice" id="passive-choice-2" onclick="passiveSystem.selectChoice(2)">
+                        <div class="passive-choice-header">
+                            <span class="passive-choice-name">Loading...</span>
+                            <span class="passive-choice-tier">normal</span>
+                        </div>
+                        <p class="passive-choice-description">Loading...</p>
                     </div>
-                    <p class="passive-choice-description">Loading...</p>
                 </div>
-            </div>
-            
-            <div class="passive-modal-actions">
-                <button id="confirm-passive-btn" onclick="passiveSystem.confirmPassive()" disabled>Confirm Selection</button>
-                <button id="reroll-passive-btn" onclick="passiveSystem.rerollPassives()">Reroll (X gold)</button>
-                <button onclick="passiveSystem.closePassiveSelection()">Cancel</button>
+
+                <div class="passive-modal-actions">
+                    <button id="confirm-passive-btn" onclick="passiveSystem.confirmPassive()" disabled>Confirm
+                        Selection</button>
+                    <button id="reroll-passive-btn" onclick="passiveSystem.rerollPassives()">Reroll (X gold)</button>
+                    <button onclick="passiveSystem.closePassiveSelection()">Cancel</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- END OF Modal Support -->
+        <!-- END OF Modal Support -->
 
-    <!-- SCRIPTS MUST GO LAST html elements need to be loaded for these to interact with -->
-    <script src="js/gameState.js"></script>
-    <script src="js/data/passives.js"></script>
-    <script src="js/nameGenerator.js"></script>
-    <script src="js/systems/exileFactory.js"></script>
+        <!-- SCRIPTS MUST GO LAST html elements need to be loaded for these to interact with -->
+        <script src="js/gameState.js"></script>
+        <script src="js/data/passives.js"></script>
+        <script src="js/nameGenerator.js"></script>
+        <script src="js/systems/exileFactory.js"></script>
 
-    <!-- World system data files -->
-    <script src="js/data/missionTypes.js"></script>
-    <script src="js/data/areas.js"></script>
+        <!-- World system data files -->
+        <script src="js/data/missionTypes.js"></script>
+        <script src="js/data/areas.js"></script>
 
-    <!-- World system logic -->
-    <script src="js/systems/worldSystem.js"></script>
+        <!-- World system logic -->
+        <script src="js/systems/worldSystem.js"></script>
 
-    <!-- New game system modules -->
-    <script type="module">
-        // Import data systems
-        import { monsterDB } from './js/data/monsters.js';
+        <!-- New game system modules -->
+        <script type="module">
+            // Import data systems
+            import { monsterDB } from './js/data/monsters.js';
 
-        // Import existing item systems
-        import { itemDB } from './js/systems/itemSystem.js';
-        import { statDB } from './js/systems/statSystem.js';
-        import { rarityDB } from './js/systems/raritySystem.js';
+            // Import existing item systems
+            import { itemDB } from './js/systems/itemSystem.js';
+            import { statDB } from './js/systems/statSystem.js';
+            import { rarityDB } from './js/systems/raritySystem.js';
 
-        // Import new game systems
-        import { exileSystem } from './js/systems/exileSystem.js';
-        import { combatSystem } from './js/systems/combatSystem.js';
-        import { missionSystem } from './js/systems/missionSystem.js';
-        import { inventorySystem } from './js/systems/inventorySystem.js';
-        import { worldMapSystem } from './js/systems/worldMapSystem.js';
-        import { characterScreenSystem } from './js/systems/characterScreenSystem.js';
-        import { passiveSystem } from './js/systems/passiveSystem.js';
-        import { uiSystem } from './js/systems/uiSystem.js';
+            // Import new game systems
+            import { exileSystem } from './js/systems/exileSystem.js';
+            import { combatSystem } from './js/systems/combatSystem.js';
+            import { missionSystem } from './js/systems/missionSystem.js';
+            import { inventorySystem } from './js/systems/inventorySystem.js';
+            import { worldMapSystem } from './js/systems/worldMapSystem.js';
+            import { characterScreenSystem } from './js/systems/characterScreenSystem.js';
+            import { passiveSystem } from './js/systems/passiveSystem.js';
+            import { uiSystem } from './js/systems/uiSystem.js';
 
-        // Make them globally available during transition
-        window.monsterDB = monsterDB;
-        window.itemDB = itemDB;
-        window.statDB = statDB;
-        window.rarityDB = rarityDB;
-        window.exileSystem = exileSystem;
-        window.combatSystem = combatSystem;
-        window.missionSystem = missionSystem;
-        window.inventorySystem = inventorySystem;
-        window.worldMapSystem = worldMapSystem;
-        window.characterScreenSystem = characterScreenSystem;
-        window.passiveSystem = passiveSystem;
-        window.uiSystem = uiSystem;
+            // Make them globally available during transition
+            window.monsterDB = monsterDB;
+            window.itemDB = itemDB;
+            window.statDB = statDB;
+            window.rarityDB = rarityDB;
+            window.exileSystem = exileSystem;
+            window.combatSystem = combatSystem;
+            window.missionSystem = missionSystem;
+            window.inventorySystem = inventorySystem;
+            window.worldMapSystem = worldMapSystem;
+            window.characterScreenSystem = characterScreenSystem;
+            window.passiveSystem = passiveSystem;
+            window.uiSystem = uiSystem;
 
-        // Log that systems are loaded
-        console.log("Game systems loaded:", {
-            monsters: !!window.monsterDB,
-            items: !!window.itemDB,
-            exile: !!window.exileSystem,
-            combat: !!window.combatSystem,
-            mission: !!window.missionSystem,
-            characterScreen: !!window.characterScreenSystem,
-            passive: !!window.passiveSystem,
-            ui: !!window.uiSystem
-        });
-    </script>
+            // Log that systems are loaded
+            console.log("Game systems loaded:", {
+                monsters: !!window.monsterDB,
+                items: !!window.itemDB,
+                exile: !!window.exileSystem,
+                combat: !!window.combatSystem,
+                mission: !!window.missionSystem,
+                characterScreen: !!window.characterScreenSystem,
+                passive: !!window.passiveSystem,
+                ui: !!window.uiSystem
+            });
+        </script>
 
-    <script src="js/game.js"></script>
+        <script src="js/game.js"></script>
 
-    <!-- UI Managers -->
-    <script src="js/ui/exileRowManager.js"></script>
-    <script src="js/ui/dynamicDisplayManager.js"></script>
+        <!-- UI Managers -->
+        <script src="js/ui/exileRowManager.js"></script>
+        <script src="js/ui/dynamicDisplayManager.js"></script>
+        <script src="js/ui/inventoryGridManager.js"></script>
 
-    <!-- This goes Last -->
-    <script src="js/main.js"></script>
+
+        <!-- This goes Last -->
+        <script src="js/main.js"></script>
 
 </body>
 

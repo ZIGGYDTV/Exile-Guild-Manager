@@ -488,7 +488,6 @@ const dynamicDisplayManager = {
         // Create a simple grid layout for now (3x3)
         let worldMapHTML = `
             <div class="world-map-container">
-                <h2>World Map</h2>
                 <div class="world-map-grid">
         `;
 
@@ -533,146 +532,6 @@ const dynamicDisplayManager = {
         `;
 
         content.innerHTML = worldMapHTML;
-    },
-
-    // Update showAreaMissions to work with real data
-    showAreaMissions(areaId) {
-        const panel = document.getElementById('area-missions-panel');
-        const areaData = getAreaData(areaId);
-        const areaState = worldState.areas[areaId];
-
-        if (!areaData || !areaState) {
-            panel.style.display = 'none';
-            return;
-        }
-
-        // Get discovered missions from the actual game state
-        const missions = [];
-        Object.entries(areaState.missions).forEach(([missionId, missionState]) => {
-            if (missionState.discovered) {
-                const missionData = getMissionData(areaId, missionId);
-                if (missionData) {
-                    // Check if any exile is assigned to this mission
-                    let assignedExileId = null;
-
-                    // Check turnState.assignments instead of gameState.assignments
-                    if (turnState.assignments) {
-                        const assignment = turnState.assignments.find(a =>
-                            a.areaId === areaId && a.missionId === missionId
-                        );
-                        if (assignment) {
-                            assignedExileId = assignment.exileId;
-                        }
-                    }
-
-                    missions.push({
-                        ...missionData,
-                        missionId,
-                        areaId,
-                        available: isMissionAvailable(areaId, missionId),
-                        daysUntilAvailable: getDaysUntilAvailable(areaId, missionId),
-                        assignedExileId: assignedExileId,
-                        completions: missionState.completions || 0
-                    });
-                }
-            }
-        });
-
-        let missionsHTML = `
-        <h3>${areaData.name} - Missions</h3>
-        <div class="mission-list">
-    `;
-
-        if (missions.length === 0) {
-            missionsHTML += `<p class="no-missions">No missions discovered yet</p>`;
-        } else {
-            missions.forEach(mission => {
-                const selectedExile = getCurrentExileForDisplay();
-                // Safe check - ensure gameState.exiles exists and has items
-                let assignedExile = null;
-                if (mission.assignedExileId && gameState.exiles && Array.isArray(gameState.exiles)) {
-                    assignedExile = gameState.exiles.find(e => e && e.id === mission.assignedExileId);
-                }
-                
-                let statusClass = '';
-                let statusText = '';
-                
-                if (!mission.available) {
-                    statusClass = 'on-cooldown';
-                    statusText = `Cooldown: ${mission.daysUntilAvailable} days`;
-                } else if (assignedExile) {
-                    statusClass = 'assigned';
-                    statusText = `Assigned: ${assignedExile.name}`;
-                } else if (!selectedExile || selectedExile.status !== 'idle') {
-                    statusClass = 'no-exile';
-                    statusText = selectedExile ? 'Exile busy' : 'Select an exile first';
-                } else {
-                    // Available and can be assigned
-                    statusText = 'Click to assign';
-                }
-                
-                // Add completion count if any
-                const completionText = mission.completions > 0 ? 
-                    ` (Completed: ${mission.completions}x)` : '';
-                
-                const canAssign = mission.available && selectedExile && !assignedExile && selectedExile.status === 'idle';
-                
-                missionsHTML += `
-                    <div class="mission-item ${statusClass}" 
-                         ${canAssign ? `onclick="dynamicDisplayManager.assignMission('${areaId}', '${mission.missionId}')"` : ''}
-                         title="${mission.description || ''}">
-                        <div class="mission-header">
-                            <div class="mission-name">${mission.name}${completionText}</div>
-                            <div class="mission-difficulty">Difficulty: ${mission.difficulty || '?'}</div>
-                        </div>
-                        <div class="mission-type">Type: ${mission.type}</div>
-                        <div class="mission-status">${statusText}</div>
-                    </div>
-                `;
-            });
-        }
-
-        missionsHTML += `</div>`;
-        panel.innerHTML = missionsHTML;
-        panel.style.display = 'block';
-    },
-
-    // Also update the assignMission method to use turnState
-    assignMission(areaId, missionId) {
-        const selectedExile = getCurrentExileForDisplay();
-        if (!selectedExile) {
-            uiSystem.log("No exile selected!", "failure");
-            return;
-        }
-
-        // Initialize assignments array if it doesn't exist
-        if (!turnState.assignments) {
-            turnState.assignments = [];
-        }
-
-        // Check if exile already assigned
-        const existingAssignment = turnState.assignments.find(a =>
-            a.exileId === selectedExile.id
-        );
-
-        if (existingAssignment) {
-            uiSystem.log(`${selectedExile.name} is already assigned to a mission!`, "failure");
-            return;
-        }
-
-        // Assign the mission
-        selectedExile.status = 'assigned';
-        turnState.assignments.push({
-            exileId: selectedExile.id,
-            areaId: areaId,
-            missionId: missionId
-        });
-
-        // Update displays
-        this.showAreaMissions(areaId); // Refresh mission list
-        exileRowManager.refreshAllRows(); // Update exile rows
-
-        uiSystem.log(`${selectedExile.name} assigned to ${getMissionData(areaId, missionId).name}`, "success");
     },
 
     // Add this new method to handle area selection
@@ -742,15 +601,26 @@ const dynamicDisplayManager = {
                 } else if (!selectedExile) {
                     statusClass = 'no-exile';
                     statusText = 'Select an exile first';
+                } else {
+                    // Available and can be assigned (or reassigned)
+                    statusText = selectedExile.status === 'assigned' ? 'Click to reassign' : 'Click to assign';
                 }
+
+                // Add completion count if any
+                const completionText = mission.completions > 0 ?
+                    ` (Completed: ${mission.completions}x)` : '';
+
+                const canAssign = mission.available && selectedExile;
 
                 missionsHTML += `
                     <div class="mission-item ${statusClass}" 
-                         onclick="${mission.available && selectedExile && !assignedExile ?
-                        `dynamicDisplayManager.assignMission('${areaId}', '${mission.missionId}')` :
-                        ''}">
-                        <div class="mission-name">${mission.name}</div>
-                        <div class="mission-type">${mission.type}</div>
+                         ${canAssign ? `onclick="dynamicDisplayManager.assignMission('${areaId}', '${mission.missionId}')"` : ''}
+                         title="${mission.description || ''}">
+                        <div class="mission-header">
+                            <div class="mission-name">${mission.name}${completionText}</div>
+                            <div class="mission-difficulty">Difficulty: ${mission.difficulty || '?'}</div>
+                        </div>
+                        <div class="mission-type">Type: ${mission.type}</div>
                         <div class="mission-status">${statusText}</div>
                     </div>
                 `;
@@ -775,14 +645,37 @@ const dynamicDisplayManager = {
             turnState.assignments = [];
         }
 
-        // Check if already assigned
-        const existingAssignment = turnState.assignments.find(a =>
+        // Check if any exile is already assigned to this specific mission
+        const existingMissionAssignment = turnState.assignments.find(a =>
+            a.areaId === areaId && a.missionId === missionId
+        );
+
+        if (existingMissionAssignment) {
+            const assignedExile = gameState.exiles.find(e => e.id === existingMissionAssignment.exileId);
+            const missionData = getMissionData(areaId, missionId);
+
+            // If it's the same exile, allow reassignment (no change needed)
+            if (assignedExile.id === selectedExile.id) {
+                uiSystem.log(`${selectedExile.name} is already assigned to ${missionData.name}`, "info");
+                return;
+            }
+
+            // Different exile is already assigned - block assignment
+            uiSystem.log(`${assignedExile.name} is already assigned to ${missionData.name}! Unassign them first.`, "failure");
+            return;
+        }
+
+        // Check if exile already assigned to another mission
+        const existingAssignmentIndex = turnState.assignments.findIndex(a =>
             a.exileId === selectedExile.id
         );
 
-        if (existingAssignment) {
-            uiSystem.log(`${selectedExile.name} is already assigned to a mission!`, "failure");
-            return;
+        if (existingAssignmentIndex !== -1) {
+            // Remove old assignment
+            const oldAssignment = turnState.assignments[existingAssignmentIndex];
+            const oldMission = getMissionData(oldAssignment.areaId, oldAssignment.missionId);
+            turnState.assignments.splice(existingAssignmentIndex, 1);
+            uiSystem.log(`${selectedExile.name} reassigned from ${oldMission.name}`, "info");
         }
 
         // Assign the mission
@@ -797,6 +690,7 @@ const dynamicDisplayManager = {
         this.showAreaMissions(areaId); // Refresh mission list
         exileRowManager.refreshAllRows(); // Update exile rows
 
-        uiSystem.log(`${selectedExile.name} assigned to ${getMissionData(areaId, missionId).name}`, "success");
+        const newMission = getMissionData(areaId, missionId);
+        uiSystem.log(`${selectedExile.name} assigned to ${newMission.name}`, "success");
     }
 };

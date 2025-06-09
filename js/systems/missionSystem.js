@@ -91,6 +91,12 @@ class MissionSystem {
                 // Use updated generateGear method
                 newGear = this.generateGear(areaId, missionId, gearIlvl);
                 gameState.inventory.items.push(newGear);  // Use items instead of backpack
+                
+                // Update inventory grid if it exists
+                if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.gridContainer) {
+                    inventoryGridManager.addNewItemToInventory(newGear);
+                }
+                
                 uiSystem.log(`⭐ Found ${newGear.name}!`, newGear.rarity === 'rare' ? 'legendary' : 'success');
             }
 
@@ -274,6 +280,7 @@ class MissionSystem {
         const itemForSave = {
             id: newItem.id,
             name: newItem.getDisplayName(),
+            type: newItem.name,  // Add the base item type (Sword, Axe, etc.)
             slot: newItem.slot,
             rarity: newItem.rarity ? newItem.rarity.name.toLowerCase() : 'common',
             ilvl: targetIlvl,

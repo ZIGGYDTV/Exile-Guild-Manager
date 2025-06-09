@@ -1,312 +1,316 @@
-/* Inventory Modal */
-.inventory-modal-content {
-    background: #1a1a1a;
+/* INVENTORY */
+/* Bottom Right - Inventory Panel */
+#inventory-panel {
+    flex: 0 0 45%; /* Takes 45% of right panel height */
+    background-color: #2a2a2a;
     border: 2px solid #444;
-    border-radius: 8px;
-    max-width: 1200px;  /* Increase from 900px */
-    width: 90vw;        /* Add this - use 90% of viewport width */
-    max-height: 80vh;
+    border-radius: 5px;
     overflow: hidden;
+    display: flex; /* Add flex to match dynamic display structure */
+}
+
+/* Inventory Tabs - Vertical on left side (matching dynamic display) */
+.inventory-tabs {
+    flex: 0 0 40px;
+    background-color: #1a1a1a;
+    border-right: 1px solid #444;
     display: flex;
     flex-direction: column;
+    padding: 5px 0;
 }
 
-.inventory-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    border-bottom: 1px solid #333;
-}
-
-.inventory-modal-body {
-    padding: 20px;
-    overflow-y: auto;
-    flex: 1;
-}
-
-.inventory-info-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    background: #222;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    border: 2px solid #2e2e2e;
-}
-
-.currency-display {
-    display: flex;
-    gap: 20px;
-}
-
-.currency-item {
-    color: #c9aa71;
-    font-weight: bold;
-}
-
-
-/* Inventory Grid */
-.inventory-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* size of inventory items */
-    gap: 8px; /* space between inventory items */
-}
-
-.inventory-grid .inventory-item {
-    background: #222;
-    border: 2px solid #333;
-    border-radius: 5px;
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    font-size: 0.95em;
-    position: relative;
-    min-height: 160px; /* Ensure minimum height for button positioning */
-}
-
-.inventory-item .item-header {
-    margin-bottom: 6px;
-}
-
-.inventory-item .item-name {
-    font-size: 1em;
-    line-height: 1.2;
-    margin-bottom: 2px;
-}
-
-.inventory-item .item-type {
-    font-size: 0.7em;
-    color: #888;
-}
-
-.inventory-item .item-ilvl {
-    font-size: 0.65em;
-    color: #666;
-    font-style: italic;
-    margin-bottom: 4px;
-}
-
-.inventory-item .item-stats {
-    font-size: 0.9em;
-    line-height: 1.3;
-    margin-bottom: 6px;
-    flex: 1;
-}
-
-/* Each stat on its own line */
-.inventory-item .item-stat-line {
-    display: block;
-    color: #aaa;
-}
-
-.inventory-item .item-sell-value {
-    position: absolute;
-    bottom: 8px;
-    right: 38px;  /* Position it to the left of the buttons (24px button + 8px padding + 6px gap) */
-    font-size: 0.7em;
-    color: #c9aa71;
-    opacity: 0.6;
-    font-weight: bold;
-    background: #1a1a1a;  /* Dark background for readability */
-    padding: 2px 4px;
-    border-radius: 3px;
-    line-height: 20px;  /* Match button height for alignment */
-}
-
-/* Remove the wrapper approach */
-.item-details {
-    flex: 1;
-    padding-right: 35px; /* Make room for buttons */
-    padding-bottom: 30px;   /* prevent overlap with buttons */
-}
-
-/* Position buttons absolutely in bottom right */
-.inventory-item .item-actions {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.inventory-item .action-btn {
-    width: 24px;
-    height: 24px;
-    padding: 0;
+.tab-button {
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9em;
-    border-radius: 3px;
-    position: relative;
-}
-
-/* Smaller tooltips for compact buttons */
-.inventory-item .action-btn::after {
-    content: attr(title);
-    position: absolute;
-    bottom: 50%;
-    right: 100%;
-    transform: translateY(50%);
-    background: #1a1a1a;
-    color: #e0e0e0;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 0.65em;
-    white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: #888;
     transition: all 0.2s ease;
-    pointer-events: none;
-    z-index: 100;
-    margin-right: 4px;
+    font-size: 1.2em;
+    font-weight: bold;
 }
 
-.inventory-item .action-btn:hover::after {
-    opacity: 1;
-    visibility: visible;
+.tab-button:hover {
+    background-color: #3a3a3a;
+    color: #c9aa71;
 }
 
-/* Responsive breakpoints */
-@media (max-width: 768px) {
-    .inventory-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    }
+.tab-button.active {
+    background-color: #2a2a2a;
+    color: #c9aa71;
+    border-left: 3px solid #c9aa71;
 }
 
-@media (max-width: 480px) {
-    .inventory-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    }
+/* Wrapper for the main content (grid + detail panel) */
+.inventory-panel-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Implicit/regular stats styling updates */
-.inventory-item .implicit-stats,
-.inventory-item .regular-stats {
-    margin: 0;
+/* Main inventory container */
+.inventory-container {
+    flex: 1;
+    display: flex;
+    gap: 5px;
+    padding: 5px;
 }
 
-.inventory-item .stat-divider {
-    height: 1px;
-    background: #444;
-    margin: 2px 0;
-    opacity: 0.5;
+/* Left side: Grid wrapper */
+.inventory-grid-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
-/* ENd of Inventory Grid
 
-
-
-
-/* Item Tooltips on Hover */
-/* Item Tooltip Styles */
-.item-tooltip {
-    position: absolute;
+/* Grid Container */
+#inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+    grid-template-rows: repeat(8, minmax(0, 1fr));
+    gap: 0;
     background: #1a1a1a;
     border: 2px solid #444;
-    border-radius: 5px;
-    padding: 10px;
-    min-width: 200px;
-    max-width: 300px;
-    z-index: 10000;
+    padding: 2px;
+    /* Let height be determined by width to maintain squares */
+    width: 100%;
+}
+
+/* Grid Cells */
+.grid-cell {
+    background: #222;
+    border: 1px solid #333;
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s;
+    /* Make cells square with aspect ratio */
+    aspect-ratio: 1 / 1;
+    box-sizing: border-box;
+}
+
+.grid-cell:hover:not(.occupied) {
+    border-color: #555;
+    background: #333;
+}
+
+/* Occupied cells have completely clean appearance */
+.grid-cell.occupied {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.grid-cell.selected {
+    border: 2px solid #c9aa71 !important;
+    z-index: 1;
+}
+
+/* Adjust item icon positioning */
+.item-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: clamp(14px, 2vw, 20px);
     pointer-events: none;
-    font-size: 0.9em;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.8);
-}
-
-.tooltip-item-name {
+    user-select: none;
+    z-index: 2;
+    color: #fff;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     font-weight: bold;
-    margin-bottom: 5px;
-    font-size: 1.1em;
 }
 
-.tooltip-item-type {
-    font-size: 0.8em;
-    color: #666;
-    margin-bottom: 3px;
+.lock-icon {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 10px;
 }
 
-.tooltip-item-ilvl {
-    font-size: 0.8em;
-    color: #888;
-    margin-bottom: 8px;
-    font-style: italic;
-}
-
-.tooltip-implicit-stats {
-    color: #8888aa;
-    font-size: 0.9em;
-    font-style: italic;
-    margin-bottom: 5px;
-}
-
-.tooltip-stat-divider {
-    height: 1px;
-    background: #444;
-    margin: 5px 0;
-    opacity: 0.5;
-}
-
-.tooltip-regular-stats {
-    color: #aaa;
-    font-size: 0.9em;
-}
-
-.item-name-hover {
-    cursor: help;
+/* Right side: Item Detail Panel */
+.item-detail-panel {
+    flex: 0 0 250px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    border-radius: 5px;
+    overflow: hidden;
     position: relative;
 }
 
-.item-name-hover:hover {
-    text-decoration: underline;
+.item-detail-panel h3 {
+    margin: 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #444;
+    color: #c9aa71;
 }
 
-
-/* Dissolve to gold particles effect */
-@keyframes dissolveToGold {
-    0% {
-        opacity: 1;
-        transform: scale(1) rotate(0deg);
-        filter: brightness(1);
-    }
-    50% {
-        opacity: 0.8;
-        transform: scale(0.95) rotate(5deg);
-        filter: brightness(1.5) sepia(1) saturate(2) hue-rotate(45deg);
-    }
-    100% {
-        opacity: 0;
-        transform: scale(0.8) rotate(10deg) translateY(-20px);
-        filter: brightness(2) sepia(1) saturate(2) hue-rotate(45deg);
-    }
+#item-detail-content {
+    flex: 1;
+    overflow-y: auto;
 }
 
-.inventory-item.dissolving {
-    animation: dissolveToGold 0.3s ease-out forwards;
-    pointer-events: none;
+.no-item-selected {
+    color: #888;
+    text-align: center;
+    margin-top: 20px;
 }
 
-/* Gold particles */
-.gold-particle {
+#item-actions {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid #444;
+    padding-top: 10px;
     position: absolute;
-    width: 6px;
-    height: 6px;
-    background: radial-gradient(circle, #ffd700, #ff9500);
-    border-radius: 50%;
+    bottom: 15px;
+    left: 15px;
+    right: 15px;
+}
+
+#item-actions button:not(.square-action-btn) {
+    width: 100%;
+    padding: 8px;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    color: #ddd;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+#item-actions button:hover {
+    background: #3a3a3a;
+    border-color: #666;
+}
+
+/* Square action buttons for item details */
+.square-action-btn {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px !important;
+    border-radius: 4px !important;
+    background: #2a2a2a !important;
+    border: 1px solid #444 !important;
+    color: #ddd !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+}
+
+.square-action-btn:hover {
+    background: #3a3a3a !important;
+    border-color: #666 !important;
+    transform: translateY(-1px) !important;
+}
+
+.square-action-btn:active {
+    transform: translateY(0) !important;
+}
+
+.square-action-btn:disabled {
+    background: #1a1a1a !important;
+    color: #555 !important;
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+}
+
+.square-action-btn:disabled:hover {
+    transform: none !important;
+    background: #1a1a1a !important;
+    border-color: #333 !important;
+}
+
+.craft-btn {
+    border-color: #8B4513 !important;
+}
+
+.craft-btn:hover:not(:disabled) {
+    border-color: #CD853F !important;
+    background: #3a2a1a !important;
+}
+
+/* Inventory Controls */
+.inventory-controls {
+    display: flex;
+    gap: 5px;
+}
+
+.inventory-controls button {
+    flex: 1;
+    padding: 6px 12px;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    color: #ddd;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.inventory-controls button:hover {
+    background: #3a3a3a;
+}
+
+/* Tooltip Styles */
+.item-tooltip {
+    position: fixed;
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid #666;
+    padding: 10px;
+    border-radius: 4px;
     pointer-events: none;
     z-index: 1000;
-    box-shadow: 0 0 6px #ffd700;
+    max-width: 300px;
 }
 
-@keyframes floatUp {
-    0% {
-        opacity: 1;
-        transform: translate(0, 0) scale(1);
+.tooltip-header {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.tooltip-type {
+    color: #888;
+    font-size: 0.9em;
+    margin-bottom: 8px;
+}
+
+.tooltip-stats {
+    margin-bottom: 5px;
+}
+
+.tooltip-stats div {
+    margin: 2px 0;
+}
+
+.tooltip-level {
+    color: #666;
+    font-size: 0.8em;
+    margin-top: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .inventory-container {
+        gap: 10px;
     }
-    100% {
-        opacity: 0;
-        transform: translate(var(--dx), -80px) scale(0.3);
+    .item-detail-panel {
+        flex: 0 0 250px;
     }
 }
+/* END OF INVENTORY */
