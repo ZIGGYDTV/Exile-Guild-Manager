@@ -50,18 +50,13 @@ export class Boss extends Monster {
         return Math.floor(baseDamage);
     }
 
-    // Override attack speed for phase-specific speeds
+    // Override attack speed for phase-specific speeds (deprecated - using percentage system now)
     getAttacksThisRound() {
+        // This method is no longer used with the new percentage-based attack system
+        console.warn("Boss getAttacksThisRound() is deprecated - use percentage-based attack system");
         const phase = this.phases[this.currentPhase];
         const phaseAttackSpeed = phase.attackSpeed || this.attackSpeed;
-        
-        // Temporarily override attack speed for calculation
-        const originalSpeed = this.attackSpeed;
-        this.attackSpeed = phaseAttackSpeed;
-        const attacks = super.getAttacksThisRound();
-        this.attackSpeed = originalSpeed;
-        
-        return attacks;
+        return Math.floor(phaseAttackSpeed);
     }
 
     // Override take damage to check for phase transitions

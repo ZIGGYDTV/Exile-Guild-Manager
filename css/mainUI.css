@@ -142,6 +142,31 @@ body {
     100% { transform: scale(1); }
 }
 
+/* No attack timer indicator */
+.no-attack-indicator {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 24px;
+    animation: timerBounce 1s ease-out forwards;
+    z-index: 1001;
+}
+
+@keyframes timerBounce {
+    0% {
+        transform: translateX(-50%) translateY(0) scale(0);
+        opacity: 1;
+    }
+    50% {
+        transform: translateX(-50%) translateY(-10px) scale(1.2);
+    }
+    100% {
+        transform: translateX(-50%) translateY(-20px) scale(1);
+        opacity: 0;
+    }
+}
+
 .damage-popup {
     position: absolute;
     font-weight: bold;
@@ -149,6 +174,7 @@ body {
     text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
     animation: damageFloat 1s ease-out forwards;
     pointer-events: none;
+    z-index: 1000;
 }
 
 @keyframes damageFloat {
@@ -162,23 +188,76 @@ body {
     }
 }
 
-.damage-popup.player-damage {
+/* Monster damage (white/yellow) - appears left of monster icon */
+.damage-popup.exile-damage {
     color: #ffeb3b;
-    right: 40%;
+    right: 25%;  /* Position near monster icon */
+    top: 50%;
+    transform: translateY(-50%);
 }
 
+/* Player damage (red) - appears right of player icon */
 .damage-popup.monster-damage {
-    color: #ff6b35;
-    left: 40%;
+    color: #ff4444;
+    left: 25%;  /* Position near player icon */
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Staggered damage popups */
+.damage-popup:nth-child(2) {
+    animation-delay: 0.1s;
+}
+.damage-popup:nth-child(3) {
+    animation-delay: 0.15s;
+}
+.damage-popup:nth-child(4) {
+    animation-delay: 0.175s;
+}
+.damage-popup:nth-child(5) {
+    animation-delay: 0.19s;
+}
+.damage-popup:nth-child(6) {
+    animation-delay: 0.2s;
+}
+
+/* Blood splatter effect */
+.blood-splatter {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    pointer-events: none;
+    z-index: 999;
+}
+
+.blood-drop {
+    position: absolute;
+    background: radial-gradient(circle, #cc0000 0%, #990000 70%, transparent 100%);
+    border-radius: 50%;
+    animation: bloodSpray 0.6s ease-out forwards;
+}
+
+@keyframes bloodSpray {
+    0% {
+        transform: translate(0, 0) scale(0);
+        opacity: 1;
+    }
+    70% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(var(--x), var(--y)) scale(1);
+        opacity: 0;
+    }
 }
 
 .round-indicator {
     position: absolute;
-    bottom: 10px;
+    bottom: 0px;
     width: 100%;
     text-align: center;
-    color: #888;
-    font-size: 14px;
+    color: #777777;
+    font-size: 12px;
 }
 
 .exile-main-area {

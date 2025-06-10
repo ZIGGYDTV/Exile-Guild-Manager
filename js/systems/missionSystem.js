@@ -12,15 +12,15 @@ class MissionSystem {
             console.error("MissionState not loaded yet!");
             return;
         }
-        
+
         const missionData = getCompleteMissionData(areaId, missionId);
         const missionInstance = worldState.areas[areaId].missions[missionId].currentInstance;
-        
+
         if (!missionInstance) {
             console.error("No mission instance found!");
             return;
         }
-        
+
         // Create the mission state - use window.MissionState if needed
         const missionState = new (window.MissionState || MissionState)(missionData, exileId);
 
@@ -689,43 +689,35 @@ class MissionSystem {
         };
     }
 
-// ! DEBUG DEBUG DEBUG
-// Temporary test method - add to end of MissionSystem class
-testNewMissionSystem() {
-    console.log("=== Testing New Mission System ===");
-    
-    // Get first exile
-    const exile = gameState.exiles[0];
-    if (!exile) {
-        console.error("No exile to test with!");
-        return;
-    }
-    
-    console.log(`Testing with ${exile.name}`);
-    
-    // Deploy on crab hunting mission
-    console.log("1. Deploying exile on mission...");
-    this.deployExileOnMission(exile.id, 'beach', 'crab_hunting');
-    
-    // Check active missions
-    console.log("2. Active missions:", turnState.activeMissions);
-    
-    // Process first turn
-    console.log("3. Processing first turn...");
-    const turnResult = this.processMissionTurn(exile.id);
-    console.log("Turn result:", turnResult);
-    
-    // If decision needed, make one
-    if (turnResult?.type === 'decision_needed') {
-        console.log("4. Making decision to continue...");
-        const decisionResult = this.processDecision(exile.id, 'continue');
-        console.log("Decision result:", decisionResult);
-    }
-    
-    console.log("=== Test Complete ===");
-}
-// ! END DEBUG DEBUG DEBUG
+    // Add this method to MissionSystem class:
+    completeMissionSuccess(activeMission) {
+        const { missionState, exileId, areaId, missionId } = activeMission;
 
+        // Apply all accumulated rewards
+        const rewards = missionState.applyRewards();
+
+        // Update mission completion in world state
+        completeMission(areaId, missionId, 'victory');
+
+        // Remove from active missions
+        turnState.activeMissions = turnState.activeMissions.filter(m => m.exileId !== exileId);
+
+        // Update exile status
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        if (exile) {
+            exile.status = 'idle';
+            exile.currentMission = null;
+        }
+
+        // Log success
+        uiSystem.log(`${exile.name} completed ${missionState.missionData.name}! Earned ${rewards.gold} gold, ${rewards.experience} exp`, "success");
+
+        return {
+            type: 'mission_complete',
+            exileId: exileId,
+            rewards: rewards
+        };
+    }
 }
 
 

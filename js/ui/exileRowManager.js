@@ -137,7 +137,9 @@ const exileRowManager = {
         const activeMission = turnState.activeMissions.find(m => m.exileId === exile.id);
 
         if (activeMission && activeMission.missionState) {
-            const currentEncounter = activeMission.missionState.getCurrentEncounter();
+            const currentEncounter = activeMission.missionState && typeof activeMission.missionState.getCurrentEncounter === 'function'
+                ? activeMission.missionState.getCurrentEncounter()
+                : null;
             if (currentEncounter) {
                 // Show combat display for active missions
                 mainAreaContent = `
@@ -269,7 +271,7 @@ const exileRowManager = {
         return null;
     },
 
-    // Handle End Turn for all exiles
+    // Update handleEndTurn to properly process missions
     async handleEndTurn() {
         // Disable all end turn buttons
         document.querySelectorAll('.end-turn-btn').forEach(btn => btn.disabled = true);
@@ -279,6 +281,8 @@ const exileRowManager = {
             !turnState.pendingDecisions.find(d => d.exileId === m.exileId)
         );
 
+        console.log("Processing turns for missions:", activeMissions);
+
         // Process all missions simultaneously
         const combatPromises = activeMissions.map(mission =>
             this.animateCombat(mission.exileId)
@@ -286,83 +290,264 @@ const exileRowManager = {
 
         await Promise.all(combatPromises);
 
+        // Increment turn counter
+        turnState.currentTurn++;
+        turnState.turnsToday++;
+
+        // Check if day ended
+        if (turnState.turnsToday > turnState.turnsPerDay) {
+            turnState.currentDay++;
+            turnState.turnsToday = 1;
+            console.log(`New day: ${turnState.currentDay}`);
+        }
+
+        // Save game state
+        game.saveGame();
+
         // Refresh all rows to show new states
         this.refreshAllRows();
     },
 
-    // Animate combat for one exile
     async animateCombat(exileId) {
+        console.log(`Starting combat animation for exile ${exileId}`);
+
         const exile = gameState.exiles.find(e => e.id === exileId);
-        const row = document.querySelector(`[data-exile-id="${exile.id}"]`);
+        const row = document.querySelector(`[data-exile-id="${exileId}"]`);
+
         if (!row || !exile) return;
 
         const combatDisplay = row.querySelector('.combat-display');
         if (!combatDisplay) return;
 
+        // Get the active mission to check combat log
+        const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
+        if (!activeMission) return;
+
         // Process the turn
         const result = missionSystem.processMissionTurn(exileId);
+        console.log("Turn result:", result);
 
-        if (!result || !result.turnResult) return;
+        // Get the combat log from the last turn
+        const combatLog = activeMission.missionState.combatLog;
+        const lastCombat = combatLog[combatLog.length - 1];
 
-        // Animate the combat rounds
-        const rounds = result.turnResult.rounds;
+        if (lastCombat && lastCombat.result && lastCombat.result.rounds) {
+            const rounds = lastCombat.result.rounds;
+            const finalOutcome = lastCombat.result.outcome;
+            console.log(`Animating ${rounds.length} rounds of combat`);
 
-        for (let i = 0; i < rounds.length; i++) {
-            const round = rounds[i];
+            // Animate each round sequentially
+            for (let i = 0; i < rounds.length; i++) {
+                const round = rounds[i];
+                const isLastRound = i === rounds.length - 1;
+                console.log(`Round ${round.round}:`, round);
 
-            // Update round indicator
+                // Update round indicator
+                const roundIndicator = combatDisplay.querySelector('.round-indicator');
+                if (roundIndicator) {
+                    roundIndicator.textContent = `Round ${round.round} of 5`;
+                }
+
+                // Animate exile actions
+                if (round.exileActions && round.exileActions.length > 0) {
+                    for (const action of round.exileActions) {
+                        if (action.type === 'no_attack') {
+                            // Show timer indicator for no attack
+                            await this.showNoAttackIndicator(combatDisplay, 'exile');
+                        } else {
+                            // Regular attack
+                            const monsterDies = isLastRound && 
+                                (finalOutcome === 'victory' || finalOutcome === 'culled') &&
+                                action.targetHealthAfter <= 0;
+                            
+                            console.log("Exile attacks for", action.finalDamage, monsterDies ? "(KILLING BLOW)" : "");
+                            await this.animateAttack(combatDisplay, 'exile', action.finalDamage, monsterDies);
+                            
+                            // Small delay between multiple attacks
+                            if (round.exileActions.length > 1) {
+                                await this.wait(100);
+                            }
+                        }
+                    }
+                }
+
+                // Animate monster actions
+                if (round.monsterActions && round.monsterActions.length > 0) {
+                    for (const action of round.monsterActions) {
+                        if (action.type === 'no_attack') {
+                            // Show timer indicator for no attack
+                            await this.showNoAttackIndicator(combatDisplay, 'monster');
+                        } else {
+                            // Regular attack
+                            const exileDies = isLastRound && 
+                                finalOutcome === 'death' &&
+                                action.exileHealthAfter <= 0;
+                            
+                            console.log("Monster attacks for", action.finalDamage, exileDies ? "(KILLING BLOW)" : "");
+                            await this.animateAttack(combatDisplay, 'monster', action.finalDamage, exileDies);
+                            this.updateHealthBar(row, action.exileHealthAfter, exile.stats.life);
+                            
+                            // Small delay between multiple attacks
+                            if (round.monsterActions.length > 1) {
+                                await this.wait(100);
+                            }
+                        }
+                    }
+                }
+
+                // If nothing happened this round (no attacks), still show the round
+                if ((!round.exileActions || round.exileActions.length === 0) &&
+                    (!round.monsterActions || round.monsterActions.length === 0)) {
+                    await this.wait(1000); // Just wait to show the round happened
+                }
+
+                // Wait before next round
+                await this.wait(1000);
+            }
+
+            // Show final outcome
             const roundIndicator = combatDisplay.querySelector('.round-indicator');
-            roundIndicator.textContent = `Round ${round.round} of 5`;
-
-            // Animate exile attacks
-            for (const action of round.exileActions) {
-                await this.animateAttack(combatDisplay, 'exile', action.finalDamage);
+            if (lastCombat.result.outcome === 'victory') {
+                roundIndicator.textContent = "Victory!";
+                await this.wait(1000);
+            } else if (lastCombat.result.outcome === 'culled') {
+                roundIndicator.textContent = "Executed! (Culling Strike)";
+                await this.wait(1000);
             }
-
-            // Animate monster attacks
-            for (const action of round.monsterActions) {
-                await this.animateAttack(combatDisplay, 'monster', action.finalDamage);
-                // Update health bar
-                const healthPercent = (action.exileHealthAfter / exile.stats.life) * 100;
-                row.querySelector('.health-bar .status-bar-fill').style.width = `${healthPercent}%`;
-                row.querySelector('.health-bar .status-bar-text').textContent =
-                    `${action.exileHealthAfter}/${exile.stats.life}`;
-            }
-
-            // Wait between rounds
-            await this.wait(500);
         }
 
-        // Handle outcome
-        if (result.type === 'decision_needed') {
-            // Store pending decision
-            turnState.pendingDecisions.push({
-                exileId: exileId,
-                choices: result.choices
-            });
+        // Handle the mission result
+        if (result) {
+            if (result.type === 'encounter_complete' && result.hasNextEncounter) {
+                const roundIndicator = combatDisplay.querySelector('.round-indicator');
+                roundIndicator.textContent = result.nextEncounter;
+            } else if (result.type === 'decision_needed') {
+                turnState.pendingDecisions.push({
+                    exileId: exileId,
+                    choices: result.choices
+                });
+            }
         }
     },
 
-    // Animate a single attack
-    async animateAttack(combatDisplay, attacker, damage) {
-        const attackerIcon = combatDisplay.querySelector(`.${attacker}-icon`);
+    // Add new method to show no-attack indicator
+    async showNoAttackIndicator(combatDisplay, attacker) {
+        const icon = combatDisplay.querySelector(`.${attacker}-icon`);
+        if (!icon) return;
+        
+        // Create timer indicator
+        const timer = document.createElement('div');
+        timer.className = 'no-attack-indicator';
+        timer.textContent = '⏳';
+        timer.style.position = 'absolute';
+        
+        // Position relative to icon
+        const iconRect = icon.getBoundingClientRect();
+        const displayRect = combatDisplay.getBoundingClientRect();
+        timer.style.left = `${iconRect.left - displayRect.left + iconRect.width/2}px`;
+        timer.style.top = `${iconRect.top - displayRect.top - 10}px`;
+        
+        combatDisplay.appendChild(timer);
+        
+        // Remove after animation
+        await this.wait(1000);
+        timer.remove();
+    },
 
+    // Update animateAttack to handle multiple popups better
+    async animateAttack(combatDisplay, attacker, damage, targetDies = false) {
+        console.log(`Animating ${attacker} attack for ${damage} damage`);
+
+        const attackerIcon = combatDisplay.querySelector(`.${attacker}-icon`);
+        const targetIcon = combatDisplay.querySelector(`.${attacker === 'exile' ? 'monster' : 'exile'}-icon`);
+        
+        if (!attackerIcon || !targetIcon) return;
+        
         // Add attacking animation
         attackerIcon.classList.add('attacking');
-
-        // Create damage popup
+        
+        // Create damage popup with slight position variation for multiple hits
+        const existingPopups = combatDisplay.querySelectorAll('.damage-popup').length;
         const popup = document.createElement('div');
         popup.className = `damage-popup ${attacker}-damage`;
         popup.textContent = Math.floor(damage);
+        
+        // Offset position slightly for each additional popup
+        if (existingPopups > 0) {
+            popup.style.transform = `translateY(${-50 - (existingPopups * 15)}%)`;
+        }
+        
         combatDisplay.appendChild(popup);
+        
+        // Force animation start
+        void popup.offsetWidth;
+        
+        // Death animation timing
+        if (targetDies) {
+            await this.wait(400);
+            this.createBloodSplatter(combatDisplay, targetIcon);
+            targetIcon.classList.add('dying');
+            await this.wait(600);
+        } else {
+            await this.wait(600);
+        }
+        
+        // Clean up
+        attackerIcon.classList.remove('attacking');
+        popup.remove();
+    },
+
+    // Create blood splatter effect
+    createBloodSplatter(container, targetIcon) {
+        const splatter = document.createElement('div');
+        splatter.className = 'blood-splatter';
+
+        // Position at target icon
+        const targetRect = targetIcon.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        splatter.style.left = `${targetRect.left - containerRect.left}px`;
+        splatter.style.top = `${targetRect.top - containerRect.top}px`;
+
+        // Create multiple blood drops
+        for (let i = 0; i < 6; i++) {
+            const drop = document.createElement('div');
+            drop.className = 'blood-drop';
+
+            // Random size
+            const size = Math.random() * 15 + 5;
+            drop.style.width = `${size}px`;
+            drop.style.height = `${size}px`;
+
+            // Random direction
+            const angle = (Math.PI * 2 * i) / 6 + (Math.random() - 0.5);
+            const distance = Math.random() * 30 + 20;
+            const x = Math.cos(angle) * distance;
+            const y = Math.sin(angle) * distance;
+
+            drop.style.setProperty('--x', `${x}px`);
+            drop.style.setProperty('--y', `${y}px`);
+            drop.style.left = '40px'; // Center on icon
+            drop.style.top = '40px';
+
+            splatter.appendChild(drop);
+        }
+
+        container.appendChild(splatter);
 
         // Remove after animation
-        setTimeout(() => {
-            attackerIcon.classList.remove('attacking');
-            popup.remove();
-        }, 1000);
+        setTimeout(() => splatter.remove(), 1000);
+    },
 
-        await this.wait(300);
+    // Add helper method for health bar updates
+    updateHealthBar(row, currentLife, maxLife) {
+        const healthBar = row.querySelector('.health-bar .status-bar-fill');
+        const healthText = row.querySelector('.health-bar .status-bar-text');
+
+        if (healthBar && healthText) {
+            const percentage = Math.max(0, (currentLife / maxLife) * 100);
+            healthBar.style.width = `${percentage}%`;
+            healthText.textContent = `${Math.max(0, currentLife)}/${maxLife}`;
+        }
     },
 
     // Utility wait function

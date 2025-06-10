@@ -19,18 +19,18 @@ export class Encounter {
     // Get encounter description
     getDescription() {
         const progress = `${this.encounterNumber}/${this.totalEncounters}`;
-        
+
         if (this.monster.isBoss) {
             return `Boss Fight - ${this.monster.name} [${progress}]`;
         }
-        
+
         return `Encounter ${progress}: ${this.monster.name}`;
     }
 
     // Check for culling strike
     canCullMonster() {
         if (this.monster.isBoss) return false;
-        
+
         const healthPercent = this.monster.currentLife / this.monster.life;
         return healthPercent <= 0.2 && healthPercent > 0;
     }
@@ -109,7 +109,7 @@ export class MissionState {
 
 // Updated Combat System for turn-based encounters
 export class TurnBasedCombatSystem {
-    
+
     // Simulate one turn (5 rounds) of combat
     simulateTurn(exile, encounter) {
         const combatResult = {
@@ -124,9 +124,8 @@ export class TurnBasedCombatSystem {
         };
 
         let exileLife = exile.currentLife || exile.stats.life;
-        let exileAttackCounter = exile.attackCounter || 0;
         const exileAttackSpeed = exile.stats.attackSpeed || 1.0;
-        
+
         const monster = encounter.monster;
 
         // Simulate 5 rounds
@@ -142,26 +141,47 @@ export class TurnBasedCombatSystem {
             };
 
             // === EXILE ATTACKS ===
-            exileAttackCounter += exileAttackSpeed;
-            const exileAttacks = Math.floor(exileAttackCounter);
-            exileAttackCounter -= exileAttacks;
-            
-            for (let i = 0; i < exileAttacks && !monster.isDead(); i++) {
-                // Calculate raw damage
+            const exileBaseAttacks = Math.floor(exileAttackSpeed);
+            const exileExtraChance = (exileAttackSpeed - exileBaseAttacks);
+
+            // Always get base attacks
+            let exileAttackCount = exileBaseAttacks;
+
+            // Roll for extra attack
+            if (exileExtraChance > 0 && Math.random() < exileExtraChance) {
+                exileAttackCount++;
+            }
+
+            // If attack speed < 1, roll to see if we attack at all
+            if (exileAttackSpeed < 1 && exileAttackCount === 0) {
+                if (Math.random() >= exileAttackSpeed) {
+                    // No attack this round
+                    roundData.exileActions.push({
+                        type: 'no_attack',
+                        reason: 'slow',
+                        attackSpeed: exileAttackSpeed
+                    });
+                } else {
+                    exileAttackCount = 1;
+                }
+            }
+
+            // Process exile attacks
+            for (let i = 0; i < exileAttackCount && !monster.isDead(); i++) {                // Calculate raw damage
                 const rawDamage = exile.stats.damage;
-                
+
                 // Calculate damage breakdown vs monster defenses
                 const damageBreakdown = this.calculateExileDamageVsMonster(
                     rawDamage,
                     exile,
                     monster
                 );
-                
+
                 const healthBefore = monster.currentLife;
-                
+
                 // Apply damage and check for phase transition
                 const damageResult = monster.takeDamage(damageBreakdown.totalDamage);
-                
+
                 // Record detailed attack
                 roundData.exileActions.push({
                     type: 'attack',
@@ -173,9 +193,9 @@ export class TurnBasedCombatSystem {
                     targetHealthAfter: monster.currentLife,
                     critical: false // TODO: Implement crits later
                 });
-                
+
                 combatResult.totalDamageDealt += damageBreakdown.totalDamage;
-                
+
                 // Check for phase transition (bosses only)
                 if (damageResult.phaseTransition) {
                     combatResult.phaseTransition = damageResult.phaseTransition;
@@ -185,7 +205,7 @@ export class TurnBasedCombatSystem {
                         timestamp: Date.now()
                     });
                 }
-                
+
                 if (monster.isDead()) {
                     roundData.events.push({
                         type: 'monster_death',
@@ -199,21 +219,46 @@ export class TurnBasedCombatSystem {
 
             // === MONSTER ATTACKS === (if still alive)
             if (!monster.isDead()) {
-                const monsterAttacks = monster.getAttacksThisRound();
-                
-                for (let i = 0; i < monsterAttacks; i++) {
+                const monsterAttackSpeed = monster.attackSpeed || 1.0;
+                const monsterBaseAttacks = Math.floor(monsterAttackSpeed);
+                const monsterExtraChance = (monsterAttackSpeed - monsterBaseAttacks);
+
+                let monsterAttackCount = monsterBaseAttacks;
+
+                // Roll for extra attack
+                if (monsterExtraChance > 0 && Math.random() < monsterExtraChance) {
+                    monsterAttackCount++;
+                }
+
+                // If attack speed < 1, roll to see if we attack at all
+                if (monsterAttackSpeed < 1 && monsterAttackCount === 0) {
+                    if (Math.random() >= monsterAttackSpeed) {
+                        // Monster doesn't attack this round
+                        roundData.monsterActions.push({
+                            type: 'no_attack',
+                            attacker: monster.name,
+                            reason: 'slow',
+                            attackSpeed: monsterAttackSpeed
+                        });
+                    } else {
+                        monsterAttackCount = 1;
+                    }
+                }
+
+                // Process monster attacks
+                for (let i = 0; i < monsterAttackCount; i++) {
                     const rawDamage = monster.calculateDamage();
-                    
+
                     // Calculate damage with exile's defenses
                     const damageResult = this.calculateMonsterDamageVsExile(
                         rawDamage,
                         monster,
                         exile
                     );
-                    
+
                     const healthBefore = exileLife;
                     exileLife -= damageResult.totalDamage;
-                    
+
                     roundData.monsterActions.push({
                         type: 'attack',
                         attacker: monster.name,
@@ -223,9 +268,9 @@ export class TurnBasedCombatSystem {
                         exileHealthBefore: healthBefore,
                         exileHealthAfter: Math.max(0, exileLife)
                     });
-                    
+
                     combatResult.totalDamageTaken += damageResult.totalDamage;
-                    
+
                     if (exileLife <= 0) {
                         roundData.events.push({
                             type: 'exile_death',
@@ -237,23 +282,22 @@ export class TurnBasedCombatSystem {
                     }
                 }
             }
-            
+
             // Record health at end of round
             roundData.exileHealth = Math.max(0, exileLife);
             roundData.monsterHealth = Math.max(0, monster.currentLife);
-            
+
             combatResult.rounds.push(roundData);
-            
+
             // End early if someone died
             if (combatResult.outcome) break;
         }
 
         // Update encounter state
         encounter.turnsElapsed++;
-        
+
         // Update exile state for next turn
         exile.currentLife = Math.max(0, exileLife);
-        exile.attackCounter = exileAttackCounter;
 
         // If no one died, check for culling strike
         if (!combatResult.outcome) {
@@ -278,20 +322,20 @@ export class TurnBasedCombatSystem {
 
         return combatResult;
     }
-    
+
     // Calculate exile damage vs monster (supports all damage types)
     calculateExileDamageVsMonster(rawDamage, exile, monster) {
         const breakdown = [];
-        
+
         // Get damage types from exile - defaults to physical if not specified
         // In future: weapons/skills will add fire/cold/lightning/chaos
         const damageTypes = exile.damageTypes || { physical: 1.0 };
-        
+
         Object.entries(damageTypes).forEach(([damageType, percentage]) => {
             const typeDamage = rawDamage * percentage;
             let mitigatedDamage = typeDamage;
             let mitigationText = '';
-            
+
             if (damageType === 'physical') {
                 // Physical damage reduction formula
                 const defenseReduction = monster.defense / 200;
@@ -303,7 +347,7 @@ export class TurnBasedCombatSystem {
                 // Elemental resistance
                 const resistance = monster.resistances?.[damageType] || 0;
                 mitigatedDamage = typeDamage * (1 - resistance / 100);
-                
+
                 if (resistance > 0) {
                     mitigationText = `${resistance}% resisted`;
                 } else if (resistance < 0) {
@@ -312,7 +356,7 @@ export class TurnBasedCombatSystem {
                     mitigationText = 'no resistance';
                 }
             }
-            
+
             breakdown.push({
                 type: damageType,
                 raw: Math.round(typeDamage * 10) / 10,
@@ -321,23 +365,23 @@ export class TurnBasedCombatSystem {
                 color: this.getDamageTypeColor(damageType)
             });
         });
-        
+
         return {
             totalDamage: Math.floor(breakdown.reduce((sum, b) => sum + b.mitigated, 0)),
             breakdown: breakdown
         };
     }
-    
+
     // Calculate monster damage vs exile
     calculateMonsterDamageVsExile(rawDamage, monster, exile) {
         const breakdown = [];
         const damageTypes = monster.damageTypes || { physical: 1.0 };
-        
+
         Object.entries(damageTypes).forEach(([damageType, percentage]) => {
             const typeDamage = rawDamage * percentage;
             let mitigatedDamage = typeDamage;
             let mitigationText = '';
-            
+
             if (damageType === 'physical') {
                 // Physical damage reduction
                 const defenseReduction = exile.stats.defense / 200;
@@ -351,7 +395,7 @@ export class TurnBasedCombatSystem {
                 mitigatedDamage = typeDamage * (1 - resistance / 100);
                 mitigationText = `${resistance}% resisted`;
             }
-            
+
             breakdown.push({
                 type: damageType,
                 raw: Math.round(typeDamage * 10) / 10,
@@ -360,7 +404,7 @@ export class TurnBasedCombatSystem {
                 color: this.getDamageTypeColor(damageType)
             });
         });
-        
+
         return {
             totalDamage: Math.max(1, Math.floor(breakdown.reduce((sum, b) => sum + b.mitigated, 0))),
             breakdown: breakdown

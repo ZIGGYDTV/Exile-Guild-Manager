@@ -29,15 +29,14 @@ export class Monster {
         
         // Track current state for combat
         this.currentLife = this.life;
-        this.attackCounter = 0; // For attack speed calculations
     }
 
-    // Calculate attacks this round based on attack speed
+    // Calculate attacks this round based on attack speed (deprecated - using percentage system now)
     getAttacksThisRound() {
-        this.attackCounter += this.attackSpeed;
-        const attacks = Math.floor(this.attackCounter);
-        this.attackCounter -= attacks;
-        return attacks;
+        // This method is no longer used with the new percentage-based attack system
+        // Attack count is now calculated directly in the combat system
+        console.warn("getAttacksThisRound() is deprecated - use percentage-based attack system");
+        return Math.floor(this.attackSpeed);
     }
 
     // Calculate damage dealt (with swarm modifiers if applicable)
@@ -75,7 +74,6 @@ export class Monster {
     // Reset for new encounter
     reset() {
         this.currentLife = this.life;
-        this.attackCounter = 0;
     }
 
     // Clone this monster (for spawning instances)

@@ -819,7 +819,7 @@ const dynamicDisplayManager = {
 
                 missionsHTML += `
                     <div class="mission-item ${statusClass}" 
-                         ${canAssign ? `onclick="dynamicDisplayManager.assignMission('${areaId}', '${mission.missionId}')"` : ''}
+                         ${canAssign ? `onclick="worldMapSystem.openMissionPreview('${areaId}', '${mission.missionId}')"` : ''}
                          title="${mission.description || ''}">
                         <div class="mission-header">
                             <div class="mission-name">${mission.name}${completionText}</div>
@@ -836,66 +836,4 @@ const dynamicDisplayManager = {
         panel.innerHTML = missionsHTML;
         panel.style.display = 'block';
     },
-
-    // Add method to assign mission
-    assignMission(areaId, missionId) {
-        const selectedExile = getCurrentExileForDisplay();
-        if (!selectedExile) {
-            uiSystem.log("No exile selected!", "failure");
-            return;
-        }
-
-        // Initialize assignments array if it doesn't exist
-        if (!turnState.assignments) {
-            turnState.assignments = [];
-        }
-
-        // Check if any exile is already assigned to this specific mission
-        const existingMissionAssignment = turnState.assignments.find(a =>
-            a.areaId === areaId && a.missionId === missionId
-        );
-
-        if (existingMissionAssignment) {
-            const assignedExile = gameState.exiles.find(e => e.id === existingMissionAssignment.exileId);
-            const missionData = getMissionData(areaId, missionId);
-
-            // If it's the same exile, allow reassignment (no change needed)
-            if (assignedExile.id === selectedExile.id) {
-                uiSystem.log(`${selectedExile.name} is already assigned to ${missionData.name}`, "info");
-                return;
-            }
-
-            // Different exile is already assigned - block assignment
-            uiSystem.log(`${assignedExile.name} is already assigned to ${missionData.name}! Unassign them first.`, "failure");
-            return;
-        }
-
-        // Check if exile already assigned to another mission
-        const existingAssignmentIndex = turnState.assignments.findIndex(a =>
-            a.exileId === selectedExile.id
-        );
-
-        if (existingAssignmentIndex !== -1) {
-            // Remove old assignment
-            const oldAssignment = turnState.assignments[existingAssignmentIndex];
-            const oldMission = getMissionData(oldAssignment.areaId, oldAssignment.missionId);
-            turnState.assignments.splice(existingAssignmentIndex, 1);
-            uiSystem.log(`${selectedExile.name} reassigned from ${oldMission.name}`, "info");
-        }
-
-        // Assign the mission
-        selectedExile.status = 'assigned';
-        turnState.assignments.push({
-            exileId: selectedExile.id,
-            areaId: areaId,
-            missionId: missionId
-        });
-
-        // Update displays
-        this.showAreaMissions(areaId); // Refresh mission list
-        exileRowManager.refreshAllRows(); // Update exile rows
-
-        const newMission = getMissionData(areaId, missionId);
-        uiSystem.log(`${selectedExile.name} assigned to ${newMission.name}`, "success");
-    }
 };
