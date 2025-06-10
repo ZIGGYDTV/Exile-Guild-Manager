@@ -205,8 +205,8 @@ const passiveDefinitions = {
         tags: ["resistance"]
     },
 
-    vitality: {
-        name: "Vitality",
+    vital: {
+        name: "Vital",
         tier: "normal",
         description: "+10% increased Life, +5% increased Defense",
         effects: [

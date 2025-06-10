@@ -117,13 +117,17 @@ const exileRowManager = {
                     <div class="status-bar-fill" style="width: ${(exile.currentLife || exile.stats.life) / exile.stats.life * 100}%"></div>
                     <div class="status-bar-text">${exile.currentLife || exile.stats.life}/${exile.stats.life}</div>
                 </div>
+                <div class="status-bar vitality-bar">
+                    <div class="status-bar-fill" style="width: 100%"></div>
+                    <div class="status-bar-text">100/100</div>
+                </div>
                 <div class="status-bar morale-bar">
                     <div class="status-bar-fill" style="width: ${exile.morale}%"></div>
                     <div class="status-bar-text">${exile.morale}/100</div>
                 </div>
-                <div class="status-bar vitality-bar">
-                    <div class="status-bar-fill" style="width: 100%"></div>
-                    <div class="status-bar-text">100/100</div>
+                <div class="status-bar exp-bar">
+                    <div class="status-bar-fill" style="width: ${exile.experience}/${exile.experienceNeeded}"></div>
+                    <div class="status-bar-text">${exile.experience}/${exile.experienceNeeded}</div>
                 </div>
             </div>
         </div>
@@ -161,11 +165,8 @@ const exileRowManager = {
                     </button>
                 `).join('');
                 } else {
-                    actionButtons = `
-                    <button class="btn-small end-turn-btn" onclick="exileRowManager.handleEndTurn()">
-                        End Turn
-                    </button>
-                `;
+                    // No action buttons during combat - use global End Turn button
+                    actionButtons = '';
                 }
             }
         } else {
@@ -271,41 +272,69 @@ const exileRowManager = {
         return null;
     },
 
-    // Update handleEndTurn to properly process missions
+    // Global End Turn handler - processes all active missions simultaneously
+    // Called by primary End Turn button in resource bar and Enter key shortcut
     async handleEndTurn() {
-        // Disable all end turn buttons
-        document.querySelectorAll('.end-turn-btn').forEach(btn => btn.disabled = true);
+        // Disable all end turn buttons and update text to show processing
+        document.querySelectorAll('.end-turn-btn').forEach(btn => {
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = 'Processing...';
+            btn.dataset.originalText = originalText;
+        });
 
-        // Get all active missions without pending decisions
-        const activeMissions = turnState.activeMissions.filter(m =>
-            !turnState.pendingDecisions.find(d => d.exileId === m.exileId)
-        );
+        try {
+            // Get all active missions without pending decisions
+            const activeMissions = turnState.activeMissions.filter(m =>
+                !turnState.pendingDecisions.find(d => d.exileId === m.exileId)
+            );
 
-        console.log("Processing turns for missions:", activeMissions);
+            console.log("Processing turns for missions:", activeMissions);
 
-        // Process all missions simultaneously
-        const combatPromises = activeMissions.map(mission =>
-            this.animateCombat(mission.exileId)
-        );
+            // Process all missions simultaneously
+            const combatPromises = activeMissions.map(mission =>
+                this.animateCombat(mission.exileId)
+            );
 
-        await Promise.all(combatPromises);
+            await Promise.all(combatPromises);
 
-        // Increment turn counter
-        turnState.currentTurn++;
-        turnState.turnsToday++;
+            // Increment turn counter
+            turnState.currentTurn++;
+            turnState.turnsToday++;
 
-        // Check if day ended
-        if (turnState.turnsToday > turnState.turnsPerDay) {
-            turnState.currentDay++;
-            turnState.turnsToday = 1;
-            console.log(`New day: ${turnState.currentDay}`);
+            // Update turn display in UI
+            const turnDisplay = document.getElementById('current-turn');
+            if (turnDisplay) {
+                turnDisplay.textContent = turnState.currentTurn;
+            }
+
+            // Check if day ended
+            if (turnState.turnsToday > turnState.turnsPerDay) {
+                turnState.currentDay++;
+                turnState.turnsToday = 1;
+                console.log(`New day: ${turnState.currentDay}`);
+            }
+
+            // Save game state
+            game.saveGame();
+
+            // Refresh all rows to show new states
+            this.refreshAllRows();
+
+        } catch (error) {
+            console.error("Error during turn processing:", error);
+            uiSystem.log("⚠️ An error occurred during turn processing. Please try again.", "failure");
+        } finally {
+            // Always re-enable buttons, even if there was an error
+            document.querySelectorAll('.end-turn-btn').forEach(btn => {
+                btn.disabled = false;
+                const originalText = btn.dataset.originalText;
+                if (originalText) {
+                    btn.textContent = originalText;
+                    btn.removeAttribute('data-original-text');
+                }
+            });
         }
-
-        // Save game state
-        game.saveGame();
-
-        // Refresh all rows to show new states
-        this.refreshAllRows();
     },
 
     async animateCombat(exileId) {
@@ -356,13 +385,13 @@ const exileRowManager = {
                             await this.showNoAttackIndicator(combatDisplay, 'exile');
                         } else {
                             // Regular attack
-                            const monsterDies = isLastRound && 
+                            const monsterDies = isLastRound &&
                                 (finalOutcome === 'victory' || finalOutcome === 'culled') &&
                                 action.targetHealthAfter <= 0;
-                            
+
                             console.log("Exile attacks for", action.finalDamage, monsterDies ? "(KILLING BLOW)" : "");
                             await this.animateAttack(combatDisplay, 'exile', action.finalDamage, monsterDies);
-                            
+
                             // Small delay between multiple attacks
                             if (round.exileActions.length > 1) {
                                 await this.wait(100);
@@ -379,14 +408,14 @@ const exileRowManager = {
                             await this.showNoAttackIndicator(combatDisplay, 'monster');
                         } else {
                             // Regular attack
-                            const exileDies = isLastRound && 
+                            const exileDies = isLastRound &&
                                 finalOutcome === 'death' &&
                                 action.exileHealthAfter <= 0;
-                            
+
                             console.log("Monster attacks for", action.finalDamage, exileDies ? "(KILLING BLOW)" : "");
                             await this.animateAttack(combatDisplay, 'monster', action.finalDamage, exileDies);
                             this.updateHealthBar(row, action.exileHealthAfter, exile.stats.life);
-                            
+
                             // Small delay between multiple attacks
                             if (round.monsterActions.length > 1) {
                                 await this.wait(100);
@@ -434,21 +463,21 @@ const exileRowManager = {
     async showNoAttackIndicator(combatDisplay, attacker) {
         const icon = combatDisplay.querySelector(`.${attacker}-icon`);
         if (!icon) return;
-        
+
         // Create timer indicator
         const timer = document.createElement('div');
         timer.className = 'no-attack-indicator';
         timer.textContent = '⏳';
         timer.style.position = 'absolute';
-        
+
         // Position relative to icon
         const iconRect = icon.getBoundingClientRect();
         const displayRect = combatDisplay.getBoundingClientRect();
-        timer.style.left = `${iconRect.left - displayRect.left + iconRect.width/2}px`;
+        timer.style.left = `${iconRect.left - displayRect.left + iconRect.width / 2}px`;
         timer.style.top = `${iconRect.top - displayRect.top - 10}px`;
-        
+
         combatDisplay.appendChild(timer);
-        
+
         // Remove after animation
         await this.wait(1000);
         timer.remove();
@@ -460,28 +489,28 @@ const exileRowManager = {
 
         const attackerIcon = combatDisplay.querySelector(`.${attacker}-icon`);
         const targetIcon = combatDisplay.querySelector(`.${attacker === 'exile' ? 'monster' : 'exile'}-icon`);
-        
+
         if (!attackerIcon || !targetIcon) return;
-        
+
         // Add attacking animation
         attackerIcon.classList.add('attacking');
-        
+
         // Create damage popup with slight position variation for multiple hits
         const existingPopups = combatDisplay.querySelectorAll('.damage-popup').length;
         const popup = document.createElement('div');
         popup.className = `damage-popup ${attacker}-damage`;
         popup.textContent = Math.floor(damage);
-        
+
         // Offset position slightly for each additional popup
         if (existingPopups > 0) {
             popup.style.transform = `translateY(${-50 - (existingPopups * 15)}%)`;
         }
-        
+
         combatDisplay.appendChild(popup);
-        
+
         // Force animation start
         void popup.offsetWidth;
-        
+
         // Death animation timing
         if (targetDies) {
             await this.wait(400);
@@ -491,7 +520,7 @@ const exileRowManager = {
         } else {
             await this.wait(600);
         }
-        
+
         // Clean up
         attackerIcon.classList.remove('attacking');
         popup.remove();

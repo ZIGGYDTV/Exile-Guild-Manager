@@ -128,7 +128,7 @@ class MonsterDatabase {
             attackSpeed: 0.8,
             damageTypes: { physical: 1.0 },
             ilvl: 1,
-            xpValue: 3,
+            xpValue: 4,
             tags: ['beast', 'undead', 'beach'],
             drops: {
                 // Monster-specific drops

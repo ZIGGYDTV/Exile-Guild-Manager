@@ -10,7 +10,6 @@ body {
     display: flex;
     height: 100vh;
     background-color: #1a1a1a;
-    padding-top: 40px; /* Add padding instead of margin */
 }
 
 /* ===== LEFT PANEL - EXILE ROWS ===== */
@@ -21,7 +20,7 @@ body {
     padding: 10px;
     gap: 10px;
     overflow: hidden;
-    height: calc(100vh - 40px); /* Subtract resource bar height */
+    height: 100vh; /* Full height since no footer underneath */
 }
 
 /* Individual Exile Row */
@@ -55,7 +54,7 @@ body {
 /* Exile Row Content Areas */
 /* Permanent Status Bars */
 .exile-status {
-    flex: 0 0 200px;
+    flex: 0 0 175px;
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -96,17 +95,20 @@ body {
 }
 
 .vitality-bar .status-bar-fill {
-    background: linear-gradient(to right, #006400, #32cd32);
+    background: linear-gradient(to right, #914e02, #d7921a);
 }
 
 .status-bar-text {
     position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
     width: 100%;
     text-align: center;
     line-height: 20px;
     font-size: 12px;
     color: white;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    z-index: 1;  /* Ensure it's above the fill */
 }
 
 /* Combat Display Area */
@@ -305,7 +307,7 @@ body {
     padding: 10px;
     gap: 10px;
     overflow: hidden;
-    height: calc(100vh - 40px); /* Subtract resource bar height */
+    height: calc(100vh - 40px); /* Subtract resource bar height from bottom */
 }
 
 /* ===== DYNAMIC DISPLAY WITH TABS ===== */
@@ -1135,50 +1137,82 @@ body {
 /* ===== RESOURCE BAR ===== */
 .resource-bar {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 40px;
-    background-color: #333;
-    border-bottom: 2px solid #444;
+    bottom: 10px; /* Match right panel padding */
+    left: calc(50% + 10px); /* Start after left panel + right panel's left padding */
+    right: 10px; /* Match right panel's right padding */
+    height: 50px; /* Increased from 40px to accommodate larger button */
+    background-color: #2a2a2a; /* Match dynamic display background */
+    border: 2px solid #444; /* Match dynamic display border */
+    border-radius: 5px; /* Match dynamic display rounded corners */
     display: flex;
-    align-items: center;
+    align-items: center; /* This centers everything vertically */
     padding: 0 20px;
     z-index: 100;
-    gap: 30px;
+    gap: 20px;
 }
 
 .resources-left {
     display: flex;
-    gap: 30px;
+    gap: 25px;
     flex: 1;
+    align-items: center; /* Center items within this container */
 }
 
 .resource-item {
     display: flex;
-    align-items: center;
+    align-items: center; /* Center items within each resource item */
     gap: 8px;
 }
 
 .resource-label {
     color: #888;
     font-size: 0.9em;
+    margin: 0; /* Remove any default margins */
 }
 
 .resource-value {
     color: #fff;
     font-weight: bold;
     font-size: 1em;
+    margin: 0; /* Remove any default margins */
+}
+
+/* Currency icons styling */
+.currency-icon {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    margin-right: 5px;
+    vertical-align: middle; /* Ensure icon aligns with text middle */
+}
+
+.chaos-icon {
+    color: #da77f2; /* Chaos purple color */
+}
+
+.exalt-icon {
+    color: #ffd700; /* Gold color for exalted */
+}
+
+/* Turn counter and button section */
+.turn-and-button {
+    display: flex;
+    align-items: center; /* Center items within this container */
+    gap: 15px;
 }
 
 .end-turn-btn {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
+    background: linear-gradient(135deg, #947422, #a88314);
     color: white;
     border: none;
-    padding: 8px 20px;
+    padding: 8px 30px; /* Increased by 30% from 8px 20px */
     border-radius: 5px;
     cursor: pointer;
     font-weight: bold;
+    font-size: 1.1em; /* Slightly larger text */
     transition: all 0.3s ease;
 }
 
@@ -1189,6 +1223,20 @@ body {
 
 .end-turn-btn:active {
     transform: translateY(0);
+}
+
+.end-turn-btn:disabled {
+    background: linear-gradient(135deg, #555, #444);
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+    box-shadow: none;
+}
+
+.end-turn-btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .end-turn-btn.has-assignments {

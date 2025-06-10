@@ -14,7 +14,7 @@
 
 
 <body>
-    <!-- Resource Bar (spans full width at top) -->
+    <!-- Resource Bar (spans right panel width at bottom) -->
     <div class="resource-bar">
         <div class="resources-left">
             <div class="resource-item">
@@ -22,23 +22,25 @@
                 <span class="resource-value" id="gold">0</span>
             </div>
             <div class="resource-item">
-                <span class="resource-label">Chaos Orbs:</span>
+                <span class="currency-icon chaos-icon">◊</span>
                 <span class="resource-value" id="chaos-orbs">0</span>
             </div>
             <div class="resource-item">
-                <span class="resource-label">Exalted Orbs:</span>
+                <span class="currency-icon exalt-icon">⬟</span>
                 <span class="resource-value" id="exalted-orbs">0</span>
             </div>
+        </div>
+
+        <div class="turn-and-button">
             <div class="resource-item">
                 <span class="resource-label">Turn:</span>
                 <span class="resource-value" id="current-turn">1</span>
             </div>
+            <!-- End Turn Button -->
+            <button class="end-turn-btn" id="end-turn-btn" onclick="exileRowManager.handleEndTurn()">
+                End Turn (Enter)
+            </button>
         </div>
-
-        <!-- End Turn Button -->
-        <button class="end-turn-btn" id="end-turn-btn" onclick="missionSystem.processDay()">
-            End Turn (Enter)
-        </button>
     </div>
 
     <!-- Main Container -->
