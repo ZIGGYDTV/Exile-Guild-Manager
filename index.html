@@ -315,6 +315,9 @@
             import { missionSystem } from './js/systems/missionSystem.js';
             import { inventorySystem } from './js/systems/inventorySystem.js';
             import { worldMapSystem } from './js/systems/worldMapSystem.js';
+            import { monsterSpawnSystem } from './js/systems/monsterSpawnSystem.js';
+            import { bossDB } from './js/data/bosses.js';
+            import { turnBasedCombat, MissionState, Encounter } from './js/systems/encounterSystem.js';
             import { characterScreenSystem } from './js/systems/characterScreenSystem.js';
             import { passiveSystem } from './js/systems/passiveSystem.js';
             import { uiSystem } from './js/systems/uiSystem.js';
@@ -329,6 +332,9 @@
             window.missionSystem = missionSystem;
             window.inventorySystem = inventorySystem;
             window.worldMapSystem = worldMapSystem;
+            window.monsterSpawnSystem = monsterSpawnSystem;
+            window.bossDB = bossDB;
+            window.turnBasedCombat = turnBasedCombat;
             window.characterScreenSystem = characterScreenSystem;
             window.passiveSystem = passiveSystem;
             window.uiSystem = uiSystem;
@@ -336,6 +342,9 @@
             // Log that systems are loaded
             console.log("Game systems loaded:", {
                 monsters: !!window.monsterDB,
+                bosses: !!window.bossDB, 
+                monsterSpawn: !!window.monsterSpawnSystem,  
+                turnBasedCombat: !!window.turnBasedCombat,  // Add this
                 items: !!window.itemDB,
                 exile: !!window.exileSystem,
                 combat: !!window.combatSystem,

@@ -9,6 +9,12 @@ const areaDefinitions = {
         theme: "coastal",
         description: "A windswept coastline littered with the remnants of shipwrecks",
 
+        // Monster spawn rates (can be overridden by missions)
+        eliteChance: {
+            magic: 0.1,   // 10% base chance
+            rare: 0.02    // 2% base chance  
+        },
+
         // Area-wide loot and reward modifiers
         lootBonuses: {
             goldMultiplier: 1.0,
@@ -75,6 +81,15 @@ const areaDefinitions = {
                 difficulty: 1,
                 ilvl: { min: 1, max: 1 },
 
+                // Monster elite spawn rates
+                // if not included defaults to area base
+                // whatever is written here is the actual spawn rate for this mission
+                eliteModifiers: {
+                    magic: 0.1, // 10% more magic spawns
+                    rare: 0.01  // 1% more rare spawns
+                },
+
+                // WILL BE REMOVED AS ITS IN PLACE OF MONSTERS
                 damage: {
                     min: 1, max: 19,
                     types: { physical: 1},
@@ -142,6 +157,11 @@ const areaDefinitions = {
 
                 difficulty: 15,
                 ilvl: { min: 2, max: 4 }, // Item level range for gear drops
+
+                eliteModifiers: {
+                    magic: 0.2, // 20% more magic spawns
+                    rare: 0.01  // 1% more rare spawns
+                },
 
                 damage: {
                     min: 5, max: 20,
@@ -232,6 +252,11 @@ const areaDefinitions = {
                 difficulty: 25,
 
                 ilvl: { min: 4, max: 6 }, // Item level range for gear drops
+
+                eliteModifiers: {
+                    magic: 0.2, // 20% more magic spawns
+                    rare: 0.05  // 5% more rare spawns
+                },
 
                 damage: {
                     min: 25, max: 55,

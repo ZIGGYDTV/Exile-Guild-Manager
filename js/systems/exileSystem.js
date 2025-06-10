@@ -273,7 +273,7 @@ class ExileSystem {
         // Apply all allocated passives
         exile.passives.allocated.forEach(passiveId => {
             const passive = passiveDefinitions[passiveId];
-            if (passive && passive.stats) {
+            if (passive && passive.effects) {
                 passive.effects.forEach(effect => {
                     switch (effect.type) {
                         case passiveTypes.INCREASED_ATTACK_SPEED:
