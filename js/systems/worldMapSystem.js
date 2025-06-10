@@ -4,8 +4,203 @@
 const worldMapSystem = {
     selectedAreaId: null,
 
-    // === MODAL MANAGEMENT ===
-    
+    // Open mission preview modal
+    openMissionPreview(areaId, missionId) {
+        const mission = getMissionData(areaId, missionId);
+        const area = getAreaData(areaId);
+
+        if (!mission || !area) {
+            console.error("Mission or area not found!");
+            return;
+        }
+
+        // Get the mission instance
+        const missionInstance = worldState.areas[areaId].missions[missionId].currentInstance;
+        if (!missionInstance) {
+            console.error("Mission instance not found!");
+            return;
+        }
+
+        // Create modal if it doesn't exist
+        if (!document.getElementById('mission-preview-modal')) {
+            this.createMissionPreviewModal();
+        }
+
+        // Populate modal with mission data
+        this.updateMissionPreviewModal(areaId, missionId, mission, missionInstance);
+
+        // Show modal
+        document.getElementById('mission-preview-modal').style.display = 'flex';
+    },
+
+    // Create the mission preview modal
+    createMissionPreviewModal() {
+        const modal = document.createElement('div');
+        modal.id = 'mission-preview-modal';
+        modal.className = 'modal-overlay mission-preview-modal';
+        modal.style.display = 'none';
+
+        modal.innerHTML = `
+        <div class="modal-content">
+            <div class="mission-preview-header">
+                <h2>
+                    <span id="preview-mission-name">Mission Name</span>
+                    <span id="preview-mission-type" class="mission-type-badge">Type</span>
+                </h2>
+                <button class="close-btn" onclick="worldMapSystem.closeMissionPreview()">&times;</button>
+            </div>
+            
+            <div class="mission-preview-body">
+                <p class="mission-description" id="preview-mission-description"></p>
+                
+                <div class="mission-info-grid">
+                    <div class="info-box">
+                        <h4>Estimated Danger</h4>
+                        <p id="preview-danger-level">Unknown</p>
+                    </div>
+                    <div class="info-box">
+                        <h4>Item Level Range</h4>
+                        <p id="preview-ilvl-range">1-3</p>
+                    </div>
+                </div>
+                
+                <div class="encounters-preview">
+                    <h3>Encounters (<span id="preview-encounter-count">0</span>)</h3>
+                    <div class="encounter-list" id="preview-encounter-list"></div>
+                </div>
+                
+                <div class="mission-deploy-section">
+                    <div class="selected-exile-info">
+                        Deploy <span class="selected-exile-name" id="preview-exile-name">No Exile Selected</span>
+                    </div>
+                    <button class="deploy-btn" id="deploy-mission-btn" onclick="worldMapSystem.deployOnMission()">
+                        Deploy on Mission
+                    </button>
+                    <div class="mission-warnings" id="preview-warnings" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    `;
+
+        // Add click handler to close on overlay click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closeMissionPreview();
+            }
+        });
+
+        document.body.appendChild(modal);
+    },
+
+    // Update mission preview modal with data
+    updateMissionPreviewModal(areaId, missionId, mission, missionInstance) {
+        // Store current mission for deployment
+        this.selectedMission = { areaId, missionId };
+
+        // Update header
+        document.getElementById('preview-mission-name').textContent = mission.name;
+        const typeElement = document.getElementById('preview-mission-type');
+        typeElement.textContent = mission.type;
+        typeElement.className = `mission-type-badge ${mission.type}`;
+
+        // Update description
+        document.getElementById('preview-mission-description').textContent = mission.description;
+
+        // Update danger level
+        const dangerLevel = missionInstance.previewInfo?.estimatedDanger || 'Unknown';
+        document.getElementById('preview-danger-level').textContent = dangerLevel;
+
+        // Update ilvl range
+        const ilvlRange = mission.ilvl ? `${mission.ilvl.min} - ${mission.ilvl.max}` : 'Unknown';
+        document.getElementById('preview-ilvl-range').textContent = ilvlRange;
+
+        // Update encounters
+        document.getElementById('preview-encounter-count').textContent = missionInstance.encounters.length;
+        const encounterList = document.getElementById('preview-encounter-list');
+
+        encounterList.innerHTML = missionInstance.encounters.map((enc, index) => {
+            const monster = monsterDB.get(enc.monsterId) || bossDB?.get(enc.monsterId);
+            if (!monster) return '';
+
+            let eliteBadge = '';
+            if (enc.elite === 'magic') {
+                eliteBadge = '<span class="elite-badge magic">Magic</span>';
+            } else if (enc.elite === 'rare') {
+                eliteBadge = '<span class="elite-badge rare">Rare</span>';
+            }
+
+            return `
+            <div class="encounter-preview-item">
+                <span class="encounter-number">Encounter ${index + 1}:</span>
+                <div class="encounter-monster">
+                    <span class="monster-icon">👹</span>
+                    <span>${monster.name}</span>
+                    ${eliteBadge}
+                </div>
+            </div>
+        `;
+        }).join('');
+
+        // Update selected exile
+        const selectedExile = getCurrentExile();
+        if (selectedExile) {
+            document.getElementById('preview-exile-name').textContent = selectedExile.name;
+            document.getElementById('deploy-mission-btn').disabled = false;
+
+            // Check for warnings (low health, etc)
+            const warnings = [];
+            if (selectedExile.currentLife < selectedExile.stats.life * 0.5) {
+                warnings.push("⚠️ Exile is below 50% health");
+            }
+
+            const warningsElement = document.getElementById('preview-warnings');
+            if (warnings.length > 0) {
+                warningsElement.innerHTML = warnings.join('<br>');
+                warningsElement.style.display = 'block';
+            } else {
+                warningsElement.style.display = 'none';
+            }
+        } else {
+            document.getElementById('preview-exile-name').textContent = 'No Exile Selected';
+            document.getElementById('deploy-mission-btn').disabled = true;
+        }
+    },
+
+    // Close mission preview modal
+    closeMissionPreview() {
+        const modal = document.getElementById('mission-preview-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    },
+
+    // Deploy the selected exile on the selected mission
+    deployOnMission() {
+        const selectedExile = getCurrentExile();
+        if (!selectedExile || !this.selectedMission) return;
+
+        const { areaId, missionId } = this.selectedMission;
+
+        // Use the mission system to deploy
+        missionSystem.deployExileOnMission(selectedExile.id, areaId, missionId);
+
+        // Close modals
+        this.closeMissionPreview();
+        this.closeWorldMap();
+
+        // Refresh UI
+        exileRowManager.refreshAllRows();
+
+        // Log deployment
+        const mission = getMissionData(areaId, missionId);
+        uiSystem.log(`${selectedExile.name} deployed on ${mission.name}!`, "info");
+    },
+
+
+
+
+    // !=== OLD MODAL MANAGEMENT ===
+
     openWorldMap() {
         // Create world map modal if it doesn't exist
         if (!document.getElementById('world-map-modal')) {
@@ -46,7 +241,7 @@ const worldMapSystem = {
     },
 
     // === MODAL CREATION ===
-    
+
     createWorldMapModal() {
         const modalHTML = `
         <div id="world-map-modal" class="world-map-overlay" style="display: none;" onclick="worldMapSystem.handleWorldMapClick(event)">
@@ -83,7 +278,7 @@ const worldMapSystem = {
     },
 
     // === DISPLAY METHODS ===
-    
+
     updateWorldMapDisplay() {
         // Update day display
         document.getElementById('world-map-day').textContent = turnState.currentTurn;
@@ -216,51 +411,55 @@ const worldMapSystem = {
             <div class="missions-panel">
                 <h4>Available Missions</h4>
                 <div class="missions-grid">
-                    ${discoveredMissions.map(mission => {
+                ${discoveredMissions.map(mission => {
                 const isAvailable = isMissionAvailable(areaId, mission.missionId);
                 const daysUntil = getDaysUntilAvailable(areaId, mission.missionId);
 
-                // Assign Mission from World Map: Check if any exile is assigned to this mission
-                const isAssigned = turnState.assignments?.some(a => a.areaId === areaId && a.missionId === mission.missionId);
-                const assignedExile = turnState.assignments?.find(a => a.areaId === areaId && a.missionId === mission.missionId);
-
-                let buttonText = "Assign Mission";
+                let buttonText = "View Mission";
                 let buttonClass = "assign-mission-btn";
                 let buttonDisabled = "";
 
                 if (!isAvailable && daysUntil > 0) {
-                    buttonText = `On Cooldown (${daysUntil} day${daysUntil > 1 ? 's' : ''})`;
+                    buttonText = `On Cooldown (${daysUntil} days)`;
                     buttonClass = "assign-mission-btn disabled";
                     buttonDisabled = "disabled";
-                } else if (isAssigned) {
-                    buttonText = `Assigned ✓ (${assignedExile.exileName})`;
-                    buttonClass = "assign-mission-btn assigned";
+                }
+
+                // Check if any exile is currently on this mission
+                const isActive = turnState.activeMissions?.some(m =>
+                    m.areaId === areaId && m.missionId === mission.missionId
+                );
+
+                if (isActive) {
+                    buttonText = "Mission in Progress";
+                    buttonClass = "assign-mission-btn active";
+                    buttonDisabled = "disabled";
                 }
 
                 return `
-                            <div class="world-mission-card ${!isAvailable ? 'mission-on-cooldown' : ''}">
-                                <div class="mission-header">
-                                    <div class="mission-name">${mission.name}</div>
-                                    <div class="mission-type ${mission.type}">${getMissionTypeData(mission.type).name}</div>
-                                </div>
-                                <div class="mission-description">${mission.description}</div>
-                                <div class="mission-stats">
-                                    <div class="stat">
-                                        <strong>Difficulty:</strong><br>${mission.difficulty}
-                                    </div>
-                                    <div class="stat">
-                                        <strong>Item Level:</strong><br>${mission.ilvl.min} - ${mission.ilvl.max}
-                                    </div>
-                                    <div class="stat">
-                                        <strong>Gear Drop:</strong><br>${Math.round((mission.gearDrop?.baseChance || 0) * 100)}%
-                                    </div>
-                                </div>
-                                <button class="${buttonClass}" ${buttonDisabled} 
-                                        onclick="missionSystem.toggleMissionAssignment('${areaId}', '${mission.missionId}')">
-                                    ${buttonText}
-                                </button>
+                        <div class="world-mission-card ${!isAvailable ? 'mission-on-cooldown' : ''}">
+                            <div class="mission-header">
+                                <div class="mission-name">${mission.name}</div>
+                                <div class="mission-type ${mission.type}">${getMissionTypeData(mission.type).name}</div>
                             </div>
-                        `;
+                            <div class="mission-description">${mission.description}</div>
+                            <div class="mission-stats">
+                                <div class="stat">
+                                    <strong>Difficulty:</strong><br>${mission.difficulty}
+                                </div>
+                                <div class="stat">
+                                    <strong>Item Level:</strong><br>${mission.ilvl.min} - ${mission.ilvl.max}
+                                </div>
+                                <div class="stat">
+                                    <strong>Gear Drop:</strong><br>${Math.round((mission.gearDrop?.baseChance || 0) * 100)}%
+                                </div>
+                            </div>
+                            <button class="${buttonClass}" ${buttonDisabled} 
+                                    onclick="worldMapSystem.openMissionPreview('${areaId}', '${mission.missionId}')">
+                                ${buttonText}
+                            </button>
+                        </div>
+                    `;
             }).join('')}
                 </div>
             </div>

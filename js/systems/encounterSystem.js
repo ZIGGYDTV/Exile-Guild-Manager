@@ -380,5 +380,5 @@ export class TurnBasedCombatSystem {
     }
 }
 
-// Export instances
+// Create and export the instance
 export const turnBasedCombat = new TurnBasedCombatSystem();

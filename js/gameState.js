@@ -6,9 +6,10 @@ const RESISTANCE_CAPS = {
 
 // ===== TIME/TURN SYSTEM =====
 const turnState = {
-    currentTurn: 1,
-    
-    // Mission assignments for current turn
+    currentTurn: 1,      // Total turns taken ever
+    currentDay: 1,       // Current day (turn / turnsPerDay)
+    turnsToday: 1,       // Turns taken today (1-10)
+    turnsPerDay: 10,     // Config: how many turns per day
     assignments: [
         // { exileId: 1, areaId: "beach", missionId: "shorelineExploration", encountersRemaining: 3 }
     ],
@@ -80,9 +81,10 @@ const worldState = {
                     completions: 0,
                     firstCompleted: false,
                     lastCompleted: null,
-                    cooldownUntil: null, // Turn number when available again
-                    bestTime: null, // Fastest completion in rounds
-                    casualtyCount: 0 // Deaths on this mission
+                    cooldownUntil: null,
+                    bestTime: null,
+                    casualtyCount: 0,
+                    currentInstance: null  
                 },
                 crab_hunting: {
                     discovered: true,
@@ -91,7 +93,8 @@ const worldState = {
                     lastCompleted: null,
                     cooldownUntil: null,
                     bestTime: null,
-                    casualtyCount: 0
+                    casualtyCount: 0,
+                    currentInstance: null  
                 }
                 // More missions discovered through play
             }

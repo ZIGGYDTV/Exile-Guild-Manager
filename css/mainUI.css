@@ -53,6 +53,7 @@ body {
 }
 
 /* Exile Row Content Areas */
+/* Permanent Status Bars */
 .exile-status {
     flex: 0 0 200px;
     display: flex;
@@ -63,12 +64,121 @@ body {
 .exile-name {
     font-weight: bold;
     color: #c9aa71;
+    margin-bottom: 5px;
 }
 
-.exile-vitals {
+.status-bars {
     display: flex;
-    gap: 15px;
-    font-size: 0.9em;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.status-bar {
+    height: 20px;
+    background-color: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.status-bar-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.health-bar .status-bar-fill {
+    background: linear-gradient(to right, #8b0000, #ff0000);
+}
+
+.morale-bar .status-bar-fill {
+    background: linear-gradient(to right, #000080, #4169e1);
+}
+
+.vitality-bar .status-bar-fill {
+    background: linear-gradient(to right, #006400, #32cd32);
+}
+
+.status-bar-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    line-height: 20px;
+    font-size: 12px;
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+/* Combat Display Area */
+.combat-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    padding: 20px;
+    min-height: 100px;
+    position: relative;
+}
+
+.combat-icon {
+    width: 60px;
+    height: 60px;
+    background: #444;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    transition: transform 0.2s;
+}
+
+.combat-icon.attacking {
+    animation: attackPulse 0.3s ease-out;
+}
+
+@keyframes attackPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.damage-popup {
+    position: absolute;
+    font-weight: bold;
+    font-size: 24px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    animation: damageFloat 1s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes damageFloat {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+}
+
+.damage-popup.player-damage {
+    color: #ffeb3b;
+    right: 40%;
+}
+
+.damage-popup.monster-damage {
+    color: #ff6b35;
+    left: 40%;
+}
+
+.round-indicator {
+    position: absolute;
+    bottom: 10px;
+    width: 100%;
+    text-align: center;
+    color: #888;
+    font-size: 14px;
 }
 
 .exile-main-area {

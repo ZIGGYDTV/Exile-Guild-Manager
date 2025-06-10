@@ -59,6 +59,20 @@ const game = {
                     });
                 }
             });
+            if (typeof missionGeneration !== 'undefined') {
+                // Beach starting missions
+                if (worldState.areas.beach?.missions.shorelineExploration &&
+                    !worldState.areas.beach.missions.shorelineExploration.currentInstance) {
+                    worldState.areas.beach.missions.shorelineExploration.currentInstance =
+                        missionGeneration.generateMissionInstance('beach', 'shorelineExploration');
+                }
+
+                if (worldState.areas.beach?.missions.crab_hunting &&
+                    !worldState.areas.beach.missions.crab_hunting.currentInstance) {
+                    worldState.areas.beach.missions.crab_hunting.currentInstance =
+                        missionGeneration.generateMissionInstance('beach', 'crab_hunting');
+                }
+            }
         } else {
             console.log("areaDefinitions not loaded yet - skipping area initialization");
         }

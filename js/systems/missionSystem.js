@@ -6,6 +6,52 @@ class MissionSystem {
         console.log("Mission system initialized");
     }
 
+    deployExileOnMission(exileId, areaId, missionId) {
+        // Make sure MissionState is available
+        if (typeof MissionState === 'undefined') {
+            console.error("MissionState not loaded yet!");
+            return;
+        }
+        
+        const missionData = getCompleteMissionData(areaId, missionId);
+        const missionInstance = worldState.areas[areaId].missions[missionId].currentInstance;
+        
+        if (!missionInstance) {
+            console.error("No mission instance found!");
+            return;
+        }
+        
+        // Create the mission state - use window.MissionState if needed
+        const missionState = new (window.MissionState || MissionState)(missionData, exileId);
+
+        // Generate actual monster instances for each encounter
+        missionInstance.encounters.forEach((encData, index) => {
+            const monster = monsterSpawnSystem.spawnMonster(
+                encData.monsterId,
+                areaId,
+                missionId,
+                encData.elite
+            );
+            const encounter = new Encounter(monster, index + 1, missionInstance.encounters.length);
+            missionState.encounters.push(encounter);
+        });
+
+        // Add to active missions
+        turnState.activeMissions.push({
+            exileId: exileId,
+            areaId: areaId,
+            missionId: missionId,
+            missionState: missionState
+        });
+
+        // Update exile status
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        if (exile) {
+            exile.status = 'in_mission';
+            exile.currentMission = { areaId, missionId };
+        }
+    }
+
     runMission(missionKey, exileId = null) {
         const [areaId, missionId] = missionKey.split('.');
 
@@ -91,12 +137,12 @@ class MissionSystem {
                 // Use updated generateGear method
                 newGear = this.generateGear(areaId, missionId, gearIlvl);
                 gameState.inventory.items.push(newGear);  // Use items instead of backpack
-                
+
                 // Update inventory grid if it exists
                 if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.gridContainer) {
                     inventoryGridManager.addNewItemToInventory(newGear);
                 }
-                
+
                 uiSystem.log(`⭐ Found ${newGear.name}!`, newGear.rarity === 'rare' ? 'legendary' : 'success');
             }
 
@@ -337,7 +383,7 @@ class MissionSystem {
         // Run each assigned mission
         turnState.assignments.forEach((assignment, index) => {
             const { exileId, areaId, missionId } = assignment;
-            
+
             // Find the exile
             const exile = gameState.exiles.find(e => e.id === exileId);
             if (!exile || exile.status === 'dead') {
@@ -479,7 +525,209 @@ class MissionSystem {
         }
     }
 
+    // Inside the MissionSystem class, add these methods:
+
+    // Process one turn for an active mission
+    processMissionTurn(exileId) {
+        // Find the active mission for this exile
+        const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
+        if (!activeMission) {
+            console.error("No active mission for exile:", exileId);
+            return null;
+        }
+
+        const { missionState } = activeMission;
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        const currentEncounter = missionState.getCurrentEncounter();
+
+        if (!currentEncounter || !exile) {
+            console.error("Invalid mission state");
+            return null;
+        }
+
+        // Run combat for this turn (5 rounds)
+        const turnResult = turnBasedCombat.simulateTurn(exile, currentEncounter);
+
+        // Store the result in mission log
+        missionState.combatLog.push({
+            encounter: currentEncounter.encounterNumber,
+            turn: currentEncounter.turnsElapsed,
+            result: turnResult
+        });
+
+        // Handle outcomes
+        if (turnResult.outcome === 'victory' || turnResult.outcome === 'culled') {
+            return this.handleEncounterVictory(activeMission, turnResult);
+        } else if (turnResult.outcome === 'death') {
+            return this.handleExileDeath(activeMission, turnResult);
+        } else {
+            // Combat continues - present choices to player
+            return {
+                type: 'decision_needed',
+                exileId: exileId,
+                choices: this.getAvailableChoices(exile, currentEncounter, turnResult),
+                turnResult: turnResult
+            };
+        }
+    }
+
+    // Handle encounter victory
+    handleEncounterVictory(activeMission, turnResult) {
+        const { missionState, exileId } = activeMission;
+        const encounter = missionState.getCurrentEncounter();
+
+        // Generate loot for this monster
+        const loot = this.generateMonsterLoot(encounter.monster);
+        if (loot) {
+            missionState.addLoot(loot);
+        }
+
+        // Add gold/exp to pool
+        const goldDrop = Math.floor(encounter.monster.xpValue * 2); // Simple formula
+        missionState.addCurrency(goldDrop, 0, 0);
+        missionState.totalExperience += encounter.monster.xpValue;
+
+        // Update encounter status
+        encounter.status = 'victory';
+
+        // Check if more encounters remain
+        const nextEncounter = missionState.nextEncounter();
+
+        if (nextEncounter) {
+            // More encounters - allow safe retreat or continue
+            return {
+                type: 'encounter_complete',
+                exileId: exileId,
+                loot: loot,
+                gold: goldDrop,
+                hasNextEncounter: true,
+                nextEncounter: nextEncounter.getDescription()
+            };
+        } else {
+            // Mission complete!
+            return this.completeMissionSuccess(activeMission);
+        }
+    }
+
+    // Get available choices after a turn
+    getAvailableChoices(exile, encounter, turnResult) {
+        const choices = [];
+
+        // Always can continue fighting or retreat
+        choices.push({
+            id: 'continue',
+            label: 'Continue Fighting',
+            description: 'Attack for another 5 rounds'
+        });
+
+        choices.push({
+            id: 'retreat',
+            label: 'Combat Retreat',
+            description: 'Flee with injuries and lose some loot',
+            warning: true
+        });
+
+        // Add flask option if available and needed
+        if (exile.flask && exile.flask.charges > 0 &&
+            exile.currentLife < exile.stats.life * 0.7) {
+            choices.push({
+                id: 'use_flask',
+                label: `Use ${exile.flask.name}`,
+                description: `Restore ${exile.flask.healing} life (${exile.flask.charges} charges left)`
+            });
+        }
+
+        return choices;
+    }
+
+    // Process player's decision
+    processDecision(exileId, decision) {
+        const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
+        if (!activeMission) return null;
+
+        const exile = gameState.exiles.find(e => e.id === exileId);
+
+        switch (decision) {
+            case 'continue':
+                // Just process next turn
+                return this.processMissionTurn(exileId);
+
+            case 'retreat':
+                return this.handleCombatRetreat(activeMission);
+
+            case 'use_flask':
+                this.useFlask(exile);
+                // Then continue to next turn
+                return this.processMissionTurn(exileId);
+
+            case 'safe_retreat':
+                // Between encounters - no penalty
+                return this.completeMissionRetreat(activeMission, false);
+
+            case 'next_encounter':
+                // Move to next encounter
+                return {
+                    type: 'encounter_started',
+                    exileId: exileId,
+                    encounter: activeMission.missionState.getCurrentEncounter().getDescription()
+                };
+        }
+    }
+
+    // Generate loot from a monster (simplified for now)
+    generateMonsterLoot(monster) {
+        // Use monster's drop chance
+        if (Math.random() > (monster.drops?.dropChance || 0.1)) {
+            return null;
+        }
+
+        // Generate item based on monster's ilvl
+        // This would use your existing gear generation
+        return {
+            name: "Placeholder Item",
+            // ... generate real item
+        };
+    }
+
+// ! DEBUG DEBUG DEBUG
+// Temporary test method - add to end of MissionSystem class
+testNewMissionSystem() {
+    console.log("=== Testing New Mission System ===");
+    
+    // Get first exile
+    const exile = gameState.exiles[0];
+    if (!exile) {
+        console.error("No exile to test with!");
+        return;
+    }
+    
+    console.log(`Testing with ${exile.name}`);
+    
+    // Deploy on crab hunting mission
+    console.log("1. Deploying exile on mission...");
+    this.deployExileOnMission(exile.id, 'beach', 'crab_hunting');
+    
+    // Check active missions
+    console.log("2. Active missions:", turnState.activeMissions);
+    
+    // Process first turn
+    console.log("3. Processing first turn...");
+    const turnResult = this.processMissionTurn(exile.id);
+    console.log("Turn result:", turnResult);
+    
+    // If decision needed, make one
+    if (turnResult?.type === 'decision_needed') {
+        console.log("4. Making decision to continue...");
+        const decisionResult = this.processDecision(exile.id, 'continue');
+        console.log("Decision result:", decisionResult);
+    }
+    
+    console.log("=== Test Complete ===");
 }
+// ! END DEBUG DEBUG DEBUG
+
+}
+
 
 const missionSystem = new MissionSystem();
 export { missionSystem };
