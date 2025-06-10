@@ -48,6 +48,14 @@ const gameState = {
         items: [], 
     },
     
+    // === INVENTORY GRID LAYOUT ===
+    inventoryGridData: {
+        // Structure: { itemId: { tabId, x, y, rotation, locked } }
+        itemPositions: {},
+        // Track which tab was last active
+        activeTab: 'tab1'
+    },
+    
     // === SETTINGS ===
     settings: {
         autoSave: true,

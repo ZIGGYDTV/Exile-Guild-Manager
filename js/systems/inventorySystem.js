@@ -623,10 +623,15 @@ const inventorySystem = {
                         slotContent.innerHTML = `
                         <div class="item-equipped">
                             <div class="item-name ${equipped.rarity}">${equipped.name}</div>
-                            <div class="item-stats">
-                                ${Object.entries(equipped.stats).map(([stat, value]) =>
-                            `<div class="item-stat">+${value} ${game.getStatDisplayName(stat)}</div>`
-                        ).join('')}
+                                                        <div class="item-stats">
+                                ${Object.entries(equipped.stats).map(([stat, value]) => {
+                                    // Use the same formatting helper as inventory grid manager
+                                    if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) {
+                                        return `<div class="item-stat">${inventoryGridManager.formatStatValue(stat, value)}</div>`;
+                                    } else {
+                                        return `<div class="item-stat">+${value} ${game.getStatDisplayName(stat)}</div>`;
+                                    }
+                                }).join('')}
                             </div>
                         </div>
                     `;
@@ -752,7 +757,12 @@ const inventorySystem = {
                     }
                 }
 
-                return `<span class="item-stat-line">+${value} ${statName}</span>`;
+                // Use the same formatting helper as inventory grid manager
+                if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) {
+                    return `<span class="item-stat-line">${inventoryGridManager.formatStatValue(stat, value)}</span>`;
+                } else {
+                    return `<span class="item-stat-line">+${value} ${statName}</span>`;
+                }
             }).join('');
             html += '</div>';
         }
@@ -775,7 +785,12 @@ const inventorySystem = {
                     }
                 }
 
-                return `<span class="item-stat-line">+${value} ${statName}</span>`;
+                // Use the same formatting helper as inventory grid manager
+                if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) {
+                    return `<span class="item-stat-line">${inventoryGridManager.formatStatValue(stat, value)}</span>`;
+                } else {
+                    return `<span class="item-stat-line">+${value} ${statName}</span>`;
+                }
             }).join('');
             html += '</div>';
         }
@@ -811,7 +826,12 @@ const inventorySystem = {
                     }
                 }
 
-                return `+${value} ${statName}`;
+                // Use the same formatting helper as inventory grid manager
+                if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) {
+                    return inventoryGridManager.formatStatValue(stat, value);
+                } else {
+                    return `+${value} ${statName}`;
+                }
             }).join('<br>');
             html += '</div>';
             html += '<div class="stat-divider"></div>'; // Visual separator
@@ -832,7 +852,12 @@ const inventorySystem = {
                     }
                 }
 
-                return `+${value} ${statName}`;
+                // Use the same formatting helper as inventory grid manager
+                if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) {
+                    return inventoryGridManager.formatStatValue(stat, value);
+                } else {
+                    return `+${value} ${statName}`;
+                }
             }).join('<br>');
             html += '</div>';
         }

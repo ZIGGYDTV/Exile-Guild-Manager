@@ -548,13 +548,20 @@ class ExileSystem {
         exile.stats.chaosResist = Math.min(totalChaosResist, maxChaosResist);
 
         // Calculate light radius effects AND movement speed on scouting and exploration from gear + passives
-        // Get light radius from equipped gear
+        // Get light radius and movement speed from equipped gear (both implicits and regular stats)
         let gearLightRadius = 0;
         let gearMoveSpeed = 0;
         Object.values(exile.equipment).forEach(item => {
             if (item) {
-                gearLightRadius += item.stats.lightRadius || 0;
-                gearMoveSpeed += item.stats.moveSpeed || 0;
+                // Add from regular stats (check both camelCase and lowercase)
+                gearLightRadius += item.stats.lightRadius || item.stats.lightradius || 0;
+                gearMoveSpeed += item.stats.moveSpeed || item.stats.movespeed || 0;
+                
+                // Add from implicit stats (check both camelCase and lowercase)
+                if (item.implicitStats) {
+                    gearLightRadius += item.implicitStats.lightRadius || item.implicitStats.lightradius || 0;
+                    gearMoveSpeed += item.implicitStats.moveSpeed || item.implicitStats.movespeed || 0;
+                }
             }
         });
 
@@ -566,6 +573,10 @@ class ExileSystem {
         const totalLightRadius = gearLightRadius + passiveLightRadius;
         const totalMoveSpeed = gearMoveSpeed + passiveMoveSpeed;
 
+        // Store light radius and movement speed in stats
+        exile.stats.lightRadius = totalLightRadius;
+        exile.stats.moveSpeed = totalMoveSpeed;
+        
         // Apply to scouting bonus (base 1.0 + bonuses)
         exile.stats.scoutingBonus = 1.0 + (totalLightRadius / 100) + (totalMoveSpeed / 200);
         // End of light radius effects on scouting and exploration from gear + passives

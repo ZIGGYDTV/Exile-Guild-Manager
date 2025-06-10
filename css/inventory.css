@@ -314,6 +314,7 @@
     pointer-events: none;
     z-index: 1000;
     max-width: 300px;
+    font-size: 0.9em;
 }
 
 .tooltip-header {
@@ -321,14 +322,16 @@
     margin-bottom: 5px;
 }
 
-.tooltip-type {
-    color: #888;
-    font-size: 0.9em;
-    margin-bottom: 8px;
+.tooltip-implicit-section {
+    margin: 5px 0;
+    padding: 4px;
+    background: rgba(32, 32, 36, 0.8);
+    border-radius: 3px;
+    border-bottom: 1px solid #666;
 }
 
 .tooltip-stats {
-    margin-bottom: 5px;
+    margin: 5px 0;
 }
 
 .tooltip-stats div {
@@ -337,8 +340,8 @@
 
 .tooltip-level {
     color: #666;
-    font-size: 0.8em;
-    margin-top: 8px;
+    font-size: 0.75em;
+    margin-top: 5px;
 }
 
 /* Responsive adjustments */

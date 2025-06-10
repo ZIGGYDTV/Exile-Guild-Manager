@@ -21,6 +21,20 @@ function formatStatName(stat) {
     return statNames[stat] || stat;
 }
 
+// Helper function to normalize stat keys to camelCase for consistent aggregation
+function normalizeStatKey(statKey) {
+    const keyMap = {
+        'movespeed': 'moveSpeed',
+        'lightradius': 'lightRadius',
+        'fireresist': 'fireResist',
+        'coldresist': 'coldResist', 
+        'lightningresist': 'lightningResist',
+        'chaosresist': 'chaosResist',
+        'attackspeed': 'attackSpeed'
+    };
+    return keyMap[statKey] || statKey;
+}
+
 // Calculate total bonuses from all equipment
 function calculateEquipmentTotals(exile) {
     const totals = {};
@@ -31,14 +45,18 @@ function calculateEquipmentTotals(exile) {
             // Add implicit stats
             if (item.implicitStats) {
                 Object.entries(item.implicitStats).forEach(([stat, value]) => {
-                    totals[stat] = (totals[stat] || 0) + value;
+                    const normalizedStat = normalizeStatKey(stat);
+                    const oldValue = totals[normalizedStat] || 0;
+                    totals[normalizedStat] = oldValue + value;
                 });
             }
 
             // Add rolled stats
             if (item.stats) {
                 Object.entries(item.stats).forEach(([stat, value]) => {
-                    totals[stat] = (totals[stat] || 0) + value;
+                    const normalizedStat = normalizeStatKey(stat);
+                    const oldValue = totals[normalizedStat] || 0;
+                    totals[normalizedStat] = oldValue + value;
                 });
             }
         }
@@ -63,9 +81,37 @@ function calculateEquipmentTotals(exile) {
         html += '<div class="total-category"><strong>Resistances:</strong>';
         resists.forEach(resist => {
             if (totals[resist]) {
-                html += `<div class="element-${resist.replace('Resist', '')}">+${totals[resist]}% ${formatStatName(resist)}</div>`;
+                // Use the same formatting helper as inventory grid manager
+                const formattedStat = (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) 
+                    ? inventoryGridManager.formatStatValue(resist, totals[resist])
+                    : `+${totals[resist]}% ${formatStatName(resist)}`;
+                html += `<div class="element-${resist.replace('Resist', '')}">${formattedStat}</div>`;
             }
         });
+        html += '</div>';
+    }
+
+    // Utility stats
+    if (totals.moveSpeed || totals.lightRadius || totals.attackSpeed) {
+        html += '<div class="total-category"><strong>Utility:</strong>';
+        if (totals.moveSpeed) {
+            const formattedStat = (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) 
+                ? inventoryGridManager.formatStatValue('moveSpeed', totals.moveSpeed)
+                : `+${totals.moveSpeed}% Movement Speed`;
+            html += `<div>${formattedStat}</div>`;
+        }
+        if (totals.lightRadius) {
+            const formattedStat = (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) 
+                ? inventoryGridManager.formatStatValue('lightRadius', totals.lightRadius)
+                : `+${totals.lightRadius}% Light Radius`;
+            html += `<div>${formattedStat}</div>`;
+        }
+        if (totals.attackSpeed) {
+            const formattedStat = (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) 
+                ? inventoryGridManager.formatStatValue('attackSpeed', totals.attackSpeed)
+                : `${totals.attackSpeed}% Increased Attack Speed`;
+            html += `<div>${formattedStat}</div>`;
+        }
         html += '</div>';
     }
 
@@ -247,7 +293,7 @@ const dynamicDisplayManager = {
                     <h3>Utility Statistics</h3>
                     <div class="stat-row">
                         <span class="stat-label">Move Speed:</span>
-                        <span class="stat-value">${(exile.stats.moveSpeed * 100).toFixed(0)}%</span>
+                        <span class="stat-value">${exile.stats.moveSpeed >= 0 ? '+' : ''}${exile.stats.moveSpeed}%</span>
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Gold Find:</span>
@@ -263,7 +309,7 @@ const dynamicDisplayManager = {
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Light Radius:</span>
-                        <span class="stat-value">${exile.stats.lightRadius}</span>
+                        <span class="stat-value">${exile.stats.lightRadius >= 0 ? '+' : ''}${exile.stats.lightRadius}%</span>
                     </div>
                 </div>
                 
@@ -562,8 +608,13 @@ const dynamicDisplayManager = {
             // Implicit stats
             if (hasImplicits) {
                 for (const [stat, value] of Object.entries(item.implicitStats)) {
-                    if (value > 0) {
-                        html += `<div style="color: #9a9aaa; font-size: 0.85em; font-style: italic;">+${value} ${stat}</div>`;
+                    if (value !== 0) {
+                        // Use the same formatting helper as inventory grid manager
+                        if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) {
+                            html += `<div style="color: #9a9aaa; font-size: 0.85em; font-style: italic;">${inventoryGridManager.formatStatValue(stat, value)}</div>`;
+                        } else {
+                            html += `<div style="color: #9a9aaa; font-size: 0.85em; font-style: italic;">+${value} ${game.getStatDisplayName(stat)}</div>`;
+                        }
                     }
                 }
             }
@@ -576,8 +627,13 @@ const dynamicDisplayManager = {
             html += '<div class="rolled-stats" style="margin-bottom: 8px; padding: 6px; background: #252525; border-radius: 3px;">';
             html += '<div style="color: #aaa; font-size: 0.9em; margin-bottom: 5px;">Rolled Stats:</div>';
             for (const [stat, value] of Object.entries(item.stats)) {
-                if (value > 0) {
-                    html += `<div style="color: #ddd;">+${value} ${stat}</div>`;
+                if (value !== 0) {
+                    // Use the same formatting helper as inventory grid manager
+                    if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) {
+                        html += `<div style="color: #ddd;">${inventoryGridManager.formatStatValue(stat, value)}</div>`;
+                    } else {
+                        html += `<div style="color: #ddd;">+${value} ${game.getStatDisplayName(stat)}</div>`;
+                    }
                 }
             }
             html += '</div>';
