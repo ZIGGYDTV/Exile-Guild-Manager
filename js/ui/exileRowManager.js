@@ -50,9 +50,6 @@ const exileRowManager = {
         // Update game state with selected exile
         gameState.selectedExileId = this.rowStates[rowId].exileId;
 
-        // Remove this line that changes tabs:
-        // this.showExileDetails(this.rowStates[rowId].exileId);
-
         // Instead, refresh the current dynamic display tab with new context
         this.refreshCurrentDisplay();
     },
@@ -570,7 +567,7 @@ const exileRowManager = {
         const currentEncounter = activeMission.missionState.getCurrentEncounter();
         const monster = currentEncounter ? currentEncounter.monster : null;
 
-        // Process the turn
+        // Process the turn - rewards will NOT be applied for mission completion
         const result = missionSystem.processMissionTurn(exileId);
         console.log("Turn result:", result);
 
@@ -684,6 +681,9 @@ const exileRowManager = {
             if (result.type === 'encounter_complete' && result.hasNextEncounter) {
                 // Handle encounter transition with animations
                 await this.handleEncounterTransition(exileId, result);
+            } else if (result.type === 'mission_complete') {
+                // NOW apply the mission completion rewards after animation completes
+                missionSystem.applyMissionRewards(exileId, result.rewards);
             } else if (result.type === 'decision_needed') {
                 turnState.pendingDecisions.push({
                     exileId: exileId,

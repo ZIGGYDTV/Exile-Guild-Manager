@@ -1381,12 +1381,12 @@ const inventoryGridManager = {
             actionsContainer.innerHTML = `
             <button id="lock-item-button"
                 onclick="inventoryGridManager.toggleItemLock(${item.id})">
-                ${isLocked ? '🔓 Unlock' : '🔒 Lock'}
+                ${isLocked ? '🔓' : '🔒'}
             </button>
             <button id="sell-item-button"
                 onclick="inventoryGridManager.sellItem(${item.id})"
                 ${isLocked ? 'disabled' : ''}>
-                💰 Sell Item
+                💰
             </button>
             <button id="craft-item-button" 
                 onclick="game.craftItem(${item.id})"

@@ -141,11 +141,11 @@ class MonsterDatabase {
             tags: ['beast', 'undead', 'beach'],
             drops: {
                 dropChance: 1.0,
-                bases: ['rusted_sword', 'tattered_cloth'],
+                bases: ['rusted_sword', 'tattered_cloth'], // ! is this supported?
                 // Add currency drops
                 gold: { min: 1, max: 3 },
-                chaosOrbs: 0.01,  // 1% chance
-                exaltedOrbs: 0     // No chance
+                chaosOrbs: 1.0,  // ! debug chance change later
+                exaltedOrbs: 1.0     // ! debug chance change later
             }
         }));
 

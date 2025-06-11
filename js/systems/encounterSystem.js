@@ -255,6 +255,11 @@ export class MissionState {
             exileSystem.checkLevelUp(exile);
         }
 
+        // Update UI display to reflect currency changes
+        if (typeof uiSystem !== 'undefined' && uiSystem.updateDisplay) {
+            uiSystem.updateDisplay();
+        }
+
         // Return summary of what was gained
         return {
             gold: this.totalGold,

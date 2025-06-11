@@ -565,9 +565,31 @@ class MissionSystem {
             missionState.addLoot(loot);
         }
 
-        // Add gold/exp to pool
-        const goldDrop = Math.floor(encounter.monster.xpValue * 2); // Simple formula
-        missionState.addCurrency(goldDrop, 0, 0);
+        // Generate currency drops using monster definitions
+        let goldDrop = 0;
+        let chaosDrop = 0;
+        let exaltedDrop = 0;
+
+        if (encounter.monster.drops) {
+            if (encounter.monster.drops.gold) {
+                const goldRange = encounter.monster.drops.gold;
+                goldDrop = Math.floor(Math.random() * (goldRange.max - goldRange.min + 1)) + goldRange.min;
+                
+                if (encounter.monster.lootBonus && encounter.monster.lootBonus > 1) {
+                    goldDrop = Math.floor(goldDrop * encounter.monster.lootBonus);
+                }
+            }
+            if (encounter.monster.drops.chaosOrbs && Math.random() < encounter.monster.drops.chaosOrbs) {
+                chaosDrop = 1;
+            }
+            if (encounter.monster.drops.exaltedOrbs && Math.random() < encounter.monster.drops.exaltedOrbs) {
+                exaltedDrop = 1;
+            }
+        }
+
+        // Add currency to mission pool (applied when mission completes)
+        // Notice we are now passing the variables, not hardcoded 0s.
+        missionState.addCurrency(goldDrop, chaosDrop, exaltedDrop);
         missionState.totalExperience += encounter.monster.xpValue;
 
         // Update encounter status
@@ -689,12 +711,12 @@ class MissionSystem {
         };
     }
 
-    // Add this method to MissionSystem class:
+    // Modified method: Don't apply rewards immediately, just prepare them
     completeMissionSuccess(activeMission) {
         const { missionState, exileId, areaId, missionId } = activeMission;
 
-        // Apply all accumulated rewards
-        const rewards = missionState.applyRewards();
+        // Calculate rewards but DON'T apply them yet
+        const rewards = this.calculateMissionRewards(missionState);
 
         // Update mission completion in world state
         completeMission(areaId, missionId, 'victory');
@@ -709,14 +731,77 @@ class MissionSystem {
             exile.currentMission = null;
         }
 
-        // Log success
-        uiSystem.log(`${exile.name} completed ${missionState.missionData.name}! Earned ${rewards.gold} gold, ${rewards.experience} exp`, "success");
-
         return {
             type: 'mission_complete',
             exileId: exileId,
-            rewards: rewards
+            rewards: rewards,
+            missionState: missionState // Include mission state for delayed reward application
         };
+    }
+
+    // New helper method to calculate rewards without applying them
+    calculateMissionRewards(missionState) {
+        // Apply retreat penalty if needed
+        if (missionState.status === 'retreated') {
+            missionState.applyRetreatPenalty();
+        }
+
+        // Return rewards data without applying to game state
+        return {
+            gold: missionState.totalGold,
+            chaosOrbs: missionState.totalChaosOrbs,
+            exaltedOrbs: missionState.totalExaltedOrbs,
+            items: missionState.lootPool.length,
+            experience: missionState.totalExperience,
+            wasRetreat: missionState.status === 'retreated',
+            retreatType: missionState.retreatType,
+            itemList: [...missionState.lootPool]
+        };
+    }
+
+    // New method to actually apply rewards after animation
+    applyMissionRewards(exileId, rewards) {
+        if (!rewards) return;
+
+        // Find the exile
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        if (!exile) {
+            console.error('Could not find exile to apply rewards!');
+            return;
+        }
+
+        // Add currency to game state
+        gameState.resources.gold += rewards.gold || 0;
+        gameState.resources.chaosOrbs += rewards.chaosOrbs || 0;
+        gameState.resources.exaltedOrbs += rewards.exaltedOrbs || 0;
+
+        // Add items to inventory
+        if (rewards.itemList && rewards.itemList.length > 0) {
+            rewards.itemList.forEach(item => {
+                gameState.inventory.items.push(item);
+
+                // Update inventory grid if it exists
+                if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.addNewItemToInventory) {
+                    inventoryGridManager.addNewItemToInventory(item);
+                }
+            });
+        }
+
+        // Add experience to exile
+        exile.experience += rewards.experience || 0;
+
+        // Check for level up
+        if (typeof exileSystem !== 'undefined' && exileSystem.checkLevelUp) {
+            exileSystem.checkLevelUp(exile);
+        }
+        
+        // Update the display after applying rewards
+        if (typeof uiSystem !== 'undefined') {
+            uiSystem.updateDisplay();
+        }
+
+        // Log success
+        uiSystem.log(`${exile.name} mission rewards applied: +${rewards.gold} gold, +${rewards.experience} exp`, "success");
     }
 }
 
