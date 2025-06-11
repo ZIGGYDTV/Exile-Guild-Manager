@@ -98,6 +98,10 @@ body {
     background: linear-gradient(to right, #914e02, #d7921a);
 }
 
+.exp-bar .status-bar-fill {
+    background: linear-gradient(to right, #bd7420, #e89c19);
+}
+
 .status-bar-text {
     position: absolute;
     top: 50%;

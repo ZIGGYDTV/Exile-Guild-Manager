@@ -123,7 +123,7 @@ const exileRowManager = {
                     <div class="status-bar-text">${exile.morale}/100</div>
                 </div>
                 <div class="status-bar exp-bar">
-                    <div class="status-bar-fill" style="width: ${exile.experience}/${exile.experienceNeeded}"></div>
+                    <div class="status-bar-fill" style="width: ${exile.experienceNeeded ? (exile.experience / exile.experienceNeeded) * 100 : 0}%"></div>
                     <div class="status-bar-text">${exile.experience}/${exile.experienceNeeded}</div>
                 </div>
             </div>
