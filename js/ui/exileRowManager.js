@@ -137,6 +137,10 @@ const exileRowManager = {
         // Check if exile is in active mission
         const activeMission = turnState.activeMissions.find(m => m.exileId === exile.id);
 
+        // Check for pending decision for this exile
+        const pendingDecision = turnState.pendingDecisions.find(d => d.exileId === exile.id);
+        const isBetweenEncounters = pendingDecision && Array.isArray(pendingDecision.choices) && pendingDecision.choices.includes('retreat') && pendingDecision.choices.includes('continue');
+
         if (activeMission && activeMission.missionState) {
             const currentEncounter = activeMission.missionState && typeof activeMission.missionState.getCurrentEncounter === 'function'
                 ? activeMission.missionState.getCurrentEncounter()
@@ -164,15 +168,21 @@ const exileRowManager = {
                 </div>
             `;
 
-                        // Initialize monster health bar after HTML is added
-        setTimeout(() => this.initializeMonsterHealthBar(exile.id, currentEncounter.monster), 0);
+                // Initialize monster health bar after HTML is added
+                setTimeout(() => this.initializeMonsterHealthBar(exile.id, currentEncounter.monster), 0);
 
-                // Check for pending decisions
-                const pendingDecision = turnState.pendingDecisions.find(d => d.exileId === exile.id);
-                if (pendingDecision) {
+                if (isBetweenEncounters) {
+                    // Only show safe retreat between encounters
+                    actionButtons = `
+                        <button class="btn-small retreat-btn info" 
+                                onclick="exileRowManager.showRetreatOptions(${exile.id})"
+                                title="Safely retreat from the encounter with no penalties.">
+                            ✓ Safe Retreat
+                        </button>
+                    `;
+                } else if (pendingDecision) {
                     // In-combat decisions: Manually build action buttons
                     let buttons = [];
-                    
                     // 1. Retreat Button (using the new system)
                     const retreatInfo = this.getRetreatInfo(exile.id, currentEncounter);
                     if (retreatInfo.available && retreatInfo.type === 'risky') {
@@ -184,10 +194,9 @@ const exileRowManager = {
                             </button>
                         `);
                     }
-
                     // 2. Flask Button (for future use)
                     if (exile.flask && exile.flask.charges > 0) {
-                         buttons.push(`
+                        buttons.push(`
                             <button class="btn-small decision-btn" 
                                     onclick="exileRowManager.handleDecision(${exile.id}, 'use_flask')"
                                     title="Use Flask: Restore ${exile.flask.healing || 50} life. ${exile.flask.charges} charges left.">
@@ -195,9 +204,7 @@ const exileRowManager = {
                             </button>
                         `);
                     }
-                    
                     actionButtons = buttons.join('');
-
                 } else {
                     // Between-encounter decisions (e.g., after killing a monster)
                     const retreatInfo = this.getRetreatInfo(exile.id, currentEncounter);
@@ -701,8 +708,13 @@ const exileRowManager = {
         // Handle the mission result
         if (result) {
             if (result.type === 'encounter_complete' && result.hasNextEncounter) {
-                // Handle encounter transition with animations
-                await this.handleEncounterTransition(exileId, result);
+                // Instead of immediately transitioning, add a pending decision for retreat/continue
+                turnState.pendingDecisions.push({
+                    exileId: exileId,
+                    choices: ['retreat', 'continue']
+                });
+                // Update the row to show the new state (retreat button, preview, etc.)
+                this.updateRow(this.getRowForExile(exileId), exile);
             } else if (result.type === 'mission_complete') {
                 // NOW apply the mission completion rewards after animation completes
                 missionSystem.applyMissionRewards(exileId, result.rewards);
@@ -858,13 +870,21 @@ const exileRowManager = {
 
     // Get retreat information for an exile
     getRetreatInfo(exileId, currentEncounter) {
+        // If between encounters (pending decision for retreat/continue), only allow safe retreat
+        const pendingDecision = turnState.pendingDecisions.find(d => d.exileId === exileId);
+        const isBetweenEncounters = pendingDecision && Array.isArray(pendingDecision.choices) && pendingDecision.choices.includes('retreat') && pendingDecision.choices.includes('continue');
+        if (isBetweenEncounters) {
+            return {
+                available: true,
+                type: 'safe',
+                description: 'Safely retreat before the next encounter begins.'
+            };
+        }
         if (!currentEncounter || !currentEncounter.monster) {
             return { available: false };
         }
-
         const monster = currentEncounter.monster;
         const isMonsterAlive = monster.currentLife > 0;
-
         if (isMonsterAlive) {
             // Risky retreat - monster is alive (using the 90% from encounterSystem)
             const retreatChance = 90; // Match encounterSystem's 90% chance

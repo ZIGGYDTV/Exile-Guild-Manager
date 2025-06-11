@@ -171,7 +171,7 @@ class MonsterDatabase {
         this.register(new Monster({
             id: 'crab_swarm',
             name: 'Crab Swarm',
-            life: 40,
+            life: 100,
             damage: 6,
             defense: 3,
             attackSpeed: 1.5, // Attacks frequently
