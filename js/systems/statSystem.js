@@ -20,7 +20,7 @@ class StatDefinition {
         return this;
     }
 
-    requireThemes(...themes) {
+    requireThemes(...themes) {      // ? THIS IS CALLED A SETTER (as opposed to a getter)
         this.requiredThemes = themes;
         return this;
     }

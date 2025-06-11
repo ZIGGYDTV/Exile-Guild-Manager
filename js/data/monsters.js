@@ -143,7 +143,7 @@ class MonsterDatabase {
                 dropChance: 1.0,
                 bases: ['rusted_sword', 'tattered_cloth'], // ! is this supported?
                 // Add currency drops
-                gold: { min: 1, max: 3 },
+                gold: { min: 5, max: 22 },
                 chaosOrbs: 1.0,  // ! debug chance change later
                 exaltedOrbs: 1.0     // ! debug chance change later
             }
@@ -162,7 +162,7 @@ class MonsterDatabase {
             tags: ['human', 'cannibal', 'beach'],
             drops: {
                 dropChance: 0.15,
-                gold: { min: 3, max: 8 },
+                gold: { min: 9, max: 44 },
                 chaosOrbs: 0.02,   // 2% chance
                 exaltedOrbs: 0.001  // 0.1% chance
             }

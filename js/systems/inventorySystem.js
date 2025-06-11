@@ -394,25 +394,21 @@ const inventorySystem = {
             return false;
         }
 
-        // Get available stats that aren't already on the item
-        const availableStats = Array.from(itemBase.statWeights.keys())
+        // Get all possible stats for this slot from statDB
+        const allPossibleStats = statDB.getStatsForSlot(item.slot);
+        const craftableStats = allPossibleStats.filter(statDef => !statDef.requiredThemes);
+        const availableStats = craftableStats
+            .map(statDef => statDef.name)
             .filter(stat => !currentStatKeys.includes(stat) && stat !== statToRemove);
 
         if (availableStats.length === 0) {
-            uiSystem.log("No new stats available to roll!", "failure");
+            uiSystem.log("No available stats to add!", "failure");
             return false;
         }
 
-        // Pick a new stat
+        // Pick a random stat from available stats
         const newStat = availableStats[Math.floor(Math.random() * availableStats.length)];
-
-        // Roll value using stat system
         const statDef = statDB.getStat(newStat);
-        if (!statDef) {
-            uiSystem.log("Stat definition not found!", "failure");
-            return false;
-        }
-
         const range = statDef.getValueRange(item.ilvl);
         const value = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
 
@@ -529,7 +525,7 @@ const inventorySystem = {
         }
 
         // Get all possible stats for this slot from statDB
-        const allPossibleStats = statDB.getStatsForSlot(item.slot);
+        const allPossibleStats = statDB.getStatsForSlot(item.slot).filter(statDef => !statDef.requiredThemes);
 
         // Build list of stats that aren't already on the item
         const currentStats = Object.keys(item.stats);

@@ -27,7 +27,7 @@ function normalizeStatKey(statKey) {
         'movespeed': 'moveSpeed',
         'lightradius': 'lightRadius',
         'fireresist': 'fireResist',
-        'coldresist': 'coldResist', 
+        'coldresist': 'coldResist',
         'lightningresist': 'lightningResist',
         'chaosresist': 'chaosResist',
         'attackspeed': 'attackSpeed'
@@ -82,7 +82,7 @@ function calculateEquipmentTotals(exile) {
         resists.forEach(resist => {
             if (totals[resist]) {
                 // Use the same formatting helper as inventory grid manager
-                const formattedStat = (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) 
+                const formattedStat = (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue)
                     ? inventoryGridManager.formatStatValue(resist, totals[resist])
                     : `+${totals[resist]}% ${formatStatName(resist)}`;
                 html += `<div class="element-${resist.replace('Resist', '')}">${formattedStat}</div>`;
@@ -95,19 +95,19 @@ function calculateEquipmentTotals(exile) {
     if (totals.moveSpeed || totals.lightRadius || totals.attackSpeed) {
         html += '<div class="total-category"><strong>Utility:</strong>';
         if (totals.moveSpeed) {
-            const formattedStat = (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) 
+            const formattedStat = (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue)
                 ? inventoryGridManager.formatStatValue('moveSpeed', totals.moveSpeed)
                 : `+${totals.moveSpeed}% Movement Speed`;
             html += `<div>${formattedStat}</div>`;
         }
         if (totals.lightRadius) {
-            const formattedStat = (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) 
+            const formattedStat = (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue)
                 ? inventoryGridManager.formatStatValue('lightRadius', totals.lightRadius)
                 : `+${totals.lightRadius}% Light Radius`;
             html += `<div>${formattedStat}</div>`;
         }
         if (totals.attackSpeed) {
-            const formattedStat = (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue) 
+            const formattedStat = (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.formatStatValue)
                 ? inventoryGridManager.formatStatValue('attackSpeed', totals.attackSpeed)
                 : `${totals.attackSpeed}% Increased Attack Speed`;
             html += `<div>${formattedStat}</div>`;
@@ -207,41 +207,7 @@ const dynamicDisplayManager = {
         content.innerHTML = `
             <h2>${exile.name} - Level ${exile.level} ${classDefinitions[exile.class].name}</h2>
             
-            <div class="exile-details-grid">
-                <!-- Basic Info -->
-                <div class="detail-section">
-                    <h3>Vital Statistics</h3>
-                    <div class="stat-row">
-                        <span class="stat-label">Health:</span>
-                        <span class="stat-value">${exile.currentHp}/${exile.maxHp} (${healthPercent}%)</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Morale:</span>
-                        <span class="stat-value">${exile.morale}/100</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Status:</span>
-                        <span class="stat-value status-${exile.status}">${exile.status}</span>
-                    </div>
-                </div>
-                
-                <!-- Progression -->
-                <div class="detail-section">
-                    <h3>Progression</h3>
-                    <div class="stat-row">
-                        <span class="stat-label">Experience:</span>
-                        <span class="stat-value">${exile.experience}/${exile.experienceNeeded} (${expPercent}%)</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Passive Points:</span>
-                        <span class="stat-value">${exile.passives.pendingPoints} available</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Allocated Passives:</span>
-                        <span class="stat-value">${exile.passives.allocated.length}</span>
-                    </div>
-                </div>
-                
+            <div class="exile-details-grid">                            
                 <!-- Combat Stats -->
                 <div class="detail-section">
                     <h3>Combat Statistics</h3>
@@ -312,7 +278,23 @@ const dynamicDisplayManager = {
                         <span class="stat-value">${exile.stats.lightRadius >= 0 ? '+' : ''}${exile.stats.lightRadius}%</span>
                     </div>
                 </div>
-                
+            <!-- Progression -->
+                <div class="detail-section">
+                    <h3>Progression</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">Experience:</span>
+                        <span class="stat-value">${exile.experience}/${exile.experienceNeeded} (${expPercent}%)</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Passive Points:</span>
+                        <span class="stat-value">${exile.passives.pendingPoints} available</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Allocated Passives:</span>
+                        <span class="stat-value">${exile.passives.allocated.length}</span>
+                    </div>
+                </div>
+
                 <!-- Mission History -->
                 <div class="detail-section">
                     <h3>Mission History</h3>
@@ -368,9 +350,9 @@ const dynamicDisplayManager = {
         ];
 
         // Check if there's an item selected for click-to-equip
-        const selectedForEquipping = (typeof inventoryGridManager !== 'undefined') ? 
+        const selectedForEquipping = (typeof inventoryGridManager !== 'undefined') ?
             inventoryGridManager.selectedItemForEquipping : null;
-        const validSlots = selectedForEquipping ? 
+        const validSlots = selectedForEquipping ?
             inventoryGridManager.getValidSlotsForSelectedItem() : [];
 
         // Check if a 2H weapon is equipped
@@ -382,13 +364,13 @@ const dynamicDisplayManager = {
             const item = exile.equipment[slot];
             const isValidSlot = validSlots.includes(slot);
             const slotClasses = ['equipment-slot'];
-            
+
             if (item) {
                 slotClasses.push('occupied');
             } else {
                 slotClasses.push('empty');
             }
-            
+
             if (isValidSlot) {
                 slotClasses.push('valid-drop-slot');
             }
@@ -405,15 +387,15 @@ const dynamicDisplayManager = {
                 const rarity = item.rarity || 'common';
                 const rarityColors = {
                     'common': '#808080',
-                    'magic': '#4169E1', 
+                    'magic': '#4169E1',
                     'rare': '#FFD700',
                     'unique': '#FF4500'
                 };
                 const backgroundColor = rarityColors[rarity] || '#808080';
 
-                const clickHandler = isValidSlot ? `onclick="inventoryGridManager.equipItemToSlot('${slot}')"` : 
-                                    `onclick="dynamicDisplayManager.selectEquippedItem('${slot}', ${exile.id})"`;
-                
+                const clickHandler = isValidSlot ? `onclick="inventoryGridManager.equipItemToSlot('${slot}')"` :
+                    `onclick="dynamicDisplayManager.selectEquippedItem('${slot}', ${exile.id})"`;
+
                 equipmentHTML += `
                     <div class="${slotClasses.join(' ')} compact-slot" data-slot="${slot}" ${clickHandler}
                          onmouseenter="dynamicDisplayManager.showEquippedItemTooltip(event, '${slot}', ${exile.id})"
@@ -429,7 +411,7 @@ const dynamicDisplayManager = {
                 // Empty slot - compact display
                 const clickHandler = isValidSlot ? `onclick="inventoryGridManager.equipItemToSlot('${slot}')"` : '';
                 const emptyText = isValidSlot ? 'Click to equip' : 'Empty';
-                
+
                 equipmentHTML += `
                     <div class="${slotClasses.join(' ')} compact-slot" data-slot="${slot}" ${clickHandler}>
                         <div class="slot-label-compact">${display}</div>
@@ -537,7 +519,7 @@ const dynamicDisplayManager = {
         if (!exile || !exile.equipment[slot]) return;
 
         const item = exile.equipment[slot];
-        
+
         // Use the same tooltip system as inventory
         if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.showTooltip) {
             inventoryGridManager.showTooltip(item);
@@ -557,10 +539,10 @@ const dynamicDisplayManager = {
         if (!exile || !exile.equipment[slot]) return;
 
         const item = exile.equipment[slot];
-        
+
         // Show in inventory detail panel with unequip button
         this.updateItemDetailPanelForEquipped(item, slot, exileId);
-        
+
         // Clear any selected inventory item
         if (typeof inventoryGridManager !== 'undefined') {
             inventoryGridManager.selectedItem = null;
@@ -604,12 +586,13 @@ const dynamicDisplayManager = {
         `;
 
         // Combined weapon stats and implicits section
-        let hasWeaponStats = item.slot === 'weapon' && item.attackSpeed;
+        // TODO: (ALSO HERE 3/3) This is where crit chance and other base item properties would need to go in the future
+        let hasWeaponStats = (typeof item.attackSpeed === 'number' || typeof item.damageMultiplier === 'number');
         let hasImplicits = item.implicitStats && Object.keys(item.implicitStats).length > 0;
-        
+
         if (hasWeaponStats || hasImplicits) {
             html += '<div class="weapon-implicit-section" style="margin-bottom: 5px; padding: 6px; background:rgb(32, 32, 36); border-radius: 3px; border-bottom: 2px solid #444;">';
-            
+
             // Weapon stats
             if (hasWeaponStats) {
                 html += `<div style="color: #888; font-size: 0.85em; font-style: italic; margin-bottom: 3px;">Attack Speed: ${item.attackSpeed.toFixed(2)}</div>`;
@@ -617,7 +600,7 @@ const dynamicDisplayManager = {
                     html += `<div style="color: #888; font-size: 0.85em; font-style: italic; margin-bottom: 3px;">Damage Multiplier: ${item.damageMultiplier.toFixed(2)}</div>`;
                 }
             }
-            
+
             // Implicit stats
             if (hasImplicits) {
                 for (const [stat, value] of Object.entries(item.implicitStats)) {
@@ -631,7 +614,7 @@ const dynamicDisplayManager = {
                     }
                 }
             }
-            
+
             html += '</div>';
         }
 

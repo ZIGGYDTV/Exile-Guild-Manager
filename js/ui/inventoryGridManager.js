@@ -311,7 +311,7 @@ const inventoryGridManager = {
         if (item.shape && Array.isArray(item.shape)) {
             return this.rotateShape(item.shape, rotation);
         }
-        
+
         // Use the same logic as before to get base dimensions
         let baseDims = this.ITEM_DIMENSIONS[item.type];
 
@@ -607,7 +607,8 @@ const inventoryGridManager = {
         let html = `<div class="tooltip-header" style="color: ${color};">${item.name || 'Unknown Item'}</div>`;
 
         // Combined weapon stats and implicits section (like item detail panel)
-        let hasWeaponStats = item.slot === 'weapon' && (item.attackSpeed || item.damageMultiplier);
+        // TODO: (ALSO HERE 1/3) This is where crit chance and other base item properties would need to go in the future
+        let hasWeaponStats = (typeof item.attackSpeed === 'number' || typeof item.damageMultiplier === 'number');
         let hasImplicits = item.implicitStats && Object.keys(item.implicitStats).length > 0;
 
         if (hasWeaponStats || hasImplicits) {
@@ -1327,7 +1328,8 @@ const inventoryGridManager = {
         }
 
         // Combined weapon stats and implicits section
-        let hasWeaponStats = item.slot === 'weapon' && (item.attackSpeed || item.damageMultiplier);
+        // TODO: (ALSO HERE 2/3) This is where crit chance and other base item properties would need to go in the future
+        let hasWeaponStats = (typeof item.attackSpeed === 'number' || typeof item.damageMultiplier === 'number');
         let hasImplicits = item.implicitStats && Object.keys(item.implicitStats).length > 0;
 
         if (hasWeaponStats || hasImplicits) {
@@ -1380,18 +1382,27 @@ const inventoryGridManager = {
 
             actionsContainer.innerHTML = `
             <button id="lock-item-button"
-                onclick="inventoryGridManager.toggleItemLock(${item.id})">
+                onclick="inventoryGridManager.toggleItemLock(${item.id})"
+                class="square-action-btn craft-btn">
                 ${isLocked ? '🔓' : '🔒'}
             </button>
             <button id="sell-item-button"
                 onclick="inventoryGridManager.sellItem(${item.id})"
+                class="square-action-btn craft-btn"
                 ${isLocked ? 'disabled' : ''}>
                 💰
             </button>
-            <button id="craft-item-button" 
-                onclick="game.craftItem(${item.id})"
-                style="display: none;">
-                🔨 Craft Item
+             <button onclick="inventorySystem.useChaosOrb(${item.id})" 
+                    title="Use Chaos Orb" 
+                    class="square-action-btn craft-btn"
+                    ${!gameState.resources.chaosOrbs || gameState.resources.chaosOrbs < 1 ? 'disabled' : ''}>
+                🌀
+            </button>
+            <button onclick="inventorySystem.useExaltedOrb(${item.id})" 
+                    title="Use Exalted Orb" 
+                    class="square-action-btn craft-btn"
+                    ${!gameState.resources.exaltedOrbs || gameState.resources.exaltedOrbs < 1 ? 'disabled' : ''}>
+                ✦
             </button>
         `;
         }
