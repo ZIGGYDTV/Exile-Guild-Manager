@@ -297,47 +297,12 @@ const inventoryGridManager = {
 
     // Get item dimensions considering rotation
     getItemDimensions(item, rotation = 0) {
-        // First, try to use the item's shape property if it exists
-        if (item.shape && Array.isArray(item.shape)) {
-            const shape = this.rotateShape(item.shape, rotation);
-            return {
-                width: shape[0].length,
-                height: shape.length
-            };
-        }
-        
-        // Try to get dimensions by type first, then fall back to slot-based mapping
-        let baseDims = this.ITEM_DIMENSIONS[item.type];
-
-        if (!baseDims && item.slot) {
-            // Map slot to common types for dimensions
-            const slotToTypeMap = {
-                'weapon1h': { width: 1, height: 3 },
-                'weapon2h': { width: 1, height: 4 },
-                'weapon': { width: 1, height: 3 }, // Default weapon size
-                'helm': { width: 2, height: 2 },
-                'helmet': { width: 2, height: 2 },
-                'chest': { width: 2, height: 3 },
-                'gloves': { width: 2, height: 2 },
-                'boots': { width: 2, height: 2 },
-                'shield': { width: 2, height: 2 },
-                'ring': { width: 1, height: 1 },
-                'amulet': { width: 1, height: 1 },
-                'belt': { width: 2, height: 1 }
-            };
-            baseDims = slotToTypeMap[item.slot];
-        }
-
-        // Final fallback
-        if (!baseDims) {
-            baseDims = { width: 1, height: 1 };
-        }
-
-        if (rotation % 2 === 0) {
-            return { width: baseDims.width, height: baseDims.height };
-        } else {
-            return { width: baseDims.height, height: baseDims.width };
-        }
+        // Refactored: Always get the shape first, then return its dimensions
+        const shape = this.getItemShape(item, rotation);
+        return {
+            width: shape[0].length,
+            height: shape.length
+        };
     },
 
     // Get item shape array
@@ -347,7 +312,7 @@ const inventoryGridManager = {
             return this.rotateShape(item.shape, rotation);
         }
         
-        // Use the same logic as getItemDimensions for fallback
+        // Use the same logic as before to get base dimensions
         let baseDims = this.ITEM_DIMENSIONS[item.type];
 
         if (!baseDims && item.slot) {
@@ -378,8 +343,15 @@ const inventoryGridManager = {
         }
 
         // Regular rectangle
-        const dims = this.getItemDimensions(item, rotation);
-        return Array(dims.height).fill(null).map(() => Array(dims.width).fill(1));
+        let width, height;
+        if (rotation % 2 === 0) {
+            width = baseDims.width;
+            height = baseDims.height;
+        } else {
+            width = baseDims.height;
+            height = baseDims.width;
+        }
+        return Array(height).fill(null).map(() => Array(width).fill(1));
     },
 
     // Rotate a shape array
