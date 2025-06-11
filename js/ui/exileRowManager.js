@@ -147,13 +147,28 @@ const exileRowManager = {
             if (currentEncounter) {
                 // Show combat display for active missions
                 mainAreaContent = `
-                <div class="combat-display" data-exile-id="${exile.id}">
-                    <div class="combat-icon exile-icon" data-side="exile">⚔️</div>
-                    <div class="vs-text">VS</div>
-                    <div class="combat-icon monster-icon" data-side="monster">👹</div>
-                    <div class="round-indicator">Ready - ${currentEncounter.getDescription()}</div>
+                <div class="combat-area" data-exile-id="${exile.id}">
+                    <div class="encounter-info">Ready - ${currentEncounter.getDescription()}</div>
+                    <div class="combat-display">
+                        <div class="combat-icon exile-icon" data-side="exile">⚔️</div>
+                        <div class="vs-text">VS</div>
+                        <div class="monster-icon-wrapper">
+                            <div class="monster-health-ring">
+                                <svg class="health-ring-svg" viewBox="0 0 40 40">
+                                    <circle class="health-ring-bg" cx="20" cy="20" r="18" />
+                                    <circle class="health-ring-fill" cx="20" cy="20" r="18" 
+                                            stroke-dasharray="${113.1}" 
+                                            stroke-dashoffset="0" />
+                                </svg>
+                            </div>
+                            <div class="combat-icon monster-icon" data-side="monster">👹</div>
+                        </div>
+                    </div>
                 </div>
             `;
+
+                        // Initialize monster health bar after HTML is added
+        setTimeout(() => this.initializeMonsterHealthBar(exile.id, currentEncounter.monster), 0);
 
                 // Check for pending decisions
                 const pendingDecision = turnState.pendingDecisions.find(d => d.exileId === exile.id);
@@ -198,6 +213,192 @@ const exileRowManager = {
             ${actionButtons}
         </div>
     `;
+    },
+
+    // Initialize monster health bar with full health
+    initializeMonsterHealthBar(exileId, monster) {
+        const combatArea = document.querySelector(`[data-exile-id="${exileId}"] .combat-area`);
+        const combatDisplay = combatArea ? combatArea.querySelector('.combat-display') : null;
+        if (!combatDisplay || !monster) return;
+
+        this.updateMonsterHealthBar(combatDisplay, monster.currentLife, monster.life);
+    },
+
+    // Update monster health bar
+    updateMonsterHealthBar(combatDisplay, currentHealth, maxHealth) {
+        const healthRingFill = combatDisplay.querySelector('.health-ring-fill');
+        const healthRing = combatDisplay.querySelector('.monster-health-ring');
+        if (!healthRingFill) return;
+
+        const circumference = 113.1; // 2 * Math.PI * 18 (radius)
+        const healthPercent = Math.max(0, currentHealth / maxHealth);
+        const offset = circumference * (1 - healthPercent);
+
+        healthRingFill.style.strokeDashoffset = offset;
+
+        // If health is 0 or below, immediately hide the entire health ring
+        if (currentHealth <= 0) {
+            if (healthRing) {
+                healthRing.style.opacity = '0';
+                healthRing.style.transition = 'opacity 0.3s ease-out';
+            }
+            return;
+        }
+
+        // Change color based on health level
+        if (healthPercent > 0.6) {
+            healthRingFill.style.stroke = '#cc0000'; // Red
+        } else if (healthPercent > 0.3) {
+            healthRingFill.style.stroke = '#960800'; // darker red
+        } else {
+            healthRingFill.style.stroke = '#470400'; // very dark red (low health)
+        }
+    },
+
+    // Start monster death animation (without cleanup - used for victory/culling)
+    async startMonsterDeathAnimation(combatDisplay) {
+        const monsterIcon = combatDisplay.querySelector('.monster-icon');
+        const healthRing = combatDisplay.querySelector('.monster-health-ring');
+        
+        if (!monsterIcon || monsterIcon.classList.contains('dying')) return;
+
+        // Immediately hide health ring
+        if (healthRing) {
+            healthRing.style.opacity = '0';
+            healthRing.style.transition = 'opacity 0.3s ease-out';
+        }
+
+        // Start death animation for monster only
+        monsterIcon.classList.add('dying');
+
+        // Wait for animation to complete (1.5s as defined in CSS)
+        await this.wait(1500);
+    },
+
+    // Animate monster death and disappearance (handles cleanup)
+    async animateMonsterDeath(combatDisplay) {
+        const monsterIcon = combatDisplay.querySelector('.monster-icon');
+        const healthRing = combatDisplay.querySelector('.monster-health-ring');
+        
+        if (!monsterIcon) return;
+
+        // Immediately hide health ring if not already hidden
+        if (healthRing && healthRing.style.opacity !== '0') {
+            healthRing.style.opacity = '0';
+            healthRing.style.transition = 'opacity 0.3s ease-out';
+        }
+
+        // If not already dying, start the death animation
+        if (!monsterIcon.classList.contains('dying')) {
+            monsterIcon.classList.add('dying');
+            // Wait for death animation to complete
+            await this.wait(1500);
+        } else {
+            // Animation already started, just wait for it to finish if needed
+            await this.wait(500); // Some buffer time for any remaining animation
+        }
+
+        // Remove dying class and hide elements
+        monsterIcon.classList.remove('dying');
+        
+        // Set final state manually
+        monsterIcon.style.opacity = '0';
+        monsterIcon.style.transform = 'translateY(30px) scale(0.5)';
+        
+        // Ensure health ring is completely hidden
+        if (healthRing) {
+            healthRing.style.display = 'none';
+            healthRing.style.opacity = '0';
+        }
+    },
+
+    // Animate new monster spawning
+    async animateMonsterSpawn(combatDisplay, newMonster) {
+        const monsterIcon = combatDisplay.querySelector('.monster-icon');
+        const monsterWrapper = combatDisplay.querySelector('.monster-icon-wrapper');
+        const healthRing = combatDisplay.querySelector('.monster-health-ring');
+        const healthRingBg = combatDisplay.querySelector('.health-ring-bg');
+        const healthRingFill = combatDisplay.querySelector('.health-ring-fill');
+        
+        if (!monsterIcon || !monsterWrapper) return;
+
+        // Reset monster icon position and add spawning class
+        monsterIcon.style.opacity = '1';
+        monsterIcon.style.transform = '';
+        monsterIcon.classList.add('spawning');
+        monsterWrapper.classList.add('spawning');
+
+        // Reset and animate health ring
+        if (healthRing) {
+            healthRing.style.display = 'block'; // Make sure it's visible again
+            healthRing.style.opacity = '1';
+            healthRing.style.transform = ''; // Reset any death transform
+        }
+        
+        // Reset individual ring elements
+        if (healthRingBg) {
+            healthRingBg.style.opacity = '1';
+        }
+        if (healthRingFill) {
+            healthRingFill.style.opacity = '1';
+            healthRingFill.classList.add('resetting');
+            
+            // Reset health bar to full
+            this.updateMonsterHealthBar(combatDisplay, newMonster.currentLife, newMonster.life);
+        }
+
+        // Wait for spawn animation
+        await this.wait(800);
+
+        // Clean up animation classes
+        monsterIcon.classList.remove('spawning');
+        monsterWrapper.classList.remove('spawning');
+        if (healthRingFill) {
+            healthRingFill.classList.remove('resetting');
+        }
+    },
+
+    // Check if we need to transition to next encounter
+    async handleEncounterTransition(exileId, result) {
+        if (result.type === 'encounter_complete' && result.hasNextEncounter) {
+            const rowElement = document.querySelector(`[data-exile-id="${exileId}"]`);
+            const combatArea = rowElement ? rowElement.querySelector('.combat-area') : null;
+            const combatDisplay = combatArea ? combatArea.querySelector('.combat-display') : null;
+            
+            if (combatDisplay) {
+                // Animate monster death and disappearance
+                await this.animateMonsterDeath(combatDisplay);
+                
+                // Get the new encounter
+                const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
+                if (activeMission) {
+                    const newEncounter = activeMission.missionState.getCurrentEncounter();
+                    if (newEncounter) {
+                        // Show transition message  
+                        const encounterInfo = rowElement ? rowElement.querySelector('.encounter-info') : null;
+                        if (encounterInfo) {
+                            encounterInfo.textContent = `Transitioning to next encounter...`;
+                        }
+                        
+                        // Small pause for dramatic effect
+                        await this.wait(500);
+                        
+                        // Update encounter info for new encounter
+                        if (encounterInfo) {
+                            encounterInfo.textContent = `Next Encounter - ${newEncounter.getDescription()}`;
+                        }
+                        
+                        // Animate new monster spawning
+                        await this.animateMonsterSpawn(combatDisplay, newEncounter.monster);
+                        
+                        // Update encounter info to ready state
+                        if (encounterInfo) {
+                            encounterInfo.textContent = `Ready - ${newEncounter.getDescription()}`;
+                        }
+                    }
+                }
+            }
+        }
     },
 
     // Refresh all rows from game state
@@ -345,12 +546,17 @@ const exileRowManager = {
 
         if (!row || !exile) return;
 
-        const combatDisplay = row.querySelector('.combat-display');
+        const combatArea = row.querySelector('.combat-area');
+        const combatDisplay = combatArea ? combatArea.querySelector('.combat-display') : null;
         if (!combatDisplay) return;
 
         // Get the active mission to check combat log
         const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
         if (!activeMission) return;
+
+        // Store monster reference at start of animation (before it potentially gets cleared)
+        const currentEncounter = activeMission.missionState.getCurrentEncounter();
+        const monster = currentEncounter ? currentEncounter.monster : null;
 
         // Process the turn
         const result = missionSystem.processMissionTurn(exileId);
@@ -371,10 +577,10 @@ const exileRowManager = {
                 const isLastRound = i === rounds.length - 1;
                 console.log(`Round ${round.round}:`, round);
 
-                // Update round indicator
-                const roundIndicator = combatDisplay.querySelector('.round-indicator');
-                if (roundIndicator) {
-                    roundIndicator.textContent = `Round ${round.round} of 5`;
+                // Update encounter info
+                const encounterInfo = row.querySelector('.encounter-info');
+                if (encounterInfo) {
+                    encounterInfo.textContent = `Round ${round.round} of 5`;
                 }
 
                 // Animate exile actions
@@ -391,6 +597,11 @@ const exileRowManager = {
 
                             console.log("Exile attacks for", action.finalDamage, monsterDies ? "(KILLING BLOW)" : "");
                             await this.animateAttack(combatDisplay, 'exile', action.finalDamage, monsterDies);
+                            
+                            // Update monster health bar (use stored monster reference)
+                            if (monster) {
+                                this.updateMonsterHealthBar(combatDisplay, action.targetHealthAfter, monster.life);
+                            }
 
                             // Small delay between multiple attacks
                             if (round.exileActions.length > 1) {
@@ -435,21 +646,32 @@ const exileRowManager = {
             }
 
             // Show final outcome
-            const roundIndicator = combatDisplay.querySelector('.round-indicator');
+            const encounterInfo = row.querySelector('.encounter-info');
             if (lastCombat.result.outcome === 'victory') {
-                roundIndicator.textContent = "Victory!";
-                await this.wait(1000);
+                if (encounterInfo) {
+                    encounterInfo.textContent = "Victory!";
+                }
+                await this.wait(500); // Brief pause to show victory message
+                
+                // Start unified death animation
+                await this.startMonsterDeathAnimation(combatDisplay);
+                
             } else if (lastCombat.result.outcome === 'culled') {
-                roundIndicator.textContent = "Executed! (Culling Strike)";
-                await this.wait(1000);
+                if (encounterInfo) {
+                    encounterInfo.textContent = "Executed! (Culling Strike)";
+                }
+                await this.wait(500); // Brief pause to show culling message
+                
+                // Start unified death animation
+                await this.startMonsterDeathAnimation(combatDisplay);
             }
         }
 
         // Handle the mission result
         if (result) {
             if (result.type === 'encounter_complete' && result.hasNextEncounter) {
-                const roundIndicator = combatDisplay.querySelector('.round-indicator');
-                roundIndicator.textContent = result.nextEncounter;
+                // Handle encounter transition with animations
+                await this.handleEncounterTransition(exileId, result);
             } else if (result.type === 'decision_needed') {
                 turnState.pendingDecisions.push({
                     exileId: exileId,

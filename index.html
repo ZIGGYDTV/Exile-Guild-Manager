@@ -301,13 +301,14 @@
         <!-- World system logic -->
         <script src="js/systems/worldSystem.js"></script>
 
-        <!-- New game system modules -->
         <script type="module">
             // Import data systems
             import { monsterDB } from './js/data/monsters.js';
+            import { bossDB } from './js/data/bosses.js';
+            import { itemBases } from './js/data/items.js';  // NEW: Import item data
 
             // Import existing item systems
-            import { itemDB } from './js/systems/itemSystem.js';
+            import { itemDB, Equipment, Weapon, Armor, Jewelry, Ring, Amulet, Belt } from './js/systems/itemSystem.js';  // UPDATED: Import all classes
             import { statDB } from './js/systems/statSystem.js';
             import { rarityDB } from './js/systems/raritySystem.js';
 
@@ -318,7 +319,6 @@
             import { inventorySystem } from './js/systems/inventorySystem.js';
             import { worldMapSystem } from './js/systems/worldMapSystem.js';
             import { monsterSpawnSystem } from './js/systems/monsterSpawnSystem.js';
-            import { bossDB } from './js/data/bosses.js';
             import { turnBasedCombat, MissionState, Encounter } from './js/systems/encounterSystem.js';
             import { missionGeneration } from './js/systems/missionGenerationSystem.js';
             import { characterScreenSystem } from './js/systems/characterScreenSystem.js';
@@ -327,7 +327,16 @@
 
             // Make them globally available during transition
             window.monsterDB = monsterDB;
+            window.bossDB = bossDB;
+            window.itemBases = itemBases;  // NEW: Make item data available
             window.itemDB = itemDB;
+            window.Equipment = Equipment;  // NEW: Make classes available
+            window.Weapon = Weapon;
+            window.Armor = Armor;
+            window.Jewelry = Jewelry;
+            window.Ring = Ring;
+            window.Amulet = Amulet;
+            window.Belt = Belt;
             window.statDB = statDB;
             window.rarityDB = rarityDB;
             window.exileSystem = exileSystem;
@@ -336,7 +345,6 @@
             window.inventorySystem = inventorySystem;
             window.worldMapSystem = worldMapSystem;
             window.monsterSpawnSystem = monsterSpawnSystem;
-            window.bossDB = bossDB;
             window.turnBasedCombat = turnBasedCombat;
             window.MissionState = MissionState;
             window.Encounter = Encounter;
@@ -349,9 +357,17 @@
             console.log("Game systems loaded:", {
                 monsters: !!window.monsterDB,
                 bosses: !!window.bossDB,
+                itemBases: !!window.itemBases,  // NEW: Check item data
+                itemDB: !!window.itemDB,
+                items: {  // NEW: Detailed item system check
+                    database: !!window.itemDB,
+                    bases: !!window.itemBases,
+                    Equipment: !!window.Equipment,
+                    Weapon: !!window.Weapon,
+                    Armor: !!window.Armor
+                },
                 monsterSpawn: !!window.monsterSpawnSystem,
-                turnBasedCombat: !!window.turnBasedCombat,  // Add this
-                items: !!window.itemDB,
+                turnBasedCombat: !!window.turnBasedCombat,
                 exile: !!window.exileSystem,
                 combat: !!window.combatSystem,
                 mission: !!window.missionSystem,

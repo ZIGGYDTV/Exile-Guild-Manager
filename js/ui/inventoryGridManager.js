@@ -66,7 +66,7 @@ const inventoryGridManager = {
         });
 
 
-        
+
         // Create tooltip element
         this.createTooltipElement();
 
@@ -91,20 +91,20 @@ const inventoryGridManager = {
     setupEventListeners() {
         // Keyboard events
         document.addEventListener('keydown', (e) => this.handleKeyPress(e));
-        
+
         // Ctrl key state tracking for visual feedback
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey && this.gridContainer) {
                 this.gridContainer.classList.add('ctrl-held');
             }
         });
-        
+
         document.addEventListener('keyup', (e) => {
             if (!e.ctrlKey && this.gridContainer) {
                 this.gridContainer.classList.remove('ctrl-held');
             }
         });
-        
+
         // Clear Ctrl state when window loses focus
         window.addEventListener('blur', () => {
             if (this.gridContainer) {
@@ -162,7 +162,7 @@ const inventoryGridManager = {
 
         // Fall back to sequential placement if no saved state
         console.log('Using sequential placement for items');
-        
+
         // Place items sequentially from top-left to bottom-right
         let currentTab = 'tab1';
         const tabOrder = ['tab1', 'tab2', 'tab3', 'tab4'];
@@ -301,7 +301,7 @@ const inventoryGridManager = {
     getItemDimensions(item, rotation = 0) {
         // Try to get dimensions by type first, then fall back to slot-based mapping
         let baseDims = this.ITEM_DIMENSIONS[item.type];
-        
+
         if (!baseDims && item.slot) {
             // Map slot to common types for dimensions
             const slotToTypeMap = {
@@ -317,12 +317,12 @@ const inventoryGridManager = {
             };
             baseDims = slotToTypeMap[item.slot];
         }
-        
+
         // Final fallback
         if (!baseDims) {
             baseDims = { width: 1, height: 1 };
         }
-        
+
         if (rotation % 2 === 0) {
             return { width: baseDims.width, height: baseDims.height };
         } else {
@@ -334,7 +334,7 @@ const inventoryGridManager = {
     getItemShape(item, rotation = 0) {
         // Use the same logic as getItemDimensions
         let baseDims = this.ITEM_DIMENSIONS[item.type];
-        
+
         if (!baseDims && item.slot) {
             const slotToTypeMap = {
                 'weapon': { width: 1, height: 3 },
@@ -349,7 +349,7 @@ const inventoryGridManager = {
             };
             baseDims = slotToTypeMap[item.slot] || { width: 1, height: 1 };
         }
-        
+
         if (!baseDims) {
             baseDims = { width: 1, height: 1 };
         }
@@ -411,7 +411,7 @@ const inventoryGridManager = {
         if (this.addItemToGrid(itemData.item, newTabId, newX, newY, itemData.rotation)) {
             // Restore lock status
             this.tabs.get(newTabId).items.get(itemId).locked = itemData.locked;
-            
+
             // Save the new grid state and persist to disk
             this.saveGridState();
             game.saveGame();
@@ -448,7 +448,7 @@ const inventoryGridManager = {
             this.removeItemFromGrid(itemId, tabId);
             this.addItemToGrid(itemData.item, tabId, itemData.x, itemData.y, newRotation);
             this.tabs.get(tabId).items.get(itemId).locked = itemData.locked;
-            
+
             // Save the new grid state and persist to disk
             this.saveGridState();
             game.saveGame();
@@ -475,7 +475,7 @@ const inventoryGridManager = {
         if (item) {
             // Update the item detail panel
             this.updateItemDetailPanel(item);
-            
+
             // Auto-enter click-to-equip mode for equipable items
             if (item.slot && gameState.selectedExileId && this.canExileEquipItem(gameState.selectedExileId)) {
                 this.selectItemForEquipping(itemId);
@@ -491,7 +491,7 @@ const inventoryGridManager = {
 
         // Update inventory display first, then refresh any active equipment display
         this.updateDisplay();
-        
+
         // Extra refresh to ensure equipment display updates
         if (typeof dynamicDisplayManager !== 'undefined') {
             // Small delay to ensure inventory update completes first
@@ -570,19 +570,19 @@ const inventoryGridManager = {
     // Helper function to format stat display
     formatStatValue(statKey, value) {
         const displayName = game.getStatDisplayName(statKey);
-        
+
         // Define stats that should display as percentages (additive)
         const percentageStats = [
             'fireResist', 'coldResist', 'lightningResist', 'chaosResist',
             'fireresist', 'coldresist', 'lightningresist', 'chaosresist',
             'moveSpeed', 'movespeed', 'lightRadius', 'lightradius'
         ];
-        
+
         // Handle "increased" stats (multiplicative scaling) - these already have "Increased" in their display name
         if (statKey === 'attackSpeed') {
             return `${value}% ${displayName}`;
         }
-        
+
         // Handle percentage stats (additive)
         if (percentageStats.includes(statKey)) {
             if (value < 0) {
@@ -591,7 +591,7 @@ const inventoryGridManager = {
                 return `+${value}% ${displayName}`;
             }
         }
-        
+
         // Handle regular stats (non-percentage)
         if (value < 0) {
             return `${value} ${displayName}`;
@@ -613,16 +613,16 @@ const inventoryGridManager = {
             'unique': '#FF4500'
         };
         const color = rarityColors[itemRarity] || '#808080';
-        
+
         let html = `<div class="tooltip-header" style="color: ${color};">${item.name || 'Unknown Item'}</div>`;
 
         // Combined weapon stats and implicits section (like item detail panel)
         let hasWeaponStats = item.slot === 'weapon' && (item.attackSpeed || item.damageMultiplier);
         let hasImplicits = item.implicitStats && Object.keys(item.implicitStats).length > 0;
-        
+
         if (hasWeaponStats || hasImplicits) {
             html += '<div class="tooltip-implicit-section" style="margin: 5px 0; padding: 4px; background: rgba(32, 32, 36, 0.8); border-radius: 3px; border-bottom: 1px solid #666;">';
-            
+
             // Weapon stats (in smaller text)
             if (hasWeaponStats) {
                 if (item.attackSpeed) {
@@ -632,7 +632,7 @@ const inventoryGridManager = {
                     html += `<div style="color: #888; font-size: 0.8em; font-style: italic;">Damage Multiplier: ${item.damageMultiplier.toFixed(2)}</div>`;
                 }
             }
-            
+
             // Implicit stats
             if (hasImplicits) {
                 for (const [stat, value] of Object.entries(item.implicitStats)) {
@@ -641,7 +641,7 @@ const inventoryGridManager = {
                     }
                 }
             }
-            
+
             html += '</div>';
         }
 
@@ -687,13 +687,13 @@ const inventoryGridManager = {
         if (e.key.toLowerCase() === 'r' && this.selectedItem) {
             this.rotateItem(this.selectedItem);
         }
-        
+
         // Cancel click-to-equip mode with Escape
         if (e.key === 'Escape' && this.selectedItemForEquipping) {
             this.clearSelectedItemForEquipping();
             uiSystem.log('Click-to-equip cancelled', 'info');
         }
-        
+
         // Show help for keyboard shortcuts (F1 is universal help key)
         if (e.key === 'F1') {
             e.preventDefault(); // Prevent browser's F1 help
@@ -708,7 +708,7 @@ const inventoryGridManager = {
             this.selectedItem = null;
             // Clear click-to-equip selection when switching inventory tabs (but keep it when switching to equipment)
             this.clearSelectedItemForEquipping();
-            
+
             // Save the active tab change and persist to disk
             this.saveGridState();
             game.saveGame();
@@ -744,8 +744,8 @@ const inventoryGridManager = {
         // Render items
         tab.items.forEach((itemData, itemId) => {
             const isSelected = itemId === this.selectedItem;
-            const isSelectedForEquipping = this.selectedItemForEquipping && 
-                                          this.selectedItemForEquipping.itemId === itemId;
+            const isSelectedForEquipping = this.selectedItemForEquipping &&
+                this.selectedItemForEquipping.itemId === itemId;
             this.renderItem(itemData, isSelected, isSelectedForEquipping);
         });
     },
@@ -781,7 +781,7 @@ const inventoryGridManager = {
 
                         // Calculate which borders this cell should have based on item perimeter
                         const borders = this.calculateCellBorders(shape, dx, dy, dims);
-                        
+
                         // Completely remove all visual artifacts that could create lines
                         cell.style.setProperty('border', 'none', 'important');
                         cell.style.setProperty('border-top', 'none', 'important');
@@ -790,7 +790,7 @@ const inventoryGridManager = {
                         cell.style.setProperty('border-left', 'none', 'important');
                         cell.style.setProperty('outline', 'none', 'important');
                         cell.style.setProperty('box-shadow', 'none', 'important');
-                        
+
                         // Apply only perimeter borders
                         if (borders.top) cell.style.setProperty('border-top', `2px solid ${borderColor}`, 'important');
                         if (borders.right) cell.style.setProperty('border-right', `2px solid ${borderColor}`, 'important');
@@ -810,7 +810,7 @@ const inventoryGridManager = {
                             if (borders.bottom) cell.style.setProperty('border-bottom', '3px solid #c9aa71', 'important');
                             if (borders.left) cell.style.setProperty('border-left', '3px solid #c9aa71', 'important');
                         }
-                        
+
                         // Highlight if selected for equipping
                         if (isSelectedForEquipping) {
                             cell.classList.add('selected-for-equipping');
@@ -872,94 +872,11 @@ const inventoryGridManager = {
 
     // Get simple icon for item type
     getItemIcon(item) {
-        const icons = {
-            // Specific weapon types (from item names)
-            'Stone Hatchet': '⛏',
-            'Iron Bar': '/',
-            'Broken Short Sword': '🗡',
-            'Quarterstaff': '|',
-            'Basket Rapier Handguard': '⚔',
-            
-            // Armor pieces (from item names)
-            'Stone Ring': '💍',
-            'Wooden Ring': '💍',
-            'Bonecharm Amulet': '📿',
-            'Pukashell Necklace': '📿',
-            'Nail-studded Leather Belt': '▬',
-            'Cord Belt': '▬',
-            'Rawhide Mittens': '🧤',
-            'Single Leather Glove': '🧤',
-            'Rag Handwraps': '🧤',
-            'PatchLeather Footwraps': '🥾',
-            'Gobletcapped Boots': '🥾',
-            'Rag Tunic': '🎽',
-            'Patchleather Cap': '🎩',
-            'Rag and Chain Cowl': '👑',
-            'Plank and Rope Armguard': '⚔',
-            'Barrel Lid': '🛡',
-            
-            // Generic type fallbacks
-            'Sword': '⚔',
-            'Axe': '⛏',
-            'Mace': '⚒',
-            'Dagger': '🗡',
-            'Wand': 'i',
-            'Staff': '|',
-            'Bow': '🏹',
-            'Two-Handed Sword': '⚔',
-            'Two-Handed Axe': '⛏',
-            'Two-Handed Mace': '⚒',
-            'Ring': '💍',
-            'Amulet': '🔶',
-            'Belt': '▬',
-            'Gloves': '🧤',
-            'Boots': '🥾',
-            'Chest': '🎽',
-            'Helmet': '🎩',
-            'Shield': '🛡',
-            
-            // Slot-based fallbacks
-            'weapon': '⚔',
-            'helmet': '🎩',
-            'chest': '🎽',
-            'gloves': '🧤',
-            'boots': '🥾',
-            'shield': '🛡',
-            'ring': '💍',
-            'amulet': '🔶',
-            'belt': '▬'
-        };
-        
-        // Try multiple approaches to find an icon
-        let iconKey = item.type || item.slot || item.name;
-        let icon = icons[iconKey];
-        
-        // If no exact match, try to infer from item name
-        if (!icon) {
-            const name = item.name.toLowerCase();
-            if (name.includes('sword') || name.includes('blade')) icon = '⚔';
-            else if (name.includes('axe') || name.includes('hatchet')) icon = '⛏';
-            else if (name.includes('mace') || name.includes('hammer') || name.includes('bar')) icon = '⚒';
-            else if (name.includes('staff') || name.includes('quarterstaff')) icon = '|';
-            else if (name.includes('wand')) icon = 'i';
-            else if (name.includes('bow')) icon = '🏹';
-            else if (name.includes('ring')) icon = '💍';
-            else if (name.includes('amulet') || name.includes('charm')) icon = '🔶';
-            else if (name.includes('necklace')) icon = '📿';
-            else if (name.includes('belt')) icon = '▬';
-            else if (name.includes('glove') || name.includes('mitten')) icon = '🧤';
-            else if (name.includes('handwrap')) icon = '🧤';
-            else if (name.includes('boot')) icon = '🥾';
-            else if (name.includes('footwrap')) icon = '🥾';
-            else if (name.includes('tunic') || name.includes('chest') || name.includes('armor')) icon = '🎽';
-            else if (name.includes('lid') || name.includes('armguard')) icon = '🛡';
-            else if (name.includes('cap') || name.includes('helmet') || name.includes('hat')) icon = '🎩';
-            else if (name.includes('cowl')) icon = '👑';
-            else if (name.includes('shield') || name.includes('handguard')) icon = '🛡';
-            else icon = '⚙'; // Generic item icon instead of white box
+        if (item.icon) {
+            return `<span class="item-icon">${item.icon}</span>`;
         }
-        
-        return `<span class="item-icon">${icon}</span>`;
+        console.warn(`Item "${item.name}" missing icon property`);
+        return `<span class="item-icon">⚙</span>`;
     },
 
     // Sell item
@@ -988,7 +905,7 @@ const inventoryGridManager = {
 
         // Sell through inventory system
         const sellValue = inventorySystem.calculateItemSellValue(item);
-        
+
         // Remove item from inventory
         gameState.inventory.items = gameState.inventory.items.filter(i => i.id !== itemId);
 
@@ -1045,7 +962,7 @@ const inventoryGridManager = {
         } else {
             uiSystem.log(`No ${rarityLower} items to sell`, 'info');
         }
-        
+
         console.log(`Sold ${itemsToSell.length} ${rarityLower} items for ${totalGold} gold`);
     },
 
@@ -1053,7 +970,7 @@ const inventoryGridManager = {
     canExileEquipItem(exileId) {
         const exile = gameState.exiles.find(e => e.id === exileId);
         if (!exile) return false;
-        
+
         // Exile must be idle, resting, or assigned (but not in_mission)
         const allowedStatuses = ['idle', 'resting', 'assigned'];
         return allowedStatuses.includes(exile.status);
@@ -1106,18 +1023,18 @@ const inventoryGridManager = {
 
         // Use the existing equipment system to handle the equipping
         const success = inventorySystem.equipItem(itemId, gameState.selectedExileId);
-        
+
         if (success) {
             // Clear selection after successful equip
             this.selectedItem = null;
             this.clearSelectedItemForEquipping();
             this.clearItemDetailPanel();
-            
+
             // Switch to equipment tab to show the player
             if (typeof dynamicDisplayManager !== 'undefined') {
                 dynamicDisplayManager.switchTab('equipment');
             }
-            
+
             // Update displays
             this.updateDisplay();
             uiSystem.log(`Equipped ${item.name} to ${exile.name}`, 'success');
@@ -1156,12 +1073,12 @@ const inventoryGridManager = {
 
         // Set the item for equipping
         this.selectedItemForEquipping = { itemId, item };
-        
+
         // Refresh the equipment display if it's currently active
         if (typeof dynamicDisplayManager !== 'undefined') {
             dynamicDisplayManager.refreshCurrentTab();
         }
-        
+
         // Show feedback (but don't auto-switch tabs)
         const exile = gameState.exiles.find(e => e.id === gameState.selectedExileId);
         uiSystem.log(`${item.name} ready to equip - check Equipment tab for glowing slots`, 'info');
@@ -1199,7 +1116,7 @@ const inventoryGridManager = {
         if (!this.selectedItemForEquipping) return false;
 
         const { itemId, item } = this.selectedItemForEquipping;
-        
+
         // Validate the slot
         const validSlots = this.getValidSlotsForSelectedItem();
         if (!validSlots.includes(targetSlot)) {
@@ -1209,7 +1126,7 @@ const inventoryGridManager = {
 
         // Clear the click-to-equip selection first
         this.clearSelectedItemForEquipping();
-        
+
         // Use the existing equip logic but with specific target slot
         return this.equipItemToSpecificSlot(itemId, targetSlot);
     },
@@ -1255,20 +1172,20 @@ const inventoryGridManager = {
 
         // Use the existing equipment system with specific target slot
         const success = inventorySystem.equipItem(itemId, gameState.selectedExileId, targetSlot);
-        
+
         if (success) {
             // Clear selection after successful equip
             this.selectedItem = null;
             this.clearItemDetailPanel();
-            
+
             // Update displays
             this.updateDisplay();
-            
+
             // Force refresh equipment display if currently viewing it
             if (typeof dynamicDisplayManager !== 'undefined') {
                 dynamicDisplayManager.refreshCurrentTab();
             }
-            
+
             uiSystem.log(`Equipped ${item.name} to ${exile.name}'s ${targetSlot}`, 'success');
             return true;
         } else {
@@ -1285,16 +1202,16 @@ const inventoryGridManager = {
             if (tab.items.has(itemId)) {
                 const itemData = tab.items.get(itemId);
                 itemData.locked = !itemData.locked;
-                
+
                 // Save the new grid state and persist to disk
                 this.saveGridState();
                 game.saveGame();
-                
+
                 // Refresh the item detail panel to update the lock button
                 if (this.selectedItem === itemId) {
                     this.updateItemDetailPanel(itemData.item);
                 }
-                
+
                 this.updateDisplay();
                 return itemData.locked;
             }
@@ -1374,23 +1291,32 @@ const inventoryGridManager = {
         const color = rarityColors[itemRarity.toLowerCase()] || '#808080';
 
         let html = `
-            <div class="item-detail-header">
-                <div class="item-name" style="color: ${color}; font-weight: bold; margin-bottom: 2px;">
-                    ${itemName}
-                </div>
-                <div class="item-level" style="color: #666; font-size: 0.75em; margin-bottom: 8px;">
-                    Item Level: ${itemLevel}
-                </div>
+        <div class="item-detail-header">
+            <div class="item-name" style="color: ${color}; font-weight: bold; margin-bottom: 2px;">
+                ${itemName}
+            </div>
+            <div class="item-level" style="color: #666; font-size: 0.75em; margin-bottom: 8px;">
+                Item Level: ${itemLevel}
+            </div>
+        </div>
+    `;
+
+        // Add item description if available
+        if (item.description) {
+            html += `
+            <div class="item-description">
+                ${item.description}
             </div>
         `;
+        }
 
         // Combined weapon stats and implicits section
         let hasWeaponStats = item.slot === 'weapon' && (item.attackSpeed || item.damageMultiplier);
         let hasImplicits = item.implicitStats && Object.keys(item.implicitStats).length > 0;
-        
+
         if (hasWeaponStats || hasImplicits) {
             html += '<div class="weapon-implicit-section" style="margin-bottom: 5px; padding: 6px; background:rgb(32, 32, 36); border-radius: 3px; border-bottom: 2px solid #444;">';
-            
+
             // Weapon stats
             if (hasWeaponStats) {
                 if (item.attackSpeed) {
@@ -1400,7 +1326,7 @@ const inventoryGridManager = {
                     html += `<div style="color: #888; font-size: 0.85em; font-style: italic; margin-bottom: 3px;">Damage Multiplier: ${item.damageMultiplier.toFixed(2)}</div>`;
                 }
             }
-            
+
             // Implicit stats
             if (hasImplicits) {
                 for (const [stat, value] of Object.entries(item.implicitStats)) {
@@ -1409,7 +1335,7 @@ const inventoryGridManager = {
                     }
                 }
             }
-            
+
             html += '</div>';
         }
 
@@ -1430,65 +1356,28 @@ const inventoryGridManager = {
         // Update item actions
         const actionsContainer = document.getElementById('item-actions');
         if (actionsContainer) {
-            // Determine if this item can be equipped
-            const canEquip = item.slot && gameState.selectedExileId && this.canExileEquipItem(gameState.selectedExileId);
-            
-            // Get selected exile name for button text
-            let equipTitle = 'Equip item';
-            
-            if (gameState.selectedExileId) {
-                const exile = gameState.exiles.find(e => e.id === gameState.selectedExileId);
-                if (exile) {
-                    equipTitle = `Equip to ${exile.name}`;
-                    if (!this.canExileEquipItem(gameState.selectedExileId)) {
-                        equipTitle = `${exile.name} cannot equip (${exile.status})`;
-                    }
-                }
-            } else {
-                equipTitle = 'No exile selected';
-            }
-
-            // Find current lock state for this item
-            let isLocked = false;
-            for (const [_, tab] of this.tabs) {
-                if (tab.items.has(item.id)) {
-                    isLocked = tab.items.get(item.id).locked;
-                    break;
-                }
-            }
-
             actionsContainer.style.display = 'flex';
+
+            // Update lock button based on current lock state
+            const itemData = this.getItemData(item.id);
+            const isLocked = itemData ? itemData.locked : false;
+
             actionsContainer.innerHTML = `
-                <button onclick="inventoryGridManager.toggleItemLock(${item.id})" 
-                        title="${isLocked ? 'Unlock item' : 'Lock item'}" 
-                        class="square-action-btn">
-                    ${isLocked ? '🔒' : '🔓'}
-                </button>
-                ${canEquip ? `<button onclick="inventoryGridManager.equipItem(${item.id})" 
-                        title="${equipTitle}" 
-                        class="square-action-btn equip-btn">
-                    ⤣
-                </button>` : ''}
-                <div style="display: flex; gap: 3px;">
-                    <button onclick="inventorySystem.useChaosOrb(${item.id})" 
-                            title="Use Chaos Orb" 
-                            class="square-action-btn craft-btn"
-                            ${!gameState.resources.chaosOrbs || gameState.resources.chaosOrbs < 1 ? 'disabled' : ''}>
-                        🌀
-                    </button>
-                    <button onclick="inventorySystem.useExaltedOrb(${item.id})" 
-                            title="Use Exalted Orb" 
-                            class="square-action-btn craft-btn"
-                            ${!gameState.resources.exaltedOrbs || gameState.resources.exaltedOrbs < 1 ? 'disabled' : ''}>
-                        ✦
-                    </button>
-                </div>
-                <button onclick="inventoryGridManager.sellItem(${item.id})" 
-                        title="Sell item" 
-                        class="square-action-btn">
-                    💰
-                </button>
-            `;
+            <button id="lock-item-button"
+                onclick="inventoryGridManager.toggleItemLock(${item.id})">
+                ${isLocked ? '🔓 Unlock' : '🔒 Lock'}
+            </button>
+            <button id="sell-item-button"
+                onclick="inventoryGridManager.sellItem(${item.id})"
+                ${isLocked ? 'disabled' : ''}>
+                💰 Sell Item
+            </button>
+            <button id="craft-item-button" 
+                onclick="game.craftItem(${item.id})"
+                style="display: none;">
+                🔨 Craft Item
+            </button>
+        `;
         }
     },
 
@@ -1509,25 +1398,25 @@ const inventoryGridManager = {
     // Reload inventory from gameState (called after loading save)
     reloadInventory() {
         console.log('Reloading inventory from save data...');
-        
+
         // Clear all existing items from grid
         this.tabs.forEach(tab => {
             tab.grid = Array(this.GRID_HEIGHT).fill(null).map(() => Array(this.GRID_WIDTH).fill(null));
             tab.items.clear();
         });
-        
+
         // Reload items from gameState (will use saved positions if available)
         this.loadInventoryItems();
-        
+
         // Update tab buttons to reflect active tab
         const tabButtons = document.querySelectorAll('.tab-button');
         tabButtons.forEach(button => {
             button.classList.toggle('active', button.dataset.tab === this.activeTab);
         });
-        
+
         // Update display
         this.updateDisplay();
-        
+
         console.log(`Reloaded ${gameState.inventory.items?.length || 0} items into grid`);
     },
 
@@ -1542,7 +1431,7 @@ const inventoryGridManager = {
 
         // Clear existing positions
         gameState.inventoryGridData.itemPositions = {};
-        
+
         // Save current positions and states
         for (const [tabId, tab] of this.tabs) {
             tab.items.forEach((itemData, itemId) => {
@@ -1558,7 +1447,7 @@ const inventoryGridManager = {
 
         // Save active tab
         gameState.inventoryGridData.activeTab = this.activeTab;
-        
+
         console.log('Grid state saved - Items:', Object.keys(gameState.inventoryGridData.itemPositions).length, 'Active tab:', this.activeTab);
     },
 
@@ -1571,14 +1460,14 @@ const inventoryGridManager = {
                 activeTab: 'tab1'
             };
         }
-        
+
         if (!gameState.inventoryGridData.itemPositions || Object.keys(gameState.inventoryGridData.itemPositions).length === 0) {
             console.log('No saved grid state found, using sequential placement');
             return false;
         }
 
         console.log('Loading saved grid state - Items to restore:', Object.keys(gameState.inventoryGridData.itemPositions).length);
-        
+
         // Restore active tab
         if (gameState.inventoryGridData.activeTab) {
             this.activeTab = gameState.inventoryGridData.activeTab;

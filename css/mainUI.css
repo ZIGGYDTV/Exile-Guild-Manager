@@ -111,14 +111,34 @@ body {
     z-index: 1;  /* Ensure it's above the fill */
 }
 
+/* Combat Area with Header */
+.combat-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+}
+
+.combat-area .encounter-info {
+    color: #c9aa71;
+    font-size: 0.9em;
+    font-weight: 500;
+    text-align: center;
+    padding: 5px 10px;
+    background: rgba(201, 170, 113, 0.1);
+    border-radius: 3px;
+    border: 1px solid rgba(201, 170, 113, 0.2);
+    min-width: 200px;
+}
+
 /* Combat Display Area */
 .combat-display {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 30px;
-    padding: 20px;
-    min-height: 100px;
+    min-height: 80px;
     position: relative;
 }
 
@@ -132,6 +152,163 @@ body {
     justify-content: center;
     font-size: 24px;
     transition: transform 0.2s;
+}
+
+/* Monster Icon Wrapper with Circular Health Bar */
+.monster-icon-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.monster-health-ring {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    width: 64px;
+    height: 64px;
+    z-index: 1;
+    transition: opacity 0.3s ease;
+}
+
+.health-ring-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg); /* Start from top */
+}
+
+.health-ring-bg {
+    fill: none;
+    stroke: #333;
+    stroke-width: 2;
+}
+
+.health-ring-fill {
+    fill: none;
+    stroke: #cc0000;
+    stroke-width: 2;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.3s ease;
+}
+
+/* Monster Death Effects */
+.monster-icon.dying {
+    position: relative;
+    animation: monsterDeath 1.5s ease-out forwards;
+}
+
+.monster-icon.dying::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(150, 8, 0, 0.8) 0%, rgba(71, 4, 0, 0.9) 100%);
+    border-radius: 50%;
+    opacity: 0;
+    animation: deathFilter 0.8s ease-in forwards;
+    z-index: 2;
+}
+
+/* Health ring fades out immediately when monster dies */
+
+@keyframes deathFilter {
+    0% {
+        opacity: 0;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.9;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes monsterDeath {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    30% {
+        transform: translateY(0) scale(0.9);
+        opacity: 0.8;
+    }
+    70% {
+        transform: translateY(20px) scale(0.7);
+        opacity: 0.3;
+    }
+    100% {
+        transform: translateY(30px) scale(0.5);
+        opacity: 0;
+    }
+}
+
+
+
+/* New Monster Pop-up Animation */
+.monster-icon.spawning {
+    animation: monsterSpawn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+.monster-icon-wrapper.spawning .monster-health-ring {
+    animation: healthRingSpawn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+@keyframes monsterSpawn {
+    0% {
+        transform: translateY(20px) scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: translateY(-5px) scale(1.2);
+        opacity: 0.8;
+    }
+    70% {
+        transform: translateY(2px) scale(0.95);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes healthRingSpawn {
+    0% {
+        opacity: 0;
+        transform: scale(0) rotate(180deg);
+    }
+    60% {
+        opacity: 0.7;
+        transform: scale(1.1) rotate(-10deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+/* Health bar reset animation */
+.health-ring-fill.resetting {
+    animation: healthReset 0.5s ease-out;
+}
+
+@keyframes healthReset {
+    0% {
+        stroke-dashoffset: 113.1;
+        stroke: #666;
+    }
+    50% {
+        stroke-dashoffset: 56.55;
+        stroke: #cc4400;
+    }
+    100% {
+        stroke-dashoffset: 0;
+        stroke: #cc0000;
+    }
 }
 
 .combat-icon.attacking {
@@ -193,7 +370,7 @@ body {
 /* Monster damage (white/yellow) - appears left of monster icon */
 .damage-popup.exile-damage {
     color: #ffeb3b;
-    right: 25%;  /* Position near monster icon */
+    right: -9%;  /* Position near monster icon */
     top: 50%;
     transform: translateY(-50%);
 }
@@ -201,7 +378,7 @@ body {
 /* Player damage (red) - appears right of player icon */
 .damage-popup.monster-damage {
     color: #ff4444;
-    left: 25%;  /* Position near player icon */
+    left: -9%;  /* Position near player icon */
     top: 50%;
     transform: translateY(-50%);
 }
@@ -253,14 +430,7 @@ body {
     }
 }
 
-.round-indicator {
-    position: absolute;
-    bottom: 0px;
-    width: 100%;
-    text-align: center;
-    color: #777777;
-    font-size: 12px;
-}
+
 
 .exile-main-area {
     flex: 1;
