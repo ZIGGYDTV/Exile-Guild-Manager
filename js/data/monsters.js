@@ -140,12 +140,11 @@ class MonsterDatabase {
             xpValue: 4,
             tags: ['beast', 'undead', 'beach'],
             drops: {
-                dropChance: 1.0,
-                bases: ['rusted_sword', 'tattered_cloth'], // ! is this supported?
+                dropChance: 3.0,
                 // Add currency drops
                 gold: { min: 5, max: 22 },
-                chaosOrbs: 1.0,  // ! debug chance change later
-                exaltedOrbs: 1.0     // ! debug chance change later
+                chaosOrbs: 0.05,  
+                exaltedOrbs: 0.01    
             }
         }));
 
@@ -187,7 +186,6 @@ class MonsterDatabase {
                 0.25: { damageMultiplier: 0.4 }
             },
             drops: {
-                bases: ['crab_shell'],
                 dropChance: 0.2
             }
         }));

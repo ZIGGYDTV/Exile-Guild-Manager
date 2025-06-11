@@ -8,7 +8,6 @@ class Equipment {
         this.slot = slot;
         this.stats = {};
         this.implicitStats = {};
-        this.requirements = { level: 1 };
         this.statWeights = {};
         this.rarity = null;
     }
@@ -22,12 +21,6 @@ class Equipment {
     // Add stat weight for generation
     addStatWeight(stat, weight) {
         this.statWeights[stat] = weight;
-        return this;
-    }
-
-    // Set level requirement
-    setRequirements(level) {
-        this.requirements.level = level;
         return this;
     }
 
@@ -228,9 +221,6 @@ class ItemDatabase {
                         equipment.addStatWeight(stat, weight);
                     }
                 }
-                if (baseData.requirements) {
-                    equipment.setRequirements(baseData.requirements.level || 1);
-                }
                 equipment.itemId = itemId;
                 equipment.baseId = itemId;
                 equipment.ilvl = baseData.ilvl;
@@ -254,9 +244,9 @@ class ItemDatabase {
         return this.equipment.get(name);
     }
 
-    getRandomEquipmentByLevel(maxLevel = 100) {
+    getRandomEquipmentByIlvl(maxIlvl = 100) {
         const validEquipment = Array.from(this.equipment.values())
-            .filter(eq => eq.requirements.level <= maxLevel);
+            .filter(eq => eq.ilvl <= maxIlvl);
         if (validEquipment.length === 0) return null;
         return validEquipment[Math.floor(Math.random() * validEquipment.length)];
     }
@@ -281,7 +271,7 @@ class ItemDatabase {
                 jewelry: 0.15
             }
         } = options;
-        const baseItem = this.getRandomEquipmentByLevel(targetIlvl);
+        const baseItem = this.getRandomEquipmentByIlvl(targetIlvl);
         if (!baseItem) return null;
         const newItem = this.createItemInstance(baseItem);
         const rarity = window.rarityDB.rollRarity(difficultyBonus);
@@ -328,7 +318,13 @@ class ItemDatabase {
         newItem.category = baseItem.category;
         newItem.subCategory = baseItem.subCategory;
         for (const stat in baseItem.implicitStats) {
-            newItem.addImplicitStat(stat, baseItem.implicitStats[stat]);
+            const val = baseItem.implicitStats[stat];
+            if (typeof val === 'object' && val.min !== undefined && val.max !== undefined) {
+                const rolled = Math.floor(Math.random() * (val.max - val.min + 1)) + val.min;
+                newItem.addImplicitStat(stat, rolled);
+            } else {
+                newItem.addImplicitStat(stat, val);
+            }
         }
         for (const stat in baseItem.statWeights) {
             newItem.addStatWeight(stat, baseItem.statWeights[stat]);
@@ -338,15 +334,14 @@ class ItemDatabase {
 
     rollRandomStats(item, rarity, ilvl) {
         const baseItem = this.getEquipment(item.name);
-        if (!baseItem || !baseItem.statWeights || Object.keys(baseItem.statWeights).length === 0) return;
+        if (!baseItem) return;
         const statCount = rarity.getStatCount();
         if (statCount === 0) return;
-        const availableStats = Object.keys(baseItem.statWeights).filter(statName => {
-            const statDef = window.statDB.getStat(statName);
-            return statDef &&
-                (!statDef.requiredThemes) &&
-                (!statDef.restrictedToSlots || statDef.restrictedToSlots.includes(item.slot));
-        });
+        // Get all stats valid for this slot (ignoring requiredThemes for now)
+        const availableStats = window.statDB.getStatsForSlot(item.slot)
+            .filter(statDef => !statDef.requiredThemes)
+            .map(statDef => statDef.name);
+        if (availableStats.length === 0) return;
         const usedStats = new Set();
         for (let i = 0; i < statCount && usedStats.size < availableStats.length; i++) {
             const remainingStats = availableStats.filter(s => !usedStats.has(s));

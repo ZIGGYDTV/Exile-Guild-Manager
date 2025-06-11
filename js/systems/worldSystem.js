@@ -478,6 +478,14 @@ function generateGearWithAreaBonuses(areaData, missionData) {
     const gearBonuses = areaData.lootBonuses?.gearBonuses || {};
     const themes = areaData.lootBonuses?.forcedThemes || [];
 
+    // Determine ilvl: roll if missionData.ilvl is a range
+    let ilvl = 1;
+    if (missionData.ilvl && typeof missionData.ilvl === 'object' && missionData.ilvl.min !== undefined && missionData.ilvl.max !== undefined) {
+        ilvl = Math.floor(Math.random() * (missionData.ilvl.max - missionData.ilvl.min + 1)) + missionData.ilvl.min;
+    } else if (typeof missionData.ilvl === 'number') {
+        ilvl = missionData.ilvl;
+    }
+
     // Create slot weights with area bonuses
     const slotWeights = {
         weapon: 0.4 * (1 + (gearBonuses.weaponBonus || 0)),
@@ -487,7 +495,7 @@ function generateGearWithAreaBonuses(areaData, missionData) {
 
     // Generate using the new system
     return itemDB.generateItem({
-        targetIlvl: missionData.ilvl,
+        targetIlvl: ilvl,
         missionThemes: themes,
         difficultyBonus: missionData.rewards?.rareChance || 0,
         slotWeights: slotWeights

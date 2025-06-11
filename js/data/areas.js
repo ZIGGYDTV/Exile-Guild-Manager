@@ -78,8 +78,7 @@ const areaDefinitions = {
                 name: "Corpsecrab Hunting",
                 description: "Corpsecrabs scuttle about those lucky enough to wash ashore dead. No-one but the most 'scraping-the-bottom-of-the-barrel' recruits hunt them, but that's who we've got here.",
                 discovered: true, 
-                difficulty: 1,
-                ilvl: { min: 1, max: 1 },
+                ilvl: { min: 1, max: 2 },
 
                 // Monster elite spawn rates
                 // if not included defaults to area base
@@ -89,11 +88,6 @@ const areaDefinitions = {
                     rare: 0.01  // 1% more rare spawns
                 },
 
-                // WILL BE REMOVED AS ITS IN PLACE OF MONSTERS
-                damage: {
-                    min: 1, max: 19,
-                    types: { physical: 1},
-                },
 
                 rewardModifiers: {
                     goldMultiplier: 0.1,
@@ -117,13 +111,8 @@ const areaDefinitions = {
                 discovered: true, // Available immediately
 
                 // Mission-specific overrides
-                difficulty: 7,
-                ilvl: { min: 1, max: 2 }, // Item level range for gear drops
+                ilvl: { min: 1, max: 3 }, // Item level range for gear drops
 
-                damage: {
-                    min: 8, max: 23,
-                    types: { physical: 0.9, cold: 0.1 }
-                },
 
                 // Reward modifiers specific to this mission
                 rewardModifiers: {
@@ -133,18 +122,15 @@ const areaDefinitions = {
                         bonusExperience: 44
                     },
                 },
-
                 // Gear drop configuration
                 gearDrop: {
                     baseChance: 0.4,           // 40% chance to drop gear
                     rarityBonus: 0             // No bonus to rare drop chance
                 },
-
                 // What this mission can potentially unlock
                 canUnlock: [
                     { target: "wreckageScavenging", chance: 0.8 },      // 80% chance
                     { target: "cannibalHunting", chance: 0.25 },         // 25% chance
-                    { target: "theSpits", chance: 0.05 }                  // AREA CONNECTION
                 ]
             },
        
@@ -154,20 +140,11 @@ const areaDefinitions = {
                 name: "Scavenge Ship Wreckage",
                 description: "Search through the remains of wrecked vessels for salvageable materials",
                 discovered: false, // Must be found through exploration
-
-                difficulty: 15,
                 ilvl: { min: 2, max: 4 }, // Item level range for gear drops
-
                 eliteModifiers: {
                     magic: 0.2, // 20% more magic spawns
                     rare: 0.01  // 1% more rare spawns
                 },
-
-                damage: {
-                    min: 5, max: 20,
-                    types: { physical: 0.7, lightning: 0.3 }
-                },
-
                 rewardModifiers: {
                     goldMultiplier: 1.3, // Better gold from scavenging
                     currencyMultiplier: 1.2, // Better currency drops
@@ -183,8 +160,6 @@ const areaDefinitions = {
                     onSuccess: 1,
                     onFailure: -1
                 },
-
-                // Better gear drops for scavenging
                 gearDrop: {
                     baseChance: 0.5,           // 50% chance (better than exploration)
                     rarityBonus: 0.05,          // 5% bonus to rare drop chance
@@ -194,12 +169,8 @@ const areaDefinitions = {
                     },
 
                 },
-
-
-
-
                 canUnlock: [
-                    { target: "tidePoolBoss", chance: 0.5 }, // 20% chance to discover the Tide Warden boss
+                    { target: "tidePoolBoss", chance: 0.5 }, 
                 ]
             },
 
@@ -209,15 +180,7 @@ const areaDefinitions = {
                 name: "Cannibal Hunting",
                 description: "Hunt the hunters that hide among the rocky outcroppings",
                 discovered: false, // Must be found through exploration
-
-                difficulty: 18,
                 ilvl: { min: 3, max: 5 }, // Item level range for gear drops
-
-                damage: {
-                    min: 20, max: 45,
-                    types: { physical: 0.8, fire: 0.2 } // Cannibals want to cook their prey alive
-                },
-
                 rewardModifiers: {
                     goldMultiplier: 0.8, // What use have they for gold?
                     experienceMultiplier: 1.2, // Slightly better XP for hunting
@@ -225,7 +188,6 @@ const areaDefinitions = {
                         bonusExperience: 122
                     },
                 },
-
                 gearDrop: {
                     baseChance: 0.6,
                     rarityBonus: 0.1,
@@ -236,9 +198,6 @@ const areaDefinitions = {
                         jewelry: 0.05
                     },
                 },
-
-
-
                 canUnlock: [
                     { target: "cannibal_camps", chance: 0.2 }
                 ]
@@ -249,7 +208,6 @@ const areaDefinitions = {
                 name: "Cannibal Camp Raid",
                 description: "A collection of campsites where the cannibals live.",
                 discovered: false,
-                difficulty: 25,
 
                 ilvl: { min: 4, max: 6 }, // Item level range for gear drops
 
@@ -257,12 +215,6 @@ const areaDefinitions = {
                     magic: 0.2, // 20% more magic spawns
                     rare: 0.05  // 5% more rare spawns
                 },
-
-                damage: {
-                    min: 25, max: 55,
-                    types: { physical: 0.7, fire: 0.4 } // Cannibals want to cook their prey alive
-                },
-
                 rewardModifiers: {
                     goldMultiplier: 0.8, // What use have they for gold?
                     experienceMultiplier: 1.4,
@@ -270,7 +222,6 @@ const areaDefinitions = {
                         bonusExperience: 188
                     },
                 },
-
                 gearDrop: {
                     baseChance: 0.6,
                     rarityBonus: 0.1,
@@ -291,12 +242,7 @@ const areaDefinitions = {
                 name: "Meat, the Butcher",
                 description: "Amongst cannibal-kind the only law is that of who takes the most meat. Meat is the law and when one Meat falls another takes their place. ",
                 discovered: false,
-                difficulty: 40,
                 ilvl: { min: 5, max: 7 },
-                damage: {
-                    min: 35, max: 85,
-                    types: { physical: 0.8, fire: 0.4 }
-                },
                 rewardModifiers: {
                     goldMultiplier: 1.0,
                     experienceMultiplier: 1.6,
@@ -328,15 +274,7 @@ const areaDefinitions = {
                 name: "The Tide Warden",
                 description: "A massive crustacean that has made its home in the largest tidal pool",
                 discovered: false,
-
-                difficulty: 30,
                 ilvl: { min: 4, max: 6 },
-
-                damage: {
-                    min: 25, max: 60,
-                    types: { physical: 0.4, cold: 0.6 }
-                },
-
                 rewardModifiers: {
                     goldMultiplier: 2.0,
                     experienceMultiplier: 1.5,
@@ -347,18 +285,15 @@ const areaDefinitions = {
                         bonusExperience: 200
                     }
                 },
-                // Boss has guaranteed good gear
                 gearDrop: {
                     baseChance: 0.8,           // 80% chance (bosses almost always drop gear)
                     rarityBonus: 0.15          // 15% bonus to rare drop chance
                 },
-
                 // Simple day-based cooldown
                 cooldown: {
                     enabled: true,
                     days: 3  // Boss respawns after 3 days
                 },
-
                 canUnlock: [
                     { target: "the_depths", chance: 0.2 }
                 ]
@@ -474,14 +409,7 @@ const areaDefinitions = {
             name: "The Midden",
             description: "Only the most wrectched and foul can tolerate the toxic sludge, splintered bones and rotting contagion of the refuse lands beyond the Cannibal's camp.",
             discovered: false,
-            difficulty: 50,
             ilvl: { min: 6, max: 10 },
-
-            damage: {
-                min: 40, max: 95,
-                types: { physical: 0.4, chaos: 0.8 }
-            },
-
             rewardModifiers: {
                 goldMultiplier: 0.1,
                 experienceMultiplier: 1.6,
@@ -496,12 +424,7 @@ const areaDefinitions = {
             name: "Puswyrm",
             description: "A tangled knot of rotting organs and limbs snakes it's way through the refuse heaps, feeding of the corruption to fuel it's unlife.",
             discovered: false,
-            difficulty: 60,
             ilvl: { min: 7, max: 12 },
-            damage: {
-                min: 50, max: 120,
-                types: { physical: 0.4, chaos: 0.8 }
-            },
             rewardModifiers: {
                 goldMultiplier: 0.1,
                 experienceMultiplier: 1.8,

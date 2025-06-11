@@ -1,4 +1,6 @@
 // js/systems/missionGenerationSystem.js
+import { monsterDB } from '../data/monsters.js';
+
 export class MissionGenerationSystem {
     
     // Generate a mission instance with encounters
@@ -45,23 +47,43 @@ export class MissionGenerationSystem {
     }
     
     generateEncounter(area, mission, encounterNum, totalEncounters) {
-        // For now, just use hardcoded monster IDs since the tag system isn't set up
-        const monsterOptions = ['corpsecrab', 'cannibal_scout'];
-        const monsterId = monsterOptions[Math.floor(Math.random() * monsterOptions.length)];
-        
+        // Get tags/themes and ilvl range
+        const areaTags = mission.themes || area.themes || [];
+        const ilvlRange = mission.ilvl || { min: 1, max: 100 };
+
+        // Get valid monsters
+        const validMonsters = monsterDB.getValidMonstersForArea(
+            areaTags,
+            ilvlRange.min,
+            ilvlRange.max
+        );
+
+        // Fallback if no monsters found
+        if (validMonsters.length === 0) {
+            console.warn("No valid monsters found for this mission! Using default.");
+            return {
+                monsterId: 'corpsecrab',
+                elite: null,
+                isBoss: false
+            };
+        }
+
+        // Pick a random monster from the filtered list
+        const monster = validMonsters[Math.floor(Math.random() * validMonsters.length)];
+
         // Roll for elite status using area settings
         const eliteChances = area.eliteChance || { magic: 0.1, rare: 0.02 };
         const roll = Math.random();
         let eliteType = null;
-        
+
         if (roll < eliteChances.rare) {
             eliteType = 'rare';
         } else if (roll < eliteChances.rare + eliteChances.magic) {
             eliteType = 'magic';
         }
-        
+
         return {
-            monsterId: monsterId,
+            monsterId: monster.id,
             elite: eliteType,
             isBoss: false
         };

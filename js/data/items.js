@@ -3,7 +3,7 @@ export const itemBases = {
     // === ONE-HANDED WEAPONS ===
     brokenShortSword: {
         name: "Broken Short Sword",
-        description: "A rusted blade that has seen better days. Its edge is chipped but still serviceable.",
+        description: "It was possibly a fine sword once, but with missing tip and badly chipped edge it more closely resembles a sawblade now.",
         slot: "weapon1h",
         category: "sword",
         weaponType: "sword",
@@ -16,14 +16,12 @@ export const itemBases = {
 
         // Implicit stats
         implicitStats: {
-            damage: 8
+            damage: { min: 2, max: 6 }
         },
 
         // Stat weights for affix generation
         statWeights: {
-            damage: 3,
-            life: 0.2,
-            defense: 1.5,
+            damage: 2,
             attackSpeed: 2
         },
 
@@ -36,19 +34,19 @@ export const itemBases = {
 
     jaggedCannibalMachete: {
         name: "Jagged Cannibal Machete",
-        description: "A crude but vicious blade, its serrated edge designed to tear rather than slice.",
+        description: "Little thought is given to weilding this brutal thing safely, it's every aspect designed for hacking meat.",
         slot: "weapon1h",
         category: "sword",
         weaponType: "sword",
         icon: "🗡",
-        ilvl: 5,
-        requirements: { level: 5 },
+        ilvl: 3, // for determining stat restrictions
+        requirements: { level: 3 }, // for determining item drop restrictions
 
         attackSpeed: 1.0,
         damageMultiplier: 1.1,
 
         implicitStats: {
-            damage: 12
+            damage: { min: 6, max: 12 }
         },
 
         statWeights: {
@@ -56,49 +54,49 @@ export const itemBases = {
             defense: 0
         },
 
-        tags: ["weapon", "melee", "sword", "1h", "brutal"],
+        tags: ["weapon", "melee", "sword", "1h", "brutal", "cannibal"],
         shape: [[1], [1], [1]]
     },
 
     stoneHatchet: {
         name: "Stone Hatchet",
-        description: "A primitive tool fashioned from flint and wood, equally suited for chopping wood or bone.",
+        description: "A knapped stone, slotted into a split branch and strapped with cord made from sinew and clothing strips.",
         slot: "weapon1h",
         category: "axe",
         weaponType: "axe",
         icon: "⛏",
         ilvl: 1,
 
-        attackSpeed: 0.9,
+        attackSpeed: 0.8,
         damageMultiplier: 1.2,
 
         implicitStats: {
-            damage: 12
+            damage: 8
         },
 
         statWeights: {
             damage: 4,
-            life: 1.2
+            attackSpeed: 0.5
         },
 
         tags: ["weapon", "melee", "axe", "1h", "primitive"],
         shape: [[1], [1], [1]]
     },
 
-    ironBar: {
-        name: "Iron Bar",
-        description: "A heavy rod of cold iron. Simple, brutal, and effective.",
+    ironClub: {
+        name: "Iron Club",
+        description: "A short bar of iron, salvaged from a barred window. It's weight makes it difficult to swing quickly, but it wont break anytime soon.",
         slot: "weapon1h",
         category: "mace",
         weaponType: "mace",
         icon: "⚒",
         ilvl: 1,
 
-        attackSpeed: 0.75,
-        damageMultiplier: 1.1,
+        attackSpeed: 0.70,
+        damageMultiplier: 1.2,
 
         implicitStats: {
-            damage: 10,
+            damage: 8,
             defense: 4
         },
 
@@ -274,7 +272,7 @@ export const itemBases = {
         icon: "🧤",
         ilvl: 1,
 
-        defenseMultiplier: 1.0,
+        defenseMultiplier: 1.1,
 
         implicitStats: {
             defense: 5
@@ -355,7 +353,6 @@ export const itemBases = {
 
         implicitStats: {
             life: 3,
-            lightRadius: 5
         },
 
         statWeights: {
@@ -403,7 +400,7 @@ export const itemBases = {
         ilvl: 1,
 
         implicitStats: {
-            life: 8
+            defense: { min: 3, max: 8 }
         },
 
         statWeights: {

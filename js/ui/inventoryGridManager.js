@@ -1309,11 +1309,11 @@ const inventoryGridManager = {
 
         let html = `
         <div class="item-detail-header">
-            <div class="item-name" style="color: ${color}; font-weight: bold; margin-bottom: 2px;">
+            <div class="item-name" style="color: ${color};">
                 ${itemName}
             </div>
-            <div class="item-level" style="color: #666; font-size: 0.75em; margin-bottom: 8px;">
-                Item Level: ${itemLevel}
+            <div class="item-level">
+                ilvl: ${itemLevel}
             </div>
         </div>
     `;
@@ -1333,7 +1333,7 @@ const inventoryGridManager = {
         let hasImplicits = item.implicitStats && Object.keys(item.implicitStats).length > 0;
 
         if (hasWeaponStats || hasImplicits) {
-            html += '<div class="weapon-implicit-section" style="margin-bottom: 5px; padding: 6px; background:rgb(32, 32, 36); border-radius: 3px; border-bottom: 2px solid #444;">';
+            html += '<div class="weapon-implicit-section" style="margin-bottom: 5px; padding: 6px; background:rgb(32, 32, 36); border-radius: 3px; border-bottom: 2px solid #444; font-size: 0.65em;">';
 
             // Weapon stats
             if (hasWeaponStats) {

@@ -115,33 +115,40 @@ export class MissionState {
         // Accumulate experience (NOT applied to exile yet)
         this.totalExperience += monster.xpValue || 0;
 
-        // Roll for item drop
-        if (monster.drops && Math.random() <= (monster.drops.dropChance || 0.1)) {
-            const loot = window.itemDB.generateItem({
-                targetIlvl: monster.ilvl,
-                missionThemes: monster.tags || [],
-                difficultyBonus: monster.tier === 'rare' ? 10 : (monster.tier === 'magic' ? 5 : 0)
-            });
-
-            if (loot) {
-                // Convert to plain object and add to pool
-                const lootItem = {
-                    id: loot.id || Date.now() + Math.random(),
-                    name: loot.getDisplayName(),
-                    slot: loot.slot,
-                    type: loot.category || loot.slot,
-                    rarity: loot.rarity?.name?.toLowerCase() || 'common',
-                    ilvl: loot.ilvl,
-                    icon: loot.icon,
-                    description: loot.description,
-                    attackSpeed: loot.attackSpeed,
-                    damageMultiplier: loot.damageMultiplier,
-                    stats: Object.fromEntries(loot.stats),
-                    implicitStats: Object.fromEntries(loot.implicitStats)
-                };
-
-                this.addLoot(lootItem);
-                this.combatLog.push(`💎 ${monster.name} dropped ${lootItem.name}!`);
+        // Roll for item drop (improved dropChance logic)
+        if (monster.drops) {
+            const dropChance = monster.drops.dropChance || 0.1;
+            const guaranteed = Math.floor(dropChance);
+            const extraChance = dropChance - guaranteed;
+            let numDrops = guaranteed;
+            if (Math.random() < extraChance) {
+                numDrops += 1;
+            }
+            for (let i = 0; i < numDrops; i++) {
+                const loot = window.itemDB.generateItem({
+                    targetIlvl: monster.ilvl,
+                    missionThemes: monster.tags || [],
+                    difficultyBonus: monster.tier === 'rare' ? 10 : (monster.tier === 'magic' ? 5 : 0)
+                });
+                if (loot) {
+                    // Convert to plain object and add to pool
+                    const lootItem = {
+                        id: loot.id || Date.now() + Math.random(),
+                        name: loot.getDisplayName(),
+                        slot: loot.slot,
+                        type: loot.category || loot.slot,
+                        rarity: loot.rarity?.name?.toLowerCase() || 'common',
+                        ilvl: loot.ilvl,
+                        icon: loot.icon,
+                        description: loot.description,
+                        attackSpeed: loot.attackSpeed,
+                        damageMultiplier: loot.damageMultiplier,
+                        stats: Object.fromEntries(loot.stats),
+                        implicitStats: Object.fromEntries(loot.implicitStats)
+                    };
+                    this.addLoot(lootItem);
+                    this.combatLog.push(`💎 ${monster.name} dropped ${lootItem.name}!`);
+                }
             }
         }
 

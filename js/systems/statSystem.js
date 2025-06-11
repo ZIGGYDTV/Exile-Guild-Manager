@@ -78,7 +78,7 @@ class StatDatabase {
                 .addBreakpoint(17, 16, 24)
                 .addBreakpoint(19, 18, 26)
                 .addBreakpoint(21, 20, 28)
-                .restrictToSlots('weapon', 'gloves', 'ring', 'amulet')
+                .restrictToSlots('weapon1h', 'weapon2h', 'gloves', 'ring', 'amulet')
                 
         );
         
@@ -95,24 +95,22 @@ class StatDatabase {
                 .addBreakpoint(17, 21, 41)
                 .addBreakpoint(19, 23, 45)
                 .addBreakpoint(21, 25, 49)
-                .restrictToSlots('weapon', 'gloves', 'ring')
+                .restrictToSlots('weapon1h', 'weapon2h', 'gloves', 'ring', 'shield')
         );
 
         this.registerStat(
             new StatDefinition('defense', 'Defense')
-                .addBreakpoint(1, 3, 10)
-                .addBreakpoint(3, 5, 12)
-                .addBreakpoint(5, 4, 15)
-                .addBreakpoint(7, 6, 18)
-                .addBreakpoint(9, 8, 20)
-                .addBreakpoint(11, 10, 22)
+                .addBreakpoint(1, 2, 6)
+                .addBreakpoint(3, 3, 9)
+                .addBreakpoint(5, 5, 12)
+                .addBreakpoint(7, 6, 15)
+                .addBreakpoint(9, 8, 18)
+                .addBreakpoint(11, 10, 21)
                 .addBreakpoint(13, 12, 24)
                 .addBreakpoint(15, 14, 26)
                 .addBreakpoint(17, 16, 28)
                 .addBreakpoint(19, 18, 30)
                 .addBreakpoint(21, 20, 32)
-                .restrictToSlots('helmet', 'chest', 'gloves', 'boots', 'shield', 'belt')
-
         );
 
         // Utility Stats
@@ -211,6 +209,7 @@ class StatDatabase {
         // Theme-specific stats
         this.registerStat(
             new StatDefinition('crabArmor', 'Crab Armor')
+                .addBreakpoint(1, 5, 9)
                 .addBreakpoint(5, 12, 35)
                 .addBreakpoint(10, 15, 40)
                 .addBreakpoint(15, 18, 45)

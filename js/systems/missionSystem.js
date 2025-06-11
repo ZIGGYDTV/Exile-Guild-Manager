@@ -306,9 +306,21 @@ class MissionSystem {
     generateGear(areaId, missionId, targetIlvl) {
         const missionData = getCompleteMissionData(areaId, missionId);
 
+        // Determine ilvl: use targetIlvl if provided, otherwise roll from missionData.ilvl if it's a range
+        let ilvl = targetIlvl;
+        if (ilvl == null) {
+            if (missionData.ilvl && typeof missionData.ilvl === 'object' && missionData.ilvl.min !== undefined && missionData.ilvl.max !== undefined) {
+                ilvl = Math.floor(Math.random() * (missionData.ilvl.max - missionData.ilvl.min + 1)) + missionData.ilvl.min;
+            } else if (typeof missionData.ilvl === 'number') {
+                ilvl = missionData.ilvl;
+            } else {
+                ilvl = 1; // fallback
+            }
+        }
+
         // Generate item with new system
         const options = {
-            targetIlvl: targetIlvl,
+            targetIlvl: ilvl,
             missionThemes: missionData.themes || [],
             difficultyBonus: missionData.difficulty || 0,
         };
@@ -320,8 +332,8 @@ class MissionSystem {
 
         // Generate the item using new system
         const newItem = itemDB.generateItem(options);
-
         if (!newItem) return null;
+        newItem.ilvl = ilvl; // Ensure ilvl matches the rolled/generated value
 
         // Convert to saveable format
         return {
@@ -558,7 +570,9 @@ class MissionSystem {
 
         // Generate loot for this monster
         const loot = this.generateMonsterLoot(encounter.monster);
-        if (loot) {
+        if (Array.isArray(loot)) {
+            loot.forEach(item => missionState.addLoot(item));
+        } else if (loot) {
             missionState.addLoot(loot);
         }
 
@@ -665,35 +679,43 @@ class MissionSystem {
     }
 
     generateMonsterLoot(monster) {
-        // Check monster's drop chance
-        if (Math.random() > (monster.drops?.dropChance || 0.1)) {
-            return null;
+        // Improved dropChance logic: integer part = guaranteed drops, fractional part = chance for one extra
+        const dropChance = monster.drops?.dropChance || 0.1;
+        const guaranteed = Math.floor(dropChance);
+        const extraChance = dropChance - guaranteed;
+        let numDrops = guaranteed;
+        if (Math.random() < extraChance) {
+            numDrops += 1;
         }
-
-        // Generate item using the new system
-        const item = itemDB.generateItem({
-            targetIlvl: monster.ilvl,
-            missionThemes: monster.tags || [],
-            difficultyBonus: monster.tier === 'rare' ? 10 : (monster.tier === 'magic' ? 5 : 0)
-        });
-
-        if (!item) return null;
-
-        // Convert to saveable format
-        return {
-            id: item.id,
-            name: item.getDisplayName(),
-            slot: item.slot,
-            type: item.category || item.slot,
-            rarity: item.rarity?.name?.toLowerCase() || 'common',
-            ilvl: item.ilvl,
-            icon: item.icon,
-            description: item.description,
-            attackSpeed: item.attackSpeed,
-            damageMultiplier: item.damageMultiplier,
-            stats: item.stats,
-            implicitStats: item.implicitStats
-        };
+        if (numDrops === 0) return null;
+        const items = [];
+        for (let i = 0; i < numDrops; i++) {
+            const item = itemDB.generateItem({
+                targetIlvl: monster.ilvl,
+                missionThemes: monster.tags || [],
+                difficultyBonus: monster.tier === 'rare' ? 10 : (monster.tier === 'magic' ? 5 : 0)
+            });
+            if (item) {
+                item.ilvl = monster.ilvl;
+                items.push({
+                    id: item.id,
+                    name: item.getDisplayName(),
+                    slot: item.slot,
+                    type: item.category || item.slot,
+                    rarity: item.rarity?.name?.toLowerCase() || 'common',
+                    ilvl: item.ilvl,
+                    icon: item.icon,
+                    description: item.description,
+                    attackSpeed: item.attackSpeed,
+                    damageMultiplier: item.damageMultiplier,
+                    stats: item.stats,
+                    implicitStats: item.implicitStats
+                });
+            }
+        }
+        if (items.length === 0) return null;
+        if (items.length === 1) return items[0]; // backward compatible
+        return items;
     }
 
     // Modified method: Don't apply rewards immediately, just prepare them
