@@ -1086,13 +1086,27 @@ const inventoryGridManager = {
     // Get valid slots for the currently selected item
     getValidSlotsForSelectedItem() {
         if (!this.selectedItemForEquipping) return [];
-
         const item = this.selectedItemForEquipping.item;
         if (!item.slot) return [];
 
         // Handle ring slots (can go in ring1 or ring2)
         if (item.slot === 'ring') {
             return ['ring1', 'ring2'];
+        }
+
+        // Block offhand slot if a 2H weapon is equipped
+        if (item.slot === 'shield' || item.slot === 'offhand') {
+            // Check if selected exile has a 2H weapon equipped
+            const exile = gameState.exiles.find(e => e.id === gameState.selectedExileId);
+            if (exile && (exile.equipment.weapon && exile.equipment.weapon.slot === 'weapon2h')) {
+                return []; // Block offhand slot
+            }
+            return ['shield']; // or ['offhand'] if that's your slot name
+        }
+
+        // Map weapon slots for equipment UI compatibility
+        if (item.slot === 'weapon1h' || item.slot === 'weapon2h') {
+            return ['weapon'];
         }
 
         // All other items have a single slot
@@ -1152,6 +1166,20 @@ const inventoryGridManager = {
 
         if (!item) {
             uiSystem.log('Item not found', 'error');
+            return false;
+        }
+
+        // --- 2H Weapon Logic ---
+        // If equipping a 2H weapon, unequip offhand
+        if ((item.slot === 'weapon2h' || targetSlot === 'weapon2h' || (targetSlot === 'weapon' && item.slot === 'weapon2h')) && exile.equipment.shield) {
+            // Unequip offhand (shield)
+            inventorySystem.unequipItem('shield', exile.id);
+            uiSystem.log('Offhand item unequipped due to 2H weapon', 'info');
+        }
+
+        // If equipping an offhand and a 2H weapon is equipped, block it
+        if ((targetSlot === 'shield' || targetSlot === 'offhand') && exile.equipment.weapon && exile.equipment.weapon.slot === 'weapon2h') {
+            uiSystem.log('Cannot equip offhand while a 2H weapon is equipped', 'error');
             return false;
         }
 

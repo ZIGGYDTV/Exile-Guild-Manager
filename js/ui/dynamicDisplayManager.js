@@ -373,6 +373,10 @@ const dynamicDisplayManager = {
         const validSlots = selectedForEquipping ? 
             inventoryGridManager.getValidSlotsForSelectedItem() : [];
 
+        // Check if a 2H weapon is equipped
+        const weapon = exile.equipment.weapon;
+        const has2HWeapon = weapon && weapon.slot === 'weapon2h';
+
         // Generate each equipment slot
         equipmentSlots.forEach(({ slot, display }) => {
             const item = exile.equipment[slot];
@@ -387,6 +391,13 @@ const dynamicDisplayManager = {
             
             if (isValidSlot) {
                 slotClasses.push('valid-drop-slot');
+            }
+
+            // Add cross-out class for offhand if 2H weapon is equipped
+            let crossOutHTML = '';
+            if ((slot === 'shield' || slot === 'offhand') && has2HWeapon) {
+                slotClasses.push('crossed-out');
+                crossOutHTML = '<div class="slot-crossout"></div>';
             }
 
             if (item) {
@@ -411,6 +422,7 @@ const dynamicDisplayManager = {
                         <div class="item-box-compact" style="background-color: ${backgroundColor};">
                             <div class="item-name-compact">${item.name || 'Unknown Item'}</div>
                         </div>
+                        ${crossOutHTML}
                     </div>
                 `;
             } else {
@@ -424,6 +436,7 @@ const dynamicDisplayManager = {
                         <div class="empty-slot-compact">
                             <span class="empty-text-compact">${emptyText}</span>
                         </div>
+                        ${crossOutHTML}
                     </div>
                 `;
             }

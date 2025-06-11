@@ -1561,3 +1561,33 @@ body {
         -webkit-line-clamp: 2; /* Reduce to 2 lines on very small screens */
     }
 }
+
+/* ===== CROSS OUT OFFHAND SLOT FOR 2H WEAPON ===== */
+.crossed-out {
+    position: relative;
+    opacity: 0.6;
+    pointer-events: none; /* Prevent interaction */
+}
+.slot-crossout {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    pointer-events: none;
+    z-index: 2;
+}
+.slot-crossout::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    border-top: 3px solid #c0392b;
+    border-right: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    border-left: 3px solid transparent;
+    transform: rotate(-45deg);
+    pointer-events: none;
+}

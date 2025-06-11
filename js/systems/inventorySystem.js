@@ -27,9 +27,12 @@ const inventorySystem = {
 
         const item = gameState.inventory.items[itemIndex];
 
-        // Determine slot
+        // --- Weapon slot standardization ---
         let slot = targetSlot || item.slot;
-
+        // Map weapon1h and weapon2h to 'weapon' for equipment
+        if (item.slot === 'weapon1h' || item.slot === 'weapon2h') {
+            slot = 'weapon';
+        }
         // Handle ring slots
         if (item.slot === 'ring' && !targetSlot) {
             if (!exile.equipment.ring1) {
@@ -38,6 +41,13 @@ const inventorySystem = {
                 slot = 'ring2';
             } else {
                 slot = 'ring1'; // Default to replacing ring1
+            }
+        }
+
+        // --- 2H weapon logic: unequip offhand if equipping a 2H weapon ---
+        if ((item.slot === 'weapon2h' || slot === 'weapon') && item.slot === 'weapon2h') {
+            if (exile.equipment.shield) {
+                this.unequipItem('shield', exileId);
             }
         }
 
