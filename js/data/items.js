@@ -52,7 +52,8 @@ export const itemBases = {
         },
 
         statWeights: {
-            damage: 4
+            damage: 4,
+            defense: 0
         },
 
         tags: ["weapon", "melee", "sword", "1h", "brutal"],
@@ -280,8 +281,8 @@ export const itemBases = {
         },
 
         statWeights: {
-            defense: 2,
-            attackSpeed: 0.5
+            defense: 5,
+            attackSpeed: 0.1
         },
 
         tags: ["armor", "defensive", "leather", "gloves"],

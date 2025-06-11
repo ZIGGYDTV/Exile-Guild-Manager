@@ -341,7 +341,12 @@ class ItemDatabase {
         if (!baseItem || !baseItem.statWeights || Object.keys(baseItem.statWeights).length === 0) return;
         const statCount = rarity.getStatCount();
         if (statCount === 0) return;
-        const availableStats = Object.keys(baseItem.statWeights);
+        const availableStats = Object.keys(baseItem.statWeights).filter(statName => {
+            const statDef = window.statDB.getStat(statName);
+            return statDef &&
+                (!statDef.requiredThemes) &&
+                (!statDef.restrictedToSlots || statDef.restrictedToSlots.includes(item.slot));
+        });
         const usedStats = new Set();
         for (let i = 0; i < statCount && usedStats.size < availableStats.length; i++) {
             const remainingStats = availableStats.filter(s => !usedStats.has(s));

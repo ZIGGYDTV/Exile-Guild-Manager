@@ -396,7 +396,10 @@ const inventorySystem = {
 
         // Get all possible stats for this slot from statDB
         const allPossibleStats = statDB.getStatsForSlot(item.slot);
-        const craftableStats = allPossibleStats.filter(statDef => !statDef.requiredThemes);
+        const craftableStats = allPossibleStats.filter(statDef =>
+            !statDef.requiredThemes &&
+            (!statDef.restrictedToSlots || statDef.restrictedToSlots.includes(item.slot))
+        );
         const availableStats = craftableStats
             .map(statDef => statDef.name)
             .filter(stat => !currentStatKeys.includes(stat) && stat !== statToRemove);
@@ -407,19 +410,35 @@ const inventorySystem = {
         }
 
         // Pick a random stat from available stats
-        const newStat = availableStats[Math.floor(Math.random() * availableStats.length)];
-        const statDef = statDB.getStat(newStat);
-        const range = statDef.getValueRange(item.ilvl);
-        const value = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+        let statWeights = {};
+        if (itemBase && itemBase.statWeights) {
+            for (const stat of availableStats) {
+                statWeights[stat] = itemBase.statWeights[stat] || 1;
+            }
+        } else {
+            for (const stat of availableStats) {
+                statWeights[stat] = 1;
+            }
+        }
+        const totalWeight = availableStats.reduce((sum, stat) => sum + (statWeights[stat] || 1), 0);
+        let rand = Math.random() * totalWeight;
+        let newStat = availableStats[0];
+        for (const stat of availableStats) {
+            rand -= (statWeights[stat] || 1);
+            if (rand <= 0) {
+                newStat = stat;
+                break;
+            }
+        }
 
         // Apply the change
         delete item.stats[statToRemove];
-        item.stats[newStat] = value;
+        item.stats[newStat] = oldValue;
 
         // Consume orb
         gameState.resources.chaosOrbs--;
 
-        uiSystem.log(`🌀 Chaotic Shard used! ${game.getStatDisplayName(statToRemove)} (${oldValue}) → ${game.getStatDisplayName(newStat)} (${value})`, "legendary");
+        uiSystem.log(`🌀 Chaotic Shard used! ${game.getStatDisplayName(statToRemove)} (${oldValue}) → ${game.getStatDisplayName(newStat)} (${oldValue})`, "legendary");
 
         // Update main resource display
         uiSystem.updateResourceDisplay();
@@ -525,7 +544,10 @@ const inventorySystem = {
         }
 
         // Get all possible stats for this slot from statDB
-        const allPossibleStats = statDB.getStatsForSlot(item.slot).filter(statDef => !statDef.requiredThemes);
+        const allPossibleStats = statDB.getStatsForSlot(item.slot).filter(statDef =>
+            !statDef.requiredThemes &&
+            (!statDef.restrictedToSlots || statDef.restrictedToSlots.includes(item.slot))
+        );
 
         // Build list of stats that aren't already on the item
         const currentStats = Object.keys(item.stats);
@@ -549,18 +571,37 @@ const inventorySystem = {
         }
 
         // Pick a random stat from available stats
-        const newStat = availableStats[Math.floor(Math.random() * availableStats.length)];
-        const statDef = statDB.getStat(newStat);
+        let statWeightsEx = {};
+        if (itemBase && itemBase.statWeights) {
+            for (const stat of availableStats) {
+                statWeightsEx[stat] = itemBase.statWeights[stat] || 1;
+            }
+        } else {
+            for (const stat of availableStats) {
+                statWeightsEx[stat] = 1;
+            }
+        }
+        const totalWeightEx = availableStats.reduce((sum, stat) => sum + (statWeightsEx[stat] || 1), 0);
+        let randEx = Math.random() * totalWeightEx;
+        let newStatEx = availableStats[0];
+        for (const stat of availableStats) {
+            randEx -= (statWeightsEx[stat] || 1);
+            if (randEx <= 0) {
+                newStatEx = stat;
+                break;
+            }
+        }
+        const statDef = statDB.getStat(newStatEx);
         const range = statDef.getValueRange(item.ilvl);
         const value = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
 
         // Add the stat
-        item.stats[newStat] = value;
+        item.stats[newStatEx] = value;
 
         // Consume orb
         gameState.resources.exaltedOrbs--;
 
-        uiSystem.log(`⭐ Exalted Shard used! Added ${game.getStatDisplayName(newStat)} (${value})`, "legendary");
+        uiSystem.log(`⭐ Exalted Shard used! Added ${game.getStatDisplayName(newStatEx)} (${value})`, "legendary");
 
         // Update main resource display
         uiSystem.updateResourceDisplay();

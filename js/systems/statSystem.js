@@ -61,6 +61,7 @@ class StatDatabase {
                 .addBreakpoint(17, 38, 50)
                 .addBreakpoint(19, 42, 54)
                 .addBreakpoint(21, 46, 58)
+                .restrictToSlots('helmet', 'chest', 'gloves', 'boots', 'shield', 'belt')
                 
         );
 
@@ -77,6 +78,7 @@ class StatDatabase {
                 .addBreakpoint(17, 16, 24)
                 .addBreakpoint(19, 18, 26)
                 .addBreakpoint(21, 20, 28)
+                .restrictToSlots('weapon', 'gloves', 'ring', 'amulet')
                 
         );
         
@@ -93,7 +95,7 @@ class StatDatabase {
                 .addBreakpoint(17, 21, 41)
                 .addBreakpoint(19, 23, 45)
                 .addBreakpoint(21, 25, 49)
-                .restrictToSlots('weapon', 'gloves')
+                .restrictToSlots('weapon', 'gloves', 'ring')
         );
 
         this.registerStat(
@@ -109,6 +111,8 @@ class StatDatabase {
                 .addBreakpoint(17, 16, 28)
                 .addBreakpoint(19, 18, 30)
                 .addBreakpoint(21, 20, 32)
+                .restrictToSlots('helmet', 'chest', 'gloves', 'boots', 'shield', 'belt')
+
         );
 
         // Utility Stats
