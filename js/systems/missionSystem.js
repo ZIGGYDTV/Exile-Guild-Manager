@@ -323,7 +323,7 @@ class MissionSystem {
 
         if (!newItem) return null;
 
-        // Convert Equipment instance to plain object for saving
+        // Convert to saveable format
         return {
             id: newItem.id,
             name: newItem.getDisplayName(),
@@ -335,8 +335,8 @@ class MissionSystem {
             description: newItem.description,
             attackSpeed: newItem.attackSpeed,
             damageMultiplier: newItem.damageMultiplier,
-            stats: Object.fromEntries(newItem.stats),
-            implicitStats: Object.fromEntries(newItem.implicitStats)
+            stats: newItem.stats,
+            implicitStats: newItem.implicitStats
         };
     }
 
@@ -691,8 +691,8 @@ class MissionSystem {
             description: item.description,
             attackSpeed: item.attackSpeed,
             damageMultiplier: item.damageMultiplier,
-            stats: Object.fromEntries(item.stats),
-            implicitStats: Object.fromEntries(item.implicitStats)
+            stats: item.stats,
+            implicitStats: item.implicitStats
         };
     }
 
