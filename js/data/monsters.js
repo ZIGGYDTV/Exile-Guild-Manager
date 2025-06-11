@@ -13,7 +13,16 @@ export class Monster {
         this.drops = baseData.drops || {};
         this.tags = baseData.tags || [];
         this.ilvl = baseData.ilvl || 1;
-        
+        this.drops = {
+            dropChance: baseData.drops?.dropChance || 0.1,
+            allowedBases: baseData.drops?.allowedBases || null,
+            forbiddenBases: baseData.drops?.forbiddenBases || null,
+            // Add currency drops
+            gold: baseData.drops?.gold || { min: 0, max: 0 },
+            chaosOrbs: baseData.drops?.chaosOrbs || 0,  // Flat chance (0-1)
+            exaltedOrbs: baseData.drops?.exaltedOrbs || 0  // Flat chance (0-1)
+        };
+
         // New properties for enhanced system
         this.xpValue = baseData.xpValue || Math.floor(this.life / 5);
         this.lootBonus = baseData.lootBonus || 1.0;
@@ -122,7 +131,7 @@ class MonsterDatabase {
         this.register(new Monster({
             id: 'corpsecrab',
             name: 'Corpsecrab',
-            life: 15,
+            life: 50,
             damage: 3,
             defense: 2,
             attackSpeed: 0.8,
@@ -131,9 +140,12 @@ class MonsterDatabase {
             xpValue: 4,
             tags: ['beast', 'undead', 'beach'],
             drops: {
-                // Monster-specific drops
+                dropChance: 1.0,
                 bases: ['rusted_sword', 'tattered_cloth'],
-                dropChance: 0.1
+                // Add currency drops
+                gold: { min: 1, max: 3 },
+                chaosOrbs: 0.01,  // 1% chance
+                exaltedOrbs: 0     // No chance
             }
         }));
 
@@ -149,8 +161,10 @@ class MonsterDatabase {
             xpValue: 8,
             tags: ['human', 'cannibal', 'beach'],
             drops: {
-                bases: ['crude_axe', 'bone_charm'],
-                dropChance: 0.15
+                dropChance: 0.15,
+                gold: { min: 3, max: 8 },
+                chaosOrbs: 0.02,   // 2% chance
+                exaltedOrbs: 0.001  // 0.1% chance
             }
         }));
 

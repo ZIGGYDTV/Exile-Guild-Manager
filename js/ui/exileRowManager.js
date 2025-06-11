@@ -180,8 +180,20 @@ const exileRowManager = {
                     </button>
                 `).join('');
                 } else {
-                    // No action buttons during combat - use global End Turn button
-                    actionButtons = '';
+                    // Show retreat button when combat is ready (between rounds)
+                    const retreatInfo = this.getRetreatInfo(exile.id, currentEncounter);
+                    if (retreatInfo.available) {
+                        actionButtons = `
+                            <button class="btn-small retreat-btn ${retreatInfo.type === 'risky' ? 'warning' : 'info'}" 
+                                    onclick="exileRowManager.showRetreatOptions(${exile.id})"
+                                    title="${retreatInfo.description}">
+                                ${retreatInfo.type === 'risky' ? '⚠️ Risky Retreat' : '✓ Safe Retreat'}
+                            </button>
+                        `;
+                    } else {
+                        // No action buttons during active combat - use global End Turn button
+                        actionButtons = '';
+                    }
                 }
             }
         } else {
@@ -820,6 +832,207 @@ const exileRowManager = {
             const exile = gameState.exiles.find(e => e.id === exileId);
             this.updateRow(rowId, exile);
         }
+    },
+
+    // Get retreat information for an exile
+    getRetreatInfo(exileId, currentEncounter) {
+        if (!currentEncounter || !currentEncounter.monster) {
+            return { available: false };
+        }
+
+        const monster = currentEncounter.monster;
+        const isMonsterAlive = monster.currentLife > 0;
+
+        if (isMonsterAlive) {
+            // Risky retreat - monster is alive (using the 90% from encounterSystem)
+            const retreatChance = 90; // Match encounterSystem's 90% chance
+            return {
+                available: true,
+                type: 'risky',
+                chance: retreatChance,
+                description: `${retreatChance}% chance to escape. Failure means monster gets 1 free attack!`
+            };
+        } else {
+            // Safe retreat - monster is dead, can safely retreat
+            return {
+                available: true,
+                type: 'safe',
+                description: 'Safely retreat from the encounter with no penalties.'
+            };
+        }
+    },
+
+    // Show retreat confirmation dialog
+    showRetreatOptions(exileId) {
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
+        
+        if (!exile || !activeMission) return;
+
+        const currentEncounter = activeMission.missionState.getCurrentEncounter();
+        const retreatInfo = this.getRetreatInfo(exileId, currentEncounter);
+
+        if (!retreatInfo.available) return;
+
+        let message;
+        let confirmText = 'Retreat';
+        
+        if (retreatInfo.type === 'risky') {
+            message = `${exile.name} wants to retreat from combat!\n\n` +
+                     `⚠️ RISKY RETREAT:\n` +
+                     `• ${retreatInfo.chance}% chance of success\n` +
+                     `• If failed: Monster gets 1 free attack\n` +
+                     `• 50% gold loss, 50% item loss\n` +
+                     `• 50% chance to lose each orb type\n` +
+                     `• Experience is preserved\n\n` +
+                     `Are you sure you want to risk it?`;
+            confirmText = 'Risk It';
+        } else {
+            message = `${exile.name} can safely retreat from this encounter.\n\n` +
+                     `✓ SAFE RETREAT:\n` +
+                     `• No damage taken\n` +
+                     `• Mission progress lost\n` +
+                     `• No mission rewards\n\n` +
+                     `Retreat now?`;
+        }
+
+        if (confirm(message)) {
+            this.attemptRetreat(exileId, retreatInfo.type);
+        }
+    },
+
+    // Attempt retreat using the existing encounterSystem
+    async attemptRetreat(exileId, retreatType) {
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
+        
+        if (!exile || !activeMission) return;
+
+        // Use the existing encounterSystem's processRetreat method
+        if (typeof turnBasedCombat !== 'undefined' && turnBasedCombat.processRetreat) {
+            const retreatResult = turnBasedCombat.processRetreat(activeMission.missionState);
+            
+            if (retreatResult.success) {
+                // Retreat successful
+                if (retreatResult.type === 'risky') {
+                    uiSystem.log(`⚠️ ${retreatResult.message}`, 'warning');
+                } else {
+                    uiSystem.log(`✓ ${retreatResult.message}`, 'success');
+                }
+                
+                // Complete the mission with retreat using existing system
+                this.completeMissionWithRetreat(activeMission, exile);
+                
+            } else {
+                // Retreat failed
+                uiSystem.log(`❌ ${retreatResult.message} Took ${Math.floor(retreatResult.damage)} damage!`, 'failure');
+                
+                // Update health display
+                const rowId = this.getRowForExile(exileId);
+                if (rowId) {
+                    const row = document.querySelector(`[data-exile-id="${exileId}"]`);
+                    this.updateHealthBar(row, exile.currentLife, exile.stats.life);
+                }
+                
+                // Check if exile died from the failed retreat
+                if (exile.currentLife <= 0) {
+                    uiSystem.log(`💀 ${exile.name} was killed during the failed retreat!`, 'failure');
+                    this.handleExileDeath(activeMission, exile);
+                    return;
+                }
+                
+                // Continue combat - exile is still in the encounter
+                uiSystem.log(`${exile.name} remains in combat after the failed retreat.`, 'info');
+            }
+        }
+        
+        // Refresh the row display
+        const rowId = this.getRowForExile(exileId);
+        if (rowId) {
+            this.updateRow(rowId, exile);
+        }
+        
+        // Save game state
+        game.saveGame();
+    },
+
+    // Complete mission with retreat status
+    completeMissionWithRetreat(activeMission, exile) {
+        // Apply retreat rewards/penalties using the mission state system
+        const rewardSummary = activeMission.missionState.applyRewards();
+        
+        // Log the retreat outcome
+        if (rewardSummary) {
+            if (rewardSummary.wasRetreat && rewardSummary.retreatType === 'risky') {
+                uiSystem.log(`${exile.name} retreated with penalties applied.`, 'warning');
+            } else {
+                uiSystem.log(`${exile.name} retreated safely.`, 'success');
+            }
+            
+            // Log what was gained/lost
+            if (rewardSummary.gold > 0) {
+                uiSystem.log(`+${rewardSummary.gold} gold`, 'info');
+            }
+            if (rewardSummary.experience > 0) {
+                uiSystem.log(`+${rewardSummary.experience} experience`, 'info');
+            }
+            if (rewardSummary.items > 0) {
+                uiSystem.log(`+${rewardSummary.items} items`, 'info');
+            }
+        }
+
+        // Remove from active missions
+        const missionIndex = turnState.activeMissions.findIndex(m => m.exileId === exile.id);
+        if (missionIndex !== -1) {
+            turnState.activeMissions.splice(missionIndex, 1);
+        }
+
+        // Clear any pending decisions
+        turnState.pendingDecisions = turnState.pendingDecisions.filter(d => d.exileId !== exile.id);
+
+        // Update exile status
+        exile.status = 'idle';
+        exile.currentLife = exile.currentLife || exile.stats.life; // Ensure currentLife is set
+
+        // Apply morale penalty for retreating
+        exile.morale = Math.max(0, exile.morale - 10);
+        uiSystem.log(`${exile.name}'s morale decreased by 10 due to retreating.`, 'info');
+
+        // Refresh all rows to show updated state
+        this.refreshAllRows();
+    },
+
+    // Handle exile death from failed retreat
+    handleExileDeath(activeMission, exile) {
+        // Mark exile as dead
+        exile.status = 'dead';
+        exile.currentLife = 0;
+
+        // Remove from active missions
+        const missionIndex = turnState.activeMissions.findIndex(m => m.exileId === exile.id);
+        if (missionIndex !== -1) {
+            turnState.activeMissions.splice(missionIndex, 1);
+        }
+
+        // Clear any pending decisions
+        turnState.pendingDecisions = turnState.pendingDecisions.filter(d => d.exileId !== exile.id);
+
+        // Add to deceased list for UI purposes
+        if (!gameState.deceasedExiles) {
+            gameState.deceasedExiles = [];
+        }
+        gameState.deceasedExiles.push({
+            ...exile,
+            deathCause: 'Failed retreat',
+            deathDay: turnState.currentDay,
+            deathTurn: turnState.currentTurn
+        });
+
+        // Remove from active exiles
+        gameState.exiles = gameState.exiles.filter(e => e.id !== exile.id);
+
+        // Refresh all rows
+        this.refreshAllRows();
     }
 
 };

@@ -474,41 +474,22 @@ function calculateGearDrop(areaId, missionId, outcome) {
     return generateGearWithAreaBonuses(areaData, gearGenMission);
 }
 
-// Helper function to generate gear with area-specific bonuses
 function generateGearWithAreaBonuses(areaData, missionData) {
-    // This will integrate with your existing gear generation
-    // For now, return a placeholder that shows the concept
-
     const gearBonuses = areaData.lootBonuses?.gearBonuses || {};
     const themes = areaData.lootBonuses?.forcedThemes || [];
 
-    // Determine gear type with area bonuses
-    const baseTypeChances = {
-        weapon: 0.4,
-        armor: 0.35,
-        jewelry: 0.25
+    // Create slot weights with area bonuses
+    const slotWeights = {
+        weapon: 0.4 * (1 + (gearBonuses.weaponBonus || 0)),
+        armor: 0.45 * (1 + (gearBonuses.armorBonus || 0)),
+        jewelry: 0.15 * (1 + (gearBonuses.jewelryBonus || 0))
     };
 
-    // Apply area modifiers
-    const modifiedChances = {
-        weapon: baseTypeChances.weapon * (1 + (gearBonuses.weaponBonus || 0)),
-        armor: baseTypeChances.armor * (1 + (gearBonuses.armorBonus || 0)),
-        jewelry: baseTypeChances.jewelry * (1 + (gearBonuses.jewelryBonus || 0))
-    };
-
-    // Normalize chances back to 1.0 total
-    const total = Object.values(modifiedChances).reduce((sum, chance) => sum + chance, 0);
-    Object.keys(modifiedChances).forEach(key => {
-        modifiedChances[key] /= total;
+    // Generate using the new system
+    return itemDB.generateItem({
+        targetIlvl: missionData.ilvl,
+        missionThemes: themes,
+        difficultyBonus: missionData.rewards?.rareChance || 0,
+        slotWeights: slotWeights
     });
-
-    // For now, return info about what would be generated
-    return {
-        ilvl: missionData.ilvl,
-        areaThemes: themes,
-        typeChances: modifiedChances,
-        rarityBonus: missionData.rewards?.rareChance || 0,
-        // This would call your existing generateGear() function
-        placeholder: "Gear would be generated here with existing system"
-    };
 }

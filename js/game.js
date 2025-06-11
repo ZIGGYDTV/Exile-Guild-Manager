@@ -77,7 +77,9 @@ const game = {
             console.log("areaDefinitions not loaded yet - skipping area initialization");
         }
 
-        uiSystem.log("Send exiles on missions. Make them more powerful. Each area has dangers and rewards to discover.", "info");
+        if (typeof uiSystem !== 'undefined') {
+            uiSystem.log("Send exiles on missions. Make them more powerful. Each area has dangers and rewards to discover.", "info");
+        }
 
         // Add keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -143,7 +145,9 @@ const game = {
         // Add to game state
         gameState.exiles.push(startingExile);
 
-        uiSystem.log(`${startingExile.name} the ${classDefinitions[startingExile.class].name} joins your guild!`, "legendary");
+        if (typeof uiSystem !== 'undefined') {
+            uiSystem.log(`${startingExile.name} the ${classDefinitions[startingExile.class].name} joins your guild!`, "legendary");
+        }
 
         // Optional: Add a second test exile for development
         const ADD_TEST_EXILE = true; // Change to false for production
@@ -254,73 +258,43 @@ const game = {
     },
 
     loadGame() {
-        const savedGame = localStorage.getItem('exileManagerSave');
-        if (savedGame) {
+        const saveData = localStorage.getItem('exileManagerSave');
+        if (saveData) {
             try {
-                const parsedSave = JSON.parse(savedGame);
-
-                // Check if this is an old save format (has exile instead of exiles)
-                if (parsedSave.exile && !parsedSave.exiles) {
-                    console.log("Converting old save format to new multi-exile format...");
-
-                    // Convert old format to new
-                    parsedSave.exiles = [];
-                    parsedSave.nextExileId = 2; // Start at 2 since we'll give the old exile ID 1
-
-                    // Only proceed if exileFactory is available
-                    if (typeof exileFactory !== 'undefined') {
-                        const convertedExile = exileFactory.restoreExile({
-                            ...parsedSave.exile,
-                            id: 1,
-                            status: 'idle',
-                            currentAssignment: null
-                        });
-                        parsedSave.exiles.push(convertedExile);
-                        parsedSave.selectedExileId = 1;
-                    } else {
-                        console.error("exileFactory not loaded yet!");
-                    }
-
-                    // Remove old exile property
-                    delete parsedSave.exile;
-                }
-
-                // Load the save data - CRITICAL FIX: Load all three state objects
-                if (parsedSave.gameState) {
-                    Object.assign(gameState, parsedSave.gameState);
-                } else {
-                    // Handle older save format that didn't separate states
-                    Object.assign(gameState, parsedSave);
-                }
-
-                // Load world state if present
-                if (parsedSave.worldState) {
-                    Object.assign(worldState, parsedSave.worldState);
-                }
-
-                // Load turn state if present
-                if (parsedSave.turnState) {
-                    Object.assign(turnState, parsedSave.turnState);
-                }
+                const parsed = JSON.parse(saveData);
+                
+                // Restore game state
+                Object.assign(gameState, parsed.gameState);
+                Object.assign(turnState, parsed.turnState);
+                Object.assign(worldState, parsed.worldState);
 
                 // If we have exiles but no selected one, select the first
                 if (gameState.exiles.length > 0 && !gameState.selectedExileId) {
                     gameState.selectedExileId = gameState.exiles[0].id;
                 }
 
-                uiSystem.log("Game loaded successfully.", "success");
+                // Fix: Only use uiSystem if it's available (ES6 modules load async)
+                if (typeof uiSystem !== 'undefined') {
+                    uiSystem.log("Game loaded successfully.", "success");
+                    // Update UI to show loaded resources, turn counter, etc.
+                    uiSystem.updateDisplay();
+                } else {
+                    console.log("Game loaded successfully.");
+                }
 
                 // Refresh displays
                 if (typeof exileRowManager !== 'undefined') {
                     exileRowManager.refreshAllRows();
                 }
 
-                // Update UI to show loaded resources, turn counter, etc.
-                uiSystem.updateDisplay();
-
             } catch (error) {
                 console.error("Failed to load save:", error);
-                uiSystem.log("Failed to load save. Starting fresh.", "error");
+                // Fix: Only use uiSystem if it's available
+                if (typeof uiSystem !== 'undefined') {
+                    uiSystem.log("Failed to load save. Starting fresh.", "error");
+                } else {
+                    console.log("Failed to load save. Starting fresh.");
+                }
             }
         }
     },

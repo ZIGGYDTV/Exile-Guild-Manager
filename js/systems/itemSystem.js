@@ -194,19 +194,19 @@ class Jewelry extends Equipment {
     }
 }
 
-class Ring extends Equipment {
+class Ring extends Jewelry {
     constructor(name) {
         super(name, 'ring');
     }
 }
 
-class Amulet extends Equipment {
+class Amulet extends Jewelry {
     constructor(name) {
         super(name, 'amulet');
     }
 }
 
-class Belt extends Equipment {
+class Belt extends Jewelry {
     constructor(name) {
         super(name, 'belt');
     }
@@ -344,46 +344,67 @@ class ItemDatabase {
         // Generate random stats based on rarity
         this.rollRandomStats(newItem, rarity, targetIlvl);
 
-        // Set the item's rarity
-        newItem.rarity = rarity.name.toLowerCase();
-
-        // Apply the rarity name to the item
-        if (rarity.name !== 'Common') {
-            newItem.name = `${rarity.name} ${newItem.name}`;
-        }
+        // Set the item's rarity using the proper method
+        newItem.setRarity(rarity);
 
         return newItem;
     }
 
     // Create a new instance of an item from a base template
     createItemInstance(baseItem) {
-        // Create a plain object with all the necessary properties
-        const item = {
-            id: Date.now() + Math.random(),
-            name: baseItem.name,
-            slot: baseItem.slot,
-            type: baseItem.category || baseItem.slot,
-            icon: baseItem.icon,
-            description: baseItem.description,
-            ilvl: baseItem.ilvl,
-            shape: baseItem.shape,
-            stats: {},
-            implicitStats: {}
-        };
-
-        // Copy weapon-specific properties
+        // Create the correct type of equipment instance based on the base item
+        let newItem;
+        
         if (baseItem instanceof Weapon) {
-            item.attackSpeed = baseItem.attackSpeed;
-            item.damageMultiplier = baseItem.damageMultiplier;
-            item.weaponType = baseItem.weaponType;
+            newItem = new Weapon(baseItem.name, baseItem.weaponType)
+                .setAttackSpeed(baseItem.attackSpeed)
+                .setDamageMultiplier(baseItem.damageMultiplier);
+        } else if (baseItem instanceof Armor) {
+            newItem = new Armor(baseItem.name, baseItem.armorType || baseItem.slot);
+            if (baseItem.defenseMultiplier !== undefined) {
+                newItem.setDefenseMultiplier(baseItem.defenseMultiplier);
+            }
+        } else if (baseItem instanceof Ring) {
+            newItem = new Ring(baseItem.name);
+            if (baseItem.statBonusMultiplier !== undefined) {
+                newItem.setStatBonusMultiplier(baseItem.statBonusMultiplier);
+            }
+        } else if (baseItem instanceof Amulet) {
+            newItem = new Amulet(baseItem.name);
+            if (baseItem.statBonusMultiplier !== undefined) {
+                newItem.setStatBonusMultiplier(baseItem.statBonusMultiplier);
+            }
+        } else if (baseItem instanceof Belt) {
+            newItem = new Belt(baseItem.name);
+            if (baseItem.statBonusMultiplier !== undefined) {
+                newItem.setStatBonusMultiplier(baseItem.statBonusMultiplier);
+            }
+        } else {
+            // Fallback to generic equipment
+            newItem = new Equipment(baseItem.name, baseItem.slot);
         }
-
+        
+        // Set unique ID and copy all properties
+        newItem.id = Date.now() + Math.random();
+        newItem.ilvl = baseItem.ilvl;
+        newItem.icon = baseItem.icon;
+        newItem.description = baseItem.description;
+        newItem.shape = baseItem.shape;
+        newItem.slot = baseItem.slot;
+        newItem.category = baseItem.category;
+        newItem.subCategory = baseItem.subCategory;
+        
         // Copy implicit stats
         for (const [stat, value] of baseItem.implicitStats) {
-            item.implicitStats[stat] = value;
+            newItem.addImplicitStat(stat, value);
         }
-
-        return item;
+        
+        // Copy stat weights
+        for (const [stat, weight] of baseItem.statWeights) {
+            newItem.addStatWeight(stat, weight);
+        }
+        
+        return newItem;
     }
 
     // Roll random stats for an item based on rarity

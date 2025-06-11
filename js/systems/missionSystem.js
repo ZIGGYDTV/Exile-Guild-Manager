@@ -310,7 +310,7 @@ class MissionSystem {
         const options = {
             targetIlvl: targetIlvl,
             missionThemes: missionData.themes || [],
-            difficultyBonus: 0, // Could calculate this based on mission difficulty later
+            difficultyBonus: missionData.difficulty || 0,
         };
 
         // Check for mission-specific gear type overrides
@@ -321,40 +321,23 @@ class MissionSystem {
         // Generate the item using new system
         const newItem = itemDB.generateItem(options);
 
-        // The new system already rolls rarity and stats, so we just need to convert
-        // it to the format our save system expects
-        const itemForSave = {
+        if (!newItem) return null;
+
+        // Convert Equipment instance to plain object for saving
+        return {
             id: newItem.id,
             name: newItem.getDisplayName(),
-            type: newItem.name,  // Add the base item type (Sword, Axe, etc.)
             slot: newItem.slot,
-            rarity: newItem.rarity ? newItem.rarity.name.toLowerCase() : 'common',
-            ilvl: targetIlvl,
-            implicitStats: {},  // store implicits separately
-            stats: {},          // store only rolled stats
-            equipped: false
+            type: newItem.category || newItem.slot,
+            rarity: newItem.rarity?.name?.toLowerCase() || 'common',
+            ilvl: newItem.ilvl,
+            icon: newItem.icon,
+            description: newItem.description,
+            attackSpeed: newItem.attackSpeed,
+            damageMultiplier: newItem.damageMultiplier,
+            stats: Object.fromEntries(newItem.stats),
+            implicitStats: Object.fromEntries(newItem.implicitStats)
         };
-
-        // IMPORTANT: First, copy all implicit stats from the base item
-        for (const [stat, value] of newItem.implicitStats) {
-            itemForSave.implicitStats[stat] = value;
-        }
-
-        // Then, copy all rolled stats (these are in newItem.stats but NOT in implicitStats)
-        for (const [stat, value] of newItem.stats) {
-            // Only add to stats if it's NOT an implicit stat
-            if (!newItem.implicitStats.has(stat)) {
-                itemForSave.stats[stat] = value;
-            }
-        }
-
-        // Store weapon-specific properties if they exist
-        if (newItem.slot === 'weapon' && newItem.attackSpeed) {
-            itemForSave.attackSpeed = newItem.attackSpeed;
-            itemForSave.damageMultiplier = newItem.damageMultiplier || 1.0;
-        }
-
-        return itemForSave;
     }
 
     // Process Day Method: Time passing and what occurs (triggering missions, etc.)
@@ -674,18 +657,35 @@ class MissionSystem {
         }
     }
 
-    // Generate loot from a monster (simplified for now)
     generateMonsterLoot(monster) {
-        // Use monster's drop chance
+        // Check monster's drop chance
         if (Math.random() > (monster.drops?.dropChance || 0.1)) {
             return null;
         }
 
-        // Generate item based on monster's ilvl
-        // This would use your existing gear generation
+        // Generate item using the new system
+        const item = itemDB.generateItem({
+            targetIlvl: monster.ilvl,
+            missionThemes: monster.tags || [],
+            difficultyBonus: monster.tier === 'rare' ? 10 : (monster.tier === 'magic' ? 5 : 0)
+        });
+
+        if (!item) return null;
+
+        // Convert to saveable format
         return {
-            name: "Placeholder Item",
-            // ... generate real item
+            id: item.id,
+            name: item.getDisplayName(),
+            slot: item.slot,
+            type: item.category || item.slot,
+            rarity: item.rarity?.name?.toLowerCase() || 'common',
+            ilvl: item.ilvl,
+            icon: item.icon,
+            description: item.description,
+            attackSpeed: item.attackSpeed,
+            damageMultiplier: item.damageMultiplier,
+            stats: Object.fromEntries(item.stats),
+            implicitStats: Object.fromEntries(item.implicitStats)
         };
     }
 

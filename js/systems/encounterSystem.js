@@ -49,11 +49,38 @@ export class MissionState {
         this.totalChaosOrbs = 0;
         this.totalExaltedOrbs = 0;
         this.combatLog = [];
+        this.retreatType = null; // 'safe' or 'risky'
     }
 
     // Get current encounter
     getCurrentEncounter() {
         return this.encounters[this.currentEncounterIndex];
+    }
+
+    // Check if currently in combat
+    isInCombat() {
+        const currentEncounter = this.getCurrentEncounter();
+        if (!currentEncounter) return false;
+
+        // We're in combat if there's an active encounter with a living monster
+        return currentEncounter.status === 'active' &&
+            currentEncounter.monster &&
+            !currentEncounter.monster.isDead();
+    }
+
+    // Initiate retreat (determines type automatically)
+    initiateRetreat() {
+        if (this.isInCombat()) {
+            this.retreatType = 'risky';
+            this.status = 'retreated';
+            this.combatLog.push(`⚠️ Risky retreat! Fled from ${this.getCurrentEncounter().monster.name}`);
+        } else {
+            this.retreatType = 'safe';
+            this.status = 'retreated';
+            this.combatLog.push(`✓ Safe retreat between encounters.`);
+        }
+
+        return this.retreatType;
     }
 
     // Add loot to pool (not given to player yet)
@@ -78,13 +105,134 @@ export class MissionState {
         return this.getCurrentEncounter();
     }
 
-    // Apply all rewards when mission ends successfully
-    applyRewards() {
-        // This is called when exile returns home safely
-        const exile = gameState.exiles.find(e => e.id === this.exileId);
-        if (!exile) return;
+    // Resolve victory over a monster
+    resolveEncounterVictory(encounter) {
+        const monster = encounter.monster;
 
-        // Add currency
+        // Mark encounter as complete
+        encounter.status = 'victory';
+
+        // Accumulate experience (NOT applied to exile yet)
+        this.totalExperience += monster.xpValue || 0;
+
+        // Roll for item drop
+        if (monster.drops && Math.random() <= (monster.drops.dropChance || 0.1)) {
+            const loot = window.itemDB.generateItem({
+                targetIlvl: monster.ilvl,
+                missionThemes: monster.tags || [],
+                difficultyBonus: monster.tier === 'rare' ? 10 : (monster.tier === 'magic' ? 5 : 0)
+            });
+
+            if (loot) {
+                // Convert to plain object and add to pool
+                const lootItem = {
+                    id: loot.id || Date.now() + Math.random(),
+                    name: loot.getDisplayName(),
+                    slot: loot.slot,
+                    type: loot.category || loot.slot,
+                    rarity: loot.rarity?.name?.toLowerCase() || 'common',
+                    ilvl: loot.ilvl,
+                    icon: loot.icon,
+                    description: loot.description,
+                    attackSpeed: loot.attackSpeed,
+                    damageMultiplier: loot.damageMultiplier,
+                    stats: Object.fromEntries(loot.stats),
+                    implicitStats: Object.fromEntries(loot.implicitStats)
+                };
+
+                this.addLoot(lootItem);
+                this.combatLog.push(`💎 ${monster.name} dropped ${lootItem.name}!`);
+            }
+        }
+
+        // Roll for gold drops
+        if (monster.drops?.gold && monster.drops.gold.max > 0) {
+            const goldDrop = Math.floor(Math.random() *
+                (monster.drops.gold.max - monster.drops.gold.min + 1)) +
+                monster.drops.gold.min;
+
+            this.addCurrency(goldDrop, 0, 0);
+            this.combatLog.push(`💰 Found ${goldDrop} gold!`);
+        }
+
+        // Roll for chaos orbs
+        if (monster.drops?.chaosOrbs && Math.random() < monster.drops.chaosOrbs) {
+            this.addCurrency(0, 1, 0);
+            this.combatLog.push(`🌀 Found a Chaos Orb!`);
+        }
+
+        // Roll for exalted orbs
+        if (monster.drops?.exaltedOrbs && Math.random() < monster.drops.exaltedOrbs) {
+            this.addCurrency(0, 0, 1);
+            this.combatLog.push(`⭐ Found an Exalted Orb!`);
+        }
+    }
+
+    // UPDATED METHOD: Apply penalty only for risky retreats
+    applyRetreatPenalty() {
+        // Only apply penalty for risky retreats
+        if (this.retreatType !== 'risky') {
+            this.combatLog.push(`✓ Safe retreat - no penalty applied.`);
+            return;
+        }
+
+        // Risky retreat penalties - 50% across the board, NO experience penalty
+        const goldLost = this.totalGold - Math.floor(this.totalGold * 0.5);
+        this.totalGold = Math.floor(this.totalGold * 0.5);
+
+        // NO experience penalty on risky retreat
+        // this.totalExperience remains unchanged
+
+        // 50% chance to lose each orb type (instead of losing all)
+        let chaosOrbsLost = 0;
+        let exaltedOrbsLost = 0;
+        
+        if (this.totalChaosOrbs > 0 && Math.random() < 0.5) {
+            chaosOrbsLost = this.totalChaosOrbs;
+            this.totalChaosOrbs = 0;
+        }
+        
+        if (this.totalExaltedOrbs > 0 && Math.random() < 0.5) {
+            exaltedOrbsLost = this.totalExaltedOrbs;
+            this.totalExaltedOrbs = 0;
+        }
+
+        // Lose 50% of items (randomly) - keep existing logic
+        let itemsLost = 0;
+        if (this.lootPool.length > 0) {
+            const itemsToKeep = Math.ceil(this.lootPool.length * 0.5);
+            itemsLost = this.lootPool.length - itemsToKeep;
+            const shuffled = [...this.lootPool].sort(() => Math.random() - 0.5);
+            this.lootPool = shuffled.slice(0, itemsToKeep);
+        }
+
+        // Log penalties
+        this.combatLog.push(`⚠️ Risky retreat penalties:`);
+        if (goldLost > 0) this.combatLog.push(`   - Lost ${goldLost} gold`);
+        if (chaosOrbsLost > 0) this.combatLog.push(`   - Lost ${chaosOrbsLost} chaos orbs`);
+        if (exaltedOrbsLost > 0) this.combatLog.push(`   - Lost ${exaltedOrbsLost} exalted orbs`);
+        if (itemsLost > 0) this.combatLog.push(`   - Lost ${itemsLost} items`);
+        if (goldLost === 0 && chaosOrbsLost === 0 && exaltedOrbsLost === 0 && itemsLost === 0) {
+            this.combatLog.push(`   - Lucky! No penalties this time.`);
+        }
+        this.combatLog.push(`   - Experience preserved`);
+    }
+
+    // Apply all rewards when mission ends
+    applyRewards() {
+        // Apply retreat penalty if needed
+        if (this.status === 'retreated') {
+            this.applyRetreatPenalty();
+        }
+
+        // Find the exile
+        const exile = gameState.exiles.find(e => e.id === this.exileId);
+        if (!exile) {
+            console.error('Could not find exile to apply rewards!');
+            return null;
+        }
+
+        // Add currency to game state
         gameState.resources.gold += this.totalGold;
         gameState.resources.chaosOrbs += this.totalChaosOrbs;
         gameState.resources.exaltedOrbs += this.totalExaltedOrbs;
@@ -92,20 +240,35 @@ export class MissionState {
         // Add items to inventory
         this.lootPool.forEach(item => {
             gameState.inventory.items.push(item);
+
+            // Update inventory grid if it exists
+            if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.addNewItemToInventory) {
+                inventoryGridManager.addNewItemToInventory(item);
+            }
         });
 
-        // Add experience
+        // Add experience to exile
         exile.experience += this.totalExperience;
 
+        // Check for level up
+        if (typeof exileSystem !== 'undefined' && exileSystem.checkLevelUp) {
+            exileSystem.checkLevelUp(exile);
+        }
+
+        // Return summary of what was gained
         return {
             gold: this.totalGold,
             chaosOrbs: this.totalChaosOrbs,
             exaltedOrbs: this.totalExaltedOrbs,
             items: this.lootPool.length,
-            experience: this.totalExperience
+            experience: this.totalExperience,
+            wasRetreat: this.status === 'retreated',
+            retreatType: this.retreatType,  // Include retreat type
+            itemList: [...this.lootPool]
         };
     }
 }
+
 
 // Updated Combat System for turn-based encounters
 export class TurnBasedCombatSystem {
@@ -421,6 +584,80 @@ export class TurnBasedCombatSystem {
             chaos: '#9c27b0'
         };
         return colors[damageType] || '#ffffff';
+    }
+
+    processRetreat(missionState) {
+        // Check if we're in active combat
+        const currentEncounter = missionState.getCurrentEncounter();
+
+        if (!currentEncounter) {
+            // No encounter, safe retreat
+            missionState.initiateRetreat();
+            return {
+                success: true,
+                type: 'safe',
+                message: 'Retreated safely between encounters.'
+            };
+        }
+
+        // Check if monster is alive (risky retreat)
+        if (currentEncounter.status === 'active' &&
+            currentEncounter.monster &&
+            !currentEncounter.monster.isDead()) {
+
+            // Risky retreat - maybe add a chance to fail?
+            const retreatChance = 0.9; // 90% chance to successfully retreat
+
+            if (Math.random() < retreatChance) {
+                missionState.initiateRetreat();
+                return {
+                    success: true,
+                    type: 'risky',
+                    message: `Fled from ${currentEncounter.monster.name}! Some loot will be lost.`,
+                    monsterName: currentEncounter.monster.name,
+                    monsterHealth: `${currentEncounter.monster.currentLife}/${currentEncounter.monster.life}`
+                };
+            } else {
+                // Failed to retreat - monster gets free attacks
+                const failureResult = this.processFailedRetreat(missionState.exileId, currentEncounter);
+                return {
+                    success: false,
+                    type: 'failed',
+                    message: `Failed to escape from ${currentEncounter.monster.name}!`,
+                    damage: failureResult.damage
+                };
+            }
+        } else {
+            // Monster is dead or encounter not active, safe retreat
+            missionState.initiateRetreat();
+            return {
+                success: true,
+                type: 'safe',
+                message: 'Retreated safely after defeating the enemy.'
+            };
+        }
+    }
+
+    // ! Handle failed retreat attempt - this may want to be changed
+    processFailedRetreat(exileId, encounter) {
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        if (!exile) return { damage: 0 };
+
+        const monster = encounter.monster;
+
+        // Monster gets 1 free attack
+        const freeAttacks = 1;
+        let totalDamage = 0;
+
+        for (let i = 0; i < freeAttacks; i++) {
+            const rawDamage = monster.calculateDamage();
+            const damageResult = this.calculateMonsterDamageVsExile(rawDamage, monster, exile);
+
+            totalDamage += damageResult.totalDamage;
+            exile.currentLife = Math.max(0, (exile.currentLife || exile.stats.life) - damageResult.totalDamage);
+        }
+
+        return { damage: totalDamage };
     }
 }
 

@@ -65,8 +65,6 @@ const inventoryGridManager = {
             });
         });
 
-
-
         // Create tooltip element
         this.createTooltipElement();
 
@@ -299,13 +297,25 @@ const inventoryGridManager = {
 
     // Get item dimensions considering rotation
     getItemDimensions(item, rotation = 0) {
+        // First, try to use the item's shape property if it exists
+        if (item.shape && Array.isArray(item.shape)) {
+            const shape = this.rotateShape(item.shape, rotation);
+            return {
+                width: shape[0].length,
+                height: shape.length
+            };
+        }
+        
         // Try to get dimensions by type first, then fall back to slot-based mapping
         let baseDims = this.ITEM_DIMENSIONS[item.type];
 
         if (!baseDims && item.slot) {
             // Map slot to common types for dimensions
             const slotToTypeMap = {
+                'weapon1h': { width: 1, height: 3 },
+                'weapon2h': { width: 1, height: 4 },
                 'weapon': { width: 1, height: 3 }, // Default weapon size
+                'helm': { width: 2, height: 2 },
                 'helmet': { width: 2, height: 2 },
                 'chest': { width: 2, height: 3 },
                 'gloves': { width: 2, height: 2 },
@@ -313,7 +323,7 @@ const inventoryGridManager = {
                 'shield': { width: 2, height: 2 },
                 'ring': { width: 1, height: 1 },
                 'amulet': { width: 1, height: 1 },
-                'belt': { width: 2, height: 1 } // Changed to horizontal (2x1)
+                'belt': { width: 2, height: 1 }
             };
             baseDims = slotToTypeMap[item.slot];
         }
@@ -332,12 +342,20 @@ const inventoryGridManager = {
 
     // Get item shape array
     getItemShape(item, rotation = 0) {
-        // Use the same logic as getItemDimensions
+        // First, try to use the item's shape property if it exists
+        if (item.shape && Array.isArray(item.shape)) {
+            return this.rotateShape(item.shape, rotation);
+        }
+        
+        // Use the same logic as getItemDimensions for fallback
         let baseDims = this.ITEM_DIMENSIONS[item.type];
 
         if (!baseDims && item.slot) {
             const slotToTypeMap = {
+                'weapon1h': { width: 1, height: 3 },
+                'weapon2h': { width: 1, height: 4 },
                 'weapon': { width: 1, height: 3 },
+                'helm': { width: 2, height: 2 },
                 'helmet': { width: 2, height: 2 },
                 'chest': { width: 2, height: 3 },
                 'gloves': { width: 2, height: 2 },
@@ -345,7 +363,7 @@ const inventoryGridManager = {
                 'shield': { width: 2, height: 2 },
                 'ring': { width: 1, height: 1 },
                 'amulet': { width: 1, height: 1 },
-                'belt': { width: 2, height: 1 } // Changed to horizontal (2x1)
+                'belt': { width: 2, height: 1 }
             };
             baseDims = slotToTypeMap[item.slot] || { width: 1, height: 1 };
         }
@@ -765,8 +783,6 @@ const inventoryGridManager = {
         };
         const color = rarityColors[item.rarity] || '#808080';
         const borderColor = this.getDarkerColor(color);
-
-
 
         // Style each cell that the item occupies
         for (let dy = 0; dy < dims.height; dy++) {
@@ -1511,5 +1527,16 @@ const inventoryGridManager = {
 
         console.log(`Restored ${itemsPlaced}/${gameState.inventory.items.length} items from saved positions`);
         return true;
+    },
+
+    // Add this method after the selectItem method
+    getItemData(itemId) {
+        // Search through all tabs to find the item
+        for (const [_, tab] of this.tabs) {
+            if (tab.items.has(itemId)) {
+                return tab.items.get(itemId);
+            }
+        }
+        return null;
     }
 };
