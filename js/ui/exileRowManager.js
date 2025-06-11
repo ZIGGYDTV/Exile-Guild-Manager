@@ -170,25 +170,47 @@ const exileRowManager = {
                 // Check for pending decisions
                 const pendingDecision = turnState.pendingDecisions.find(d => d.exileId === exile.id);
                 if (pendingDecision) {
-                    actionButtons = pendingDecision.choices.map(choice => `
-                    <button class="btn-small decision-btn ${choice.warning ? 'warning' : ''}" 
-                            onclick="exileRowManager.handleDecision(${exile.id}, '${choice.id}')">
-                        ${choice.label}
-                    </button>
-                `).join('');
-                } else {
-                    // Show retreat button when combat is ready (between rounds)
+                    // In-combat decisions: Manually build action buttons
+                    let buttons = [];
+                    
+                    // 1. Retreat Button (using the new system)
                     const retreatInfo = this.getRetreatInfo(exile.id, currentEncounter);
-                    if (retreatInfo.available) {
-                        actionButtons = `
-                            <button class="btn-small retreat-btn ${retreatInfo.type === 'risky' ? 'warning' : 'info'}" 
+                    if (retreatInfo.available && retreatInfo.type === 'risky') {
+                        buttons.push(`
+                            <button class="btn-small retreat-btn warning" 
                                     onclick="exileRowManager.showRetreatOptions(${exile.id})"
                                     title="${retreatInfo.description}">
-                                ${retreatInfo.type === 'risky' ? '⚠️ Risky Retreat' : '✓ Safe Retreat'}
+                                ⚠️ Risky Retreat
+                            </button>
+                        `);
+                    }
+
+                    // 2. Flask Button (for future use)
+                    if (exile.flask && exile.flask.charges > 0) {
+                         buttons.push(`
+                            <button class="btn-small decision-btn" 
+                                    onclick="exileRowManager.handleDecision(${exile.id}, 'use_flask')"
+                                    title="Use Flask: Restore ${exile.flask.healing || 50} life. ${exile.flask.charges} charges left.">
+                                Use Flask
+                            </button>
+                        `);
+                    }
+                    
+                    actionButtons = buttons.join('');
+
+                } else {
+                    // Between-encounter decisions (e.g., after killing a monster)
+                    const retreatInfo = this.getRetreatInfo(exile.id, currentEncounter);
+                    if (retreatInfo.available && retreatInfo.type === 'safe') {
+                        actionButtons = `
+                            <button class="btn-small retreat-btn info" 
+                                    onclick="exileRowManager.showRetreatOptions(${exile.id})"
+                                    title="${retreatInfo.description}">
+                                ✓ Safe Retreat
                             </button>
                         `;
                     } else {
-                        // No action buttons during active combat - use global End Turn button
+                        // No actions needed, waiting for End Turn
                         actionButtons = '';
                     }
                 }

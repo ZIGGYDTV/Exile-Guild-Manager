@@ -508,8 +508,6 @@ class MissionSystem {
         }
     }
 
-    // Inside the MissionSystem class, add these methods:
-
     // Process one turn for an active mission
     processMissionTurn(exileId) {
         // Find the active mission for this exile
@@ -548,7 +546,6 @@ class MissionSystem {
             return {
                 type: 'decision_needed',
                 exileId: exileId,
-                choices: this.getAvailableChoices(exile, currentEncounter, turnResult),
                 turnResult: turnResult
             };
         }
@@ -614,37 +611,6 @@ class MissionSystem {
         }
     }
 
-    // Get available choices after a turn
-    getAvailableChoices(exile, encounter, turnResult) {
-        const choices = [];
-
-        // Always can continue fighting or retreat
-        choices.push({
-            id: 'continue',
-            label: 'Continue Fighting',
-            description: 'Attack for another 5 rounds'
-        });
-
-        choices.push({
-            id: 'retreat',
-            label: 'Combat Retreat',
-            description: 'Flee with injuries and lose some loot',
-            warning: true
-        });
-
-        // Add flask option if available and needed
-        if (exile.flask && exile.flask.charges > 0 &&
-            exile.currentLife < exile.stats.life * 0.7) {
-            choices.push({
-                id: 'use_flask',
-                label: `Use ${exile.flask.name}`,
-                description: `Restore ${exile.flask.healing} life (${exile.flask.charges} charges left)`
-            });
-        }
-
-        return choices;
-    }
-
     // Process player's decision
     processDecision(exileId, decision) {
         const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
@@ -656,9 +622,6 @@ class MissionSystem {
             case 'continue':
                 // Just process next turn
                 return this.processMissionTurn(exileId);
-
-            case 'retreat':
-                return this.handleCombatRetreat(activeMission);
 
             case 'use_flask':
                 this.useFlask(exile);
@@ -676,6 +639,28 @@ class MissionSystem {
                     exileId: exileId,
                     encounter: activeMission.missionState.getCurrentEncounter().getDescription()
                 };
+        }
+    }
+
+    // Placeholder for using a flask.
+    useFlask(exile) {
+        if (!exile || !exile.flask || exile.flask.charges <= 0) {
+            console.log("Cannot use flask.");
+            return;
+        }
+
+        const healing = exile.flask.healing || 50; // Default healing value
+        exile.currentLife = Math.min(exile.stats.life, (exile.currentLife || 0) + healing);
+        exile.flask.charges--;
+
+        uiSystem.log(`🧪 ${exile.name} used a flask, restoring ${healing} life. (${exile.flask.charges} charges left)`, 'info');
+        
+        // In the future, you might want to update the UI immediately here.
+        if (typeof exileRowManager !== 'undefined') {
+            const rowId = exileRowManager.getRowForExile(exile.id);
+            if (rowId) {
+                exileRowManager.updateRow(rowId, exile);
+            }
         }
     }
 
