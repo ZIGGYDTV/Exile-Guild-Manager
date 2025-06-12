@@ -613,6 +613,10 @@ const exileRowManager = {
             let result;
             // If no log entry, process the first turn
             if (!combatLogEntry) {
+                 // Play monster spawn animation before first turn of new encounter
+                 if (combatDisplay && currentEncounter.monster) {
+                    await this.animateMonsterSpawn(combatDisplay, currentEncounter.monster);
+                }
                 result = missionSystem.processMissionTurn(exileId);
                 combatLogEntry = missionState.combatLog.filter(log => log.encounter === currentEncounter.encounterNumber).pop();
             } else if (combatLogEntry.result && (combatLogEntry.result.outcome === 'combat_continue' || combatLogEntry.result.outcome === 'continue')) {
