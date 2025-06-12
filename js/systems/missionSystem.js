@@ -556,9 +556,9 @@ class MissionSystem {
         } else {
             // Combat continues - present choices to player
             return {
-                type: 'decision_needed',
+                type: 'combat_continue',
                 exileId: exileId,
-                turnResult: turnResult
+                encounter: currentEncounter.getDescription()
             };
         }
     }
