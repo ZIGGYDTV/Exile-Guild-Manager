@@ -1709,3 +1709,17 @@ body {
     transform: rotate(-45deg);
     pointer-events: none;
 }
+
+/* Ctrl-held visual feedback for equipped items */
+.equipment-container.ctrl-held .compact-slot.occupied {
+    cursor: crosshair !important;
+    transition: all 0.2s ease !important;
+}
+.equipment-container.ctrl-held .compact-slot.occupied:hover {
+    transform: scale(1.05) !important;
+    box-shadow: 0 0 15px rgba(255, 87, 34, 0.7) !important;
+    border-color: #FF5722 !important;
+}
+.equipment-container.ctrl-held .compact-slot.occupied .item-name-compact {
+    text-shadow: 0 0 8px rgba(255, 87, 34, 0.8) !important;
+}

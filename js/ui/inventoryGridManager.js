@@ -678,17 +678,15 @@ const inventoryGridManager = {
         if (e.key.toLowerCase() === 'r' && this.selectedItem) {
             this.rotateItem(this.selectedItem);
         }
-
         // Cancel click-to-equip mode with Escape
         if (e.key === 'Escape' && this.selectedItemForEquipping) {
             this.clearSelectedItemForEquipping();
             uiSystem.log('Click-to-equip cancelled', 'info');
         }
-
         // Show help for keyboard shortcuts (F1 is universal help key)
         if (e.key === 'F1') {
             e.preventDefault(); // Prevent browser's F1 help
-            uiSystem.log('💡 Shortcuts: R=Rotate, Escape=Cancel, Ctrl+Click=Quick Equip, F1=Help', 'info');
+            uiSystem.log('💡 Shortcuts: R=Rotate, Escape=Cancel, Ctrl+Click=Quick Equip/Unequip, F1=Help', 'info');
         }
     },
 

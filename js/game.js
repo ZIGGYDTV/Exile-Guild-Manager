@@ -11,7 +11,6 @@ const game = {
 
         // debug logs
         console.log("Exiles after init:", gameState.exiles);
-        console.log("Selected exile ID:", gameState.selectedExileId);
 
         // Initialize systems
         inventorySystem.initializeItemTooltips();
@@ -114,6 +113,33 @@ const game = {
         // Initialize dynamic display manager
         if (typeof dynamicDisplayManager !== 'undefined') {
             dynamicDisplayManager.init();
+        }
+
+        if (typeof uiSystem !== 'undefined') {
+            uiSystem.updateDisplay();  // This will update all UI elements including the gold display
+        }
+
+        // Add starting weapon if inventory is empty
+        if (gameState.inventory.items.length === 0) {
+            const startingWeapon = {
+                ...itemBases.brokenShortSword,  // Copy the base item properties
+                id: Date.now() + Math.random(), // Generate unique ID
+                rarity: 'common',               // Set rarity
+                name: "Guildmasters Old Sword",
+                description: "Your old longsword, broken in half and edge long gone. A desperate enough exile could parry and club with it perhaps.",
+                implicitStats: {damage: 2, defense: 1},
+                stats: {},                      // Empty stats object for rolled stats
+                statWeights: itemBases.brokenShortSword.statWeights,  // Copy stat weights
+                baseItem: 'brokenShortSword'    // Track the base item for crafting
+            };
+
+            // Add to inventory
+            gameState.inventory.items.push(startingWeapon);
+
+            // Add to inventory grid
+            if (typeof inventoryGridManager !== 'undefined' && inventoryGridManager.gridContainer) {
+                inventoryGridManager.addNewItemToInventory(startingWeapon);
+            }
         }
     },
 

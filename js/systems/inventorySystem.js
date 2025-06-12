@@ -216,7 +216,7 @@ const inventorySystem = {
 
         this.equipItemToSlot(itemId, targetSlot);
         this.updateInventoryModalDisplay();
-        characterScreenSystem.updateCharacterScreenIfOpen();
+        // characterScreenSystem.updateCharacterScreenIfOpen();
     },
 
     deleteItem(itemId) {
@@ -378,15 +378,18 @@ const inventorySystem = {
         const statToRemove = currentStatKeys[Math.floor(Math.random() * currentStatKeys.length)];
         const oldValue = item.stats[statToRemove];
 
-        // Get the item's base type from itemDB to access stat weights
-        const baseTypes = ['weapon', 'armor', 'helmet', 'chest', 'gloves', 'boots', 'shield', 'ring', 'amulet', 'belt'];
+        // Find base item with fallback
         let itemBase = null;
-
         for (const equipment of itemDB.equipment.values()) {
             if (equipment.slot === item.slot && item.name.includes(equipment.name)) {
                 itemBase = equipment;
                 break;
             }
+        }
+
+        // If not found by name, try to find by baseItem property
+        if (!itemBase && item.baseItem) {
+            itemBase = itemDB.getEquipment(itemBases[item.baseItem].name);
         }
 
         if (!itemBase) {
@@ -470,7 +473,7 @@ const inventorySystem = {
         }
         
         game.saveGame();
-        characterScreenSystem.updateCharacterScreenIfOpen();
+        // characterScreenSystem.updateCharacterScreenIfOpen();
 
         return true;
     },
@@ -527,15 +530,18 @@ const inventorySystem = {
             }
         }
 
-        // Now add a stat
-        const baseTypes = ['weapon', 'armor', 'helmet', 'chest', 'gloves', 'boots', 'shield', 'ring', 'amulet', 'belt'];
+        // Find base item with fallback
         let itemBase = null;
-
         for (const equipment of itemDB.equipment.values()) {
             if (equipment.slot === item.slot && item.name.includes(equipment.name)) {
                 itemBase = equipment;
                 break;
             }
+        }
+
+        // If not found by name, try to find by baseItem property
+        if (!itemBase && item.baseItem) {
+            itemBase = itemDB.getEquipment(itemBases[item.baseItem].name);
         }
 
         if (!itemBase) {
@@ -633,7 +639,7 @@ const inventorySystem = {
         }
         
         game.saveGame();
-        characterScreenSystem.updateCharacterScreenIfOpen();
+        // characterScreenSystem.updateCharacterScreenIfOpen();
 
         return true;
     },
@@ -652,7 +658,7 @@ const inventorySystem = {
     useExaltedOrbModal(itemId) {
         this.useExaltedOrb(itemId);
         this.updateInventoryModalDisplay();
-        characterScreenSystem.updateCharacterScreenIfOpen();
+        // characterScreenSystem.updateCharacterScreenIfOpen();
     },
 
     // === DISPLAY AND FORMATTING METHODS ===
@@ -1082,7 +1088,7 @@ ${currentItem.isOvercapped ? '<span class="overcapped-icon" title="Perfected wit
         }
 
         this.closeEquipmentSelector();
-        characterScreenSystem.updateCharacterScreen();
+        // characterScreenSystem.updateCharacterScreen();
     },
 
     // === ITEM TOOLTIP SYSTEM ===

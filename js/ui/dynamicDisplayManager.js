@@ -136,6 +136,32 @@ const dynamicDisplayManager = {
                 this.switchTab(tabName);
             });
         });
+        this.setupEquipmentKeyTracking();
+    },
+
+    setupEquipmentKeyTracking() {
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                const equipmentContainer = document.querySelector('.equipment-container');
+                if (equipmentContainer) {
+                    equipmentContainer.classList.add('ctrl-held');
+                }
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            if (!e.ctrlKey) {
+                const equipmentContainer = document.querySelector('.equipment-container');
+                if (equipmentContainer) {
+                    equipmentContainer.classList.remove('ctrl-held');
+                }
+            }
+        });
+        window.addEventListener('blur', () => {
+            const equipmentContainer = document.querySelector('.equipment-container');
+            if (equipmentContainer) {
+                equipmentContainer.classList.remove('ctrl-held');
+            }
+        });
     },
 
     switchTab(tabName) {
@@ -185,10 +211,17 @@ const dynamicDisplayManager = {
         const content = document.getElementById('tab-overview');
         content.innerHTML = `
             <h2>Guild Overview</h2>
-            <p>Total Exiles: ${gameState.exiles.length}</p>
-            <p>Available for missions: ${gameState.exiles.filter(e => e.status === 'idle').length}</p>
-            <p>Current Turn: ${gameState.turnNumber || 1}</p>
-        `;
+            <p style="font-weight: bold;">Total Exiles: ${gameState.exiles.length}</p>
+            <p style="font-weight: bold;">Available for missions: ${gameState.exiles.filter(e => e.status === 'idle').length}</p>
+            <br>
+            <p>Check your exile's stats, passives and equipment while they are resting.</p>
+            <br>
+            <p>Assign exiles to missions to acquire resources and gear.</p>
+            <br>
+            <p>Use the recruitment tab to expand your guild options when you have resources to spare.</p>
+            <br>
+            <p>Use the Activity Log to see more details about what's happening.</p>
+            `;
     },
 
     showExileDetails(exileId) {
@@ -394,7 +427,7 @@ const dynamicDisplayManager = {
                 const backgroundColor = rarityColors[rarity] || '#808080';
 
                 const clickHandler = isValidSlot ? `onclick="inventoryGridManager.equipItemToSlot('${slot}')"` :
-                    `onclick="dynamicDisplayManager.selectEquippedItem('${slot}', ${exile.id})"`;
+                    `onclick="dynamicDisplayManager.selectEquippedItem('${slot}', ${exile.id}, event)"`;
 
                 equipmentHTML += `
                     <div class="${slotClasses.join(' ')} compact-slot" data-slot="${slot}" ${clickHandler}
@@ -534,16 +567,35 @@ const dynamicDisplayManager = {
     },
 
     // Handle clicking on equipped items to show in detail panel
-    selectEquippedItem(slot, exileId) {
+    selectEquippedItem(slot, exileId, event) {
+        // Check for Ctrl+Click quick unequip
+        if (event && event.ctrlKey) {
+            const exile = gameState.exiles.find(e => e.id === exileId);
+            if (!exile || !exile.equipment[slot]) return;
+            const item = exile.equipment[slot];
+            // Check if exile can unequip items (must be in town)
+            if (!inventoryGridManager.canExileEquipItem(exileId)) {
+                uiSystem.log(`${exile.name} cannot unequip items while ${exile.status}`, 'error');
+                return;
+            }
+            // Try to unequip directly
+            const success = inventorySystem.unequipItem(slot, exileId);
+            if (success) {
+                uiSystem.log(`⚡ Quick-unequipped ${item.name}`, 'success');
+                this.refreshCurrentTab();
+                if (typeof inventoryGridManager !== 'undefined') {
+                    inventoryGridManager.updateDisplay();
+                }
+            } else {
+                uiSystem.log('Failed to unequip item', 'error');
+            }
+            return;
+        }
+        // Normal click behavior (existing code)
         const exile = gameState.exiles.find(e => e.id === exileId);
         if (!exile || !exile.equipment[slot]) return;
-
         const item = exile.equipment[slot];
-
-        // Show in inventory detail panel with unequip button
         this.updateItemDetailPanelForEquipped(item, slot, exileId);
-
-        // Clear any selected inventory item
         if (typeof inventoryGridManager !== 'undefined') {
             inventoryGridManager.selectedItem = null;
             inventoryGridManager.clearSelectedItemForEquipping();

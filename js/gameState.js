@@ -37,9 +37,9 @@ const gameState = {
 
     // === SHARED RESOURCES ===
     resources: {
-        gold: 0,
+        gold: 50,
         chaosOrbs: 0,
-        exaltedOrbs: 0,
+        exaltedOrbs: 1,
         materials: 0, // For future crafting
         rations: 0    // For future vitality system
     },
@@ -64,6 +64,8 @@ const gameState = {
         pauseOnDecisions: true
     }
 };
+
+console.log("Initial gold value:", gameState.resources.gold);
 
 // ===== WORLD STATE =====
 const worldState = {

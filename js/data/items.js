@@ -2,8 +2,8 @@
 export const itemBases = {
     // === ONE-HANDED WEAPONS ===
     brokenShortSword: {
-        name: "Broken Short Sword",
-        description: "It was possibly a fine sword once, but with missing tip and badly chipped edge it more closely resembles a sawblade now.",
+        name: "Broken Sword",
+        description: "This was once a longsword, at least it's light and fast and still has a bit of an edge.",
         slot: "weapon1h",
         category: "sword",
         weaponType: "sword",
@@ -11,18 +11,18 @@ export const itemBases = {
         ilvl: 1,
 
         // Weapon properties
-        attackSpeed: 1.2,
-        damageMultiplier: 0.9,
+        attackSpeed: 1.3,
+        damageMultiplier: 0.8,
 
         // Implicit stats
         implicitStats: {
-            damage: { min: 2, max: 6 }
+            damage: { min: 2, max: 5 }
         },
 
         // Stat weights for affix generation
         statWeights: {
             damage: 2,
-            attackSpeed: 2
+            attackSpeed: 3
         },
 
         // Tags for drop system
