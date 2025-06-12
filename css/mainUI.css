@@ -408,12 +408,16 @@ body {
 
 @keyframes damageFloat {
     0% {
+        opacity: 0;
+        transform: translateY(0px);
+    }
+    10% {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0px);
     }
     100% {
         opacity: 0;
-        transform: translateY(-30px);
+        transform: translateY(-40px) translateX(var(--curve-amount)) rotate(var(--rotation)) scale(1.2);
     }
 }
 
@@ -421,16 +425,22 @@ body {
 .damage-popup.exile-damage {
     color: #ffeb3b;
     right: -9%;  /* Position near monster icon */
-    top: 50%;
-    transform: translateY(-50%);
+    top: 20%;
+    transform: translateY(-10px);
+    --curve-amount: 30px;
+    --rotation: 10deg;
+    opacity: 0;
 }
 
 /* Player damage (red) - appears right of player icon */
 .damage-popup.monster-damage {
     color: #ff4444;
     left: -9%;  /* Position near player icon */
-    top: 50%;
-    transform: translateY(-50%);
+    top: 20%;
+    transform: translateY(-10px);
+    --curve-amount: -30px;
+    --rotation: -10deg;
+    opacity: 0;
 }
 
 /* Staggered damage popups */
@@ -444,10 +454,10 @@ body {
     animation-delay: 0.175s;
 }
 .damage-popup:nth-child(5) {
-    animation-delay: 0.19s;
+    animation-delay: 0.2s;
 }
 .damage-popup:nth-child(6) {
-    animation-delay: 0.2s;
+    animation-delay: 0.215s;
 }
 
 /* Blood splatter effect */
@@ -1524,10 +1534,10 @@ body {
 /* ===== ANIMATIONS ===== */
 @keyframes pulse-glow {
     0%, 100% { 
-        box-shadow: 0 0 5px rgba(76, 175, 80, 0.7);
+        box-shadow: 0 0 5px rgba(175, 144, 76, 0.7);
     }
     50% { 
-        box-shadow: 0 0 20px rgba(76, 175, 80, 1), 0 0 30px rgba(76, 175, 80, 0.8);
+        box-shadow: 0 0 7px rgb(207, 154, 70), 0 0 9px rgba(213, 145, 67, 0.8);
     }
 }
 
