@@ -562,11 +562,26 @@ class MissionSystem {
 
         // Handle outcomes
         if (turnResult.outcome === 'victory' || turnResult.outcome === 'culled') {
+            // DEBUG: Log combat log after processing turn
+            console.log('[DEBUG] processMissionTurn (victory/culled):', {
+                currentEncounterNumber: currentEncounter.encounterNumber,
+                combatLog: missionState.combatLog
+            });
             return this.handleEncounterVictory(activeMission, turnResult);
         } else if (turnResult.outcome === 'death') {
+            // DEBUG: Log combat log after processing turn
+            console.log('[DEBUG] processMissionTurn (death):', {
+                currentEncounterNumber: currentEncounter.encounterNumber,
+                combatLog: missionState.combatLog
+            });
             return this.handleExileDeath(activeMission, turnResult);
         } else {
             // Combat continues - present choices to player
+            // DEBUG: Log combat log after processing turn
+            console.log('[DEBUG] processMissionTurn (combat_continue):', {
+                currentEncounterNumber: currentEncounter.encounterNumber,
+                combatLog: missionState.combatLog
+            });
             return {
                 type: 'combat_continue',
                 exileId: exileId,

@@ -10,6 +10,9 @@ const exileRowManager = {
         6: { state: 'empty', exileId: null }
     },
 
+    // Add a property to track active animations per exile
+    activeAnimations: {},
+
     // Initialize the system
     init() {
         // Add click handlers to all exile rows
@@ -549,191 +552,193 @@ const exileRowManager = {
     },
 
     async animateCombat(exileId) {
-        console.log(`Starting combat animation for exile ${exileId}`);
-
-        const exile = gameState.exiles.find(e => e.id === exileId);
-        const row = document.querySelector(`[data-exile-id="${exileId}"]`);
-
-        if (!row || !exile) {
-            console.log('[DEBUG] animateCombat early return: missing row or exile', { row, exile });
+        if (this.activeAnimations[exileId]) {
+            console.log(`[DEBUG] animateCombat: Animation already in progress for exile ${exileId}, skipping.`);
             return;
         }
+        this.activeAnimations[exileId] = true;
+        try {
+            console.log(`Starting combat animation for exile ${exileId}`);
 
-        const combatArea = row.querySelector('.combat-area');
-        const combatDisplay = combatArea ? combatArea.querySelector('.combat-display') : null;
-        if (!combatDisplay) {
-            console.log('[DEBUG] animateCombat early return: missing combatDisplay', { combatArea, combatDisplay });
-            return;
-        }
+            const exile = gameState.exiles.find(e => e.id === exileId);
+            const row = document.querySelector(`[data-exile-id="${exileId}"]`);
 
-        // Get the active mission to check combat log
-        const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
-        if (!activeMission) {
-            console.log('[DEBUG] animateCombat early return: missing activeMission', { activeMission });
-            return;
-        }
+            if (!row || !exile) {
+                console.log('[DEBUG] animateCombat early return: missing row or exile', { row, exile });
+                return;
+            }
 
-        const missionState = activeMission.missionState;
-        const currentEncounter = missionState.getCurrentEncounter();
-        if (!currentEncounter) {
-            console.log('[DEBUG] animateCombat early return: missing currentEncounter', { currentEncounter });
-            return;
-        }
+            const combatArea = row.querySelector('.combat-area');
+            const combatDisplay = combatArea ? combatArea.querySelector('.combat-display') : null;
+            if (!combatDisplay) {
+                console.log('[DEBUG] animateCombat early return: missing combatDisplay', { combatArea, combatDisplay });
+                return;
+            }
 
-        // Find the combat log entry for the current encounter
-        let combatLogEntry = missionState.combatLog.find(log => log.encounter === currentEncounter.encounterNumber);
-        let result;
-        if (!combatLogEntry) {
-            // No combat log yet for this encounter, process the first turn
-            console.log('[DEBUG] BEFORE processMissionTurn:', {
-                currentEncounterNumber: currentEncounter.encounterNumber,
-                combatLog: missionState.combatLog
-            });
-            result = missionSystem.processMissionTurn(exileId);
-            // Get the new combat log entry
-            combatLogEntry = missionState.combatLog.find(log => log.encounter === currentEncounter.encounterNumber);
-            console.log('[DEBUG] AFTER processMissionTurn:', {
-                currentEncounterNumber: currentEncounter.encounterNumber,
-                combatLog: missionState.combatLog,
-                foundLogEntry: combatLogEntry,
-                foundRounds: combatLogEntry && combatLogEntry.result ? combatLogEntry.result.rounds : undefined
-            });
-        } else {
-            // Already have a combat log, use the latest result
-            result = combatLogEntry.result;
-        }
+            // Get the active mission to check combat log
+            const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
+            if (!activeMission) {
+                console.log('[DEBUG] animateCombat early return: missing activeMission', { activeMission });
+                return;
+            }
 
-        // Now animate the combat log entry as before
-        const lastCombat = combatLogEntry;
-        if (lastCombat && lastCombat.result && lastCombat.result.rounds) {
-            const rounds = lastCombat.result.rounds;
-            const finalOutcome = lastCombat.result.outcome;
-            console.log(`Animating ${rounds.length} rounds of combat`);
+            const missionState = activeMission.missionState;
+            const currentEncounter = missionState.getCurrentEncounter();
+            if (!currentEncounter) {
+                console.log('[DEBUG] animateCombat early return: missing currentEncounter', { currentEncounter });
+                return;
+            }
 
-            // Animate each round sequentially
-            for (let i = 0; i < rounds.length; i++) {
-                const round = rounds[i];
-                const isLastRound = i === rounds.length - 1;
-                console.log(`Round ${round.round}:`, round);
+            // Find the most recent combat log entry for the current encounter
+            let combatLogEntry = missionState.combatLog.filter(log => log.encounter === currentEncounter.encounterNumber).pop();
+            let result;
+            // If no log entry, process the first turn
+            if (!combatLogEntry) {
+                result = missionSystem.processMissionTurn(exileId);
+                combatLogEntry = missionState.combatLog.filter(log => log.encounter === currentEncounter.encounterNumber).pop();
+            } else if (combatLogEntry.result && (combatLogEntry.result.outcome === 'combat_continue' || combatLogEntry.result.outcome === 'continue')) {
+                // If the last result is an ongoing outcome, process a new turn
+                result = missionSystem.processMissionTurn(exileId);
+                combatLogEntry = missionState.combatLog.filter(log => log.encounter === currentEncounter.encounterNumber).pop();
+            } else {
+                // Already have a finished log, use the latest result
+                result = combatLogEntry.result;
+            }
 
-                // Update encounter info
+            // Now animate the combat log entry as before
+            const lastCombat = combatLogEntry;
+            if (lastCombat && lastCombat.result && lastCombat.result.rounds) {
+                const rounds = lastCombat.result.rounds;
+                const finalOutcome = lastCombat.result.outcome;
+                console.log(`Animating ${rounds.length} rounds of combat`);
+
+                // Animate each round sequentially
+                for (let i = 0; i < rounds.length; i++) {
+                    const round = rounds[i];
+                    const isLastRound = i === rounds.length - 1;
+                    console.log(`Round ${round.round}:`, round);
+
+                    // Update encounter info
+                    const encounterInfo = row.querySelector('.encounter-info');
+                    if (encounterInfo) {
+                        encounterInfo.textContent = `Round ${round.round} of 5`;
+                    }
+
+                    // Animate exile actions
+                    if (round.exileActions && round.exileActions.length > 0) {
+                        for (const action of round.exileActions) {
+                            if (action.type === 'no_attack') {
+                                // Show timer indicator for no attack
+                                await this.showNoAttackIndicator(combatDisplay, 'exile');
+                            } else {
+                                // Regular attack
+                                const monsterDies = isLastRound &&
+                                    (finalOutcome === 'victory' || finalOutcome === 'culled') &&
+                                    action.targetHealthAfter <= 0;
+
+                                console.log("Exile attacks for", action.finalDamage, monsterDies ? "(KILLING BLOW)" : "");
+                                await this.animateAttack(combatDisplay, 'exile', action.finalDamage, monsterDies);
+                                
+                                // Update monster health bar (use stored monster reference)
+                                if (currentEncounter.monster) {
+                                    this.updateMonsterHealthBar(combatDisplay, action.targetHealthAfter, currentEncounter.monster.life);
+                                }
+
+                                // Small delay between multiple attacks
+                                if (round.exileActions.length > 1) {
+                                    await this.wait(100);
+                                }
+                            }
+                        }
+                    }
+
+                    // Animate monster actions
+                    if (round.monsterActions && round.monsterActions.length > 0) {
+                        for (const action of round.monsterActions) {
+                            if (action.type === 'no_attack') {
+                                // Show timer indicator for no attack
+                                await this.showNoAttackIndicator(combatDisplay, 'monster');
+                            } else {
+                                // Regular attack
+                                const exileDies = isLastRound &&
+                                    finalOutcome === 'death' &&
+                                    action.exileHealthAfter <= 0;
+
+                                console.log("Monster attacks for", action.finalDamage, exileDies ? "(KILLING BLOW)" : "");
+                                await this.animateAttack(combatDisplay, 'monster', action.finalDamage, exileDies);
+                                this.updateHealthBar(row, action.exileHealthAfter, exile.stats.life);
+
+                                // Small delay between multiple attacks
+                                if (round.monsterActions.length > 1) {
+                                    await this.wait(100);
+                                }
+                            }
+                        }
+                    }
+
+                    // If nothing happened this round (no attacks), still show the round
+                    if ((!round.exileActions || round.exileActions.length === 0) &&
+                        (!round.monsterActions || round.monsterActions.length === 0)) {
+                        await this.wait(1000); // Just wait to show the round happened
+                    }
+
+                    // Wait before next round
+                    await this.wait(1000);
+                }
+
+                // Show final outcome
                 const encounterInfo = row.querySelector('.encounter-info');
-                if (encounterInfo) {
-                    encounterInfo.textContent = `Round ${round.round} of 5`;
-                }
-
-                // Animate exile actions
-                if (round.exileActions && round.exileActions.length > 0) {
-                    for (const action of round.exileActions) {
-                        if (action.type === 'no_attack') {
-                            // Show timer indicator for no attack
-                            await this.showNoAttackIndicator(combatDisplay, 'exile');
-                        } else {
-                            // Regular attack
-                            const monsterDies = isLastRound &&
-                                (finalOutcome === 'victory' || finalOutcome === 'culled') &&
-                                action.targetHealthAfter <= 0;
-
-                            console.log("Exile attacks for", action.finalDamage, monsterDies ? "(KILLING BLOW)" : "");
-                            await this.animateAttack(combatDisplay, 'exile', action.finalDamage, monsterDies);
-                            
-                            // Update monster health bar (use stored monster reference)
-                            if (currentEncounter.monster) {
-                                this.updateMonsterHealthBar(combatDisplay, action.targetHealthAfter, currentEncounter.monster.life);
-                            }
-
-                            // Small delay between multiple attacks
-                            if (round.exileActions.length > 1) {
-                                await this.wait(100);
-                            }
-                        }
+                if (lastCombat.result.outcome === 'victory') {
+                    if (encounterInfo) {
+                        encounterInfo.textContent = "Victory!";
                     }
-                }
-
-                // Animate monster actions
-                if (round.monsterActions && round.monsterActions.length > 0) {
-                    for (const action of round.monsterActions) {
-                        if (action.type === 'no_attack') {
-                            // Show timer indicator for no attack
-                            await this.showNoAttackIndicator(combatDisplay, 'monster');
-                        } else {
-                            // Regular attack
-                            const exileDies = isLastRound &&
-                                finalOutcome === 'death' &&
-                                action.exileHealthAfter <= 0;
-
-                            console.log("Monster attacks for", action.finalDamage, exileDies ? "(KILLING BLOW)" : "");
-                            await this.animateAttack(combatDisplay, 'monster', action.finalDamage, exileDies);
-                            this.updateHealthBar(row, action.exileHealthAfter, exile.stats.life);
-
-                            // Small delay between multiple attacks
-                            if (round.monsterActions.length > 1) {
-                                await this.wait(100);
-                            }
-                        }
+                    await this.wait(500); // Brief pause to show victory message
+                    
+                    // Start unified death animation
+                    await this.startMonsterDeathAnimation(combatDisplay);
+                    
+                } else if (lastCombat.result.outcome === 'culled') {
+                    if (encounterInfo) {
+                        encounterInfo.textContent = "Executed! (Culling Strike)";
                     }
+                    await this.wait(500); // Brief pause to show culling message
+                    
+                    // Start unified death animation
+                    await this.startMonsterDeathAnimation(combatDisplay);
                 }
-
-                // If nothing happened this round (no attacks), still show the round
-                if ((!round.exileActions || round.exileActions.length === 0) &&
-                    (!round.monsterActions || round.monsterActions.length === 0)) {
-                    await this.wait(1000); // Just wait to show the round happened
-                }
-
-                // Wait before next round
-                await this.wait(1000);
             }
 
-            // Show final outcome
-            const encounterInfo = row.querySelector('.encounter-info');
-            if (lastCombat.result.outcome === 'victory') {
-                if (encounterInfo) {
-                    encounterInfo.textContent = "Victory!";
+            // Handle the mission result
+            if (result) {
+                if (result.type === 'encounter_complete' && result.hasNextEncounter) {
+                    // Instead of waiting for a decision, immediately process the next encounter on End Turn
+                    // Remove any pending decision for this exile
+                    turnState.pendingDecisions = turnState.pendingDecisions.filter(d => d.exileId !== exileId);
+                    // Immediately process the next encounter (End Turn will call this again)
+                    // No need to add a pending decision, just update the row
+                    this.updateRow(this.getRowForExile(exileId), exile);
+                } else if (result.type === 'mission_complete') {
+                    // NOW apply the mission completion rewards after animation completes
+                    missionSystem.applyMissionRewards(exileId, result.rewards);
+                } else if (result.type === 'decision_needed') {
+                    // If there are other types of decisions, handle as before
+                    turnState.pendingDecisions.push({
+                        exileId: exileId,
+                        choices: result.choices
+                    });
+                } else if (result.type === 'next_encounter_started') {
+                    // Start the next encounter's combat/animation immediately
+                    await this.animateCombat(exileId);
                 }
-                await this.wait(500); // Brief pause to show victory message
-                
-                // Start unified death animation
-                await this.startMonsterDeathAnimation(combatDisplay);
-                
-            } else if (lastCombat.result.outcome === 'culled') {
-                if (encounterInfo) {
-                    encounterInfo.textContent = "Executed! (Culling Strike)";
-                }
-                await this.wait(500); // Brief pause to show culling message
-                
-                // Start unified death animation
-                await this.startMonsterDeathAnimation(combatDisplay);
             }
-        }
-
-        // Handle the mission result
-        if (result) {
-            if (result.type === 'encounter_complete' && result.hasNextEncounter) {
-                // Instead of waiting for a decision, immediately process the next encounter on End Turn
-                // Remove any pending decision for this exile
-                turnState.pendingDecisions = turnState.pendingDecisions.filter(d => d.exileId !== exileId);
-                // Immediately process the next encounter (End Turn will call this again)
-                // No need to add a pending decision, just update the row
-                this.updateRow(this.getRowForExile(exileId), exile);
-            } else if (result.type === 'mission_complete') {
-                // NOW apply the mission completion rewards after animation completes
-                missionSystem.applyMissionRewards(exileId, result.rewards);
-            } else if (result.type === 'decision_needed') {
-                // If there are other types of decisions, handle as before
-                turnState.pendingDecisions.push({
-                    exileId: exileId,
-                    choices: result.choices
-                });
-            } else if (result.type === 'next_encounter_started') {
-                // Start the next encounter's combat/animation immediately
-                await this.animateCombat(exileId);
+            // === NEW: After all animations and result handling, update the row to show retreat button ===
+            const rowId = this.getRowForExile(exileId);
+            if (rowId) {
+                const exileObj = gameState.exiles.find(e => e.id === exileId);
+                this.updateRow(rowId, exileObj);
             }
-        }
-        // === NEW: After all animations and result handling, update the row to show retreat button ===
-        const rowId = this.getRowForExile(exileId);
-        if (rowId) {
-            const exileObj = gameState.exiles.find(e => e.id === exileId);
-            this.updateRow(rowId, exileObj);
+        } finally {
+            this.activeAnimations[exileId] = false;
         }
     },
 
