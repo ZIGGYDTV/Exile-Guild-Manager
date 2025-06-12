@@ -1,3 +1,6 @@
+// A lot of old redundancies have been commented out for now. 
+// But some of these seem to still be critical and should be moved.
+
 // Exile Management System
 // Handles all exile-related operations including creation, stats, and management
 
