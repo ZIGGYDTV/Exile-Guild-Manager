@@ -141,39 +141,92 @@ const exileRowManager = {
         const activeMission = turnState.activeMissions.find(m => m.exileId === exile.id);
 
         if (activeMission && activeMission.missionState) {
+            // Check for pending decision with monster preview
+            const pendingDecision = turnState.pendingDecisions.find(d => d.exileId === exile.id);
+            const hasPreview = activeMission.monsterPreview && pendingDecision;
+
             // NEW: Between-encounters state
-            if (activeMission.missionState.awaitingNextEncounter) {
-                mainAreaContent = `<div class=\"combat-area\" data-exile-id=\"${exile.id}\">\n  <div class=\"encounter-info\">Ready - Awaiting Next Encounter</div>\n</div>`;
+            if (activeMission.missionState.awaitingNextEncounter || hasPreview) {
+                // Generate preview for next encounter if not already present
+                if (activeMission.missionState.awaitingNextEncounter && !activeMission.monsterPreview && !pendingDecision) {
+                    const nextEncounter = activeMission.missionState.encounters[activeMission.missionState.currentEncounterIndex + 1];
+                    if (nextEncounter) {
+                        // Get exile's scouting bonus (default to 1.0 if not present)
+                        const scoutingBonus = exile.stats?.scoutingBonus || 1.0;
+
+                        // Generate and store preview
+                        activeMission.monsterPreview = this.generateMonsterPreview(nextEncounter.monster, scoutingBonus);
+
+                        // Add pending decision for this exile
+                        turnState.pendingDecisions.push({
+                            exileId: exile.id,
+                            choices: ['retreat', 'continue']
+                        });
+                    }
+                }
+
+                if (activeMission.monsterPreview) {
+                    // Show monster preview
+                    mainAreaContent = this.renderMonsterPreview(exile.id, activeMission.monsterPreview);
+                } else {
+                    // Fallback to standard awaiting message
+                    mainAreaContent = `<div class="combat-area" data-exile-id="${exile.id}">
+                        <div class="encounter-info">Ready - Awaiting Next Encounter</div>
+                    </div>`;
+                }
+
                 actionButtons = `
-                    <button class=\"btn-small retreat-btn info\" 
-                            onclick=\"exileRowManager.showRetreatOptions(${exile.id})\"
-                            title=\"Safely retreat before the next encounter begins.\">\n                        ✓ Safe Retreat\n                    </button>\n                `;
+                    <button class="btn-small retreat-btn info" 
+                            onclick="exileRowManager.showRetreatOptions(${exile.id})"
+                            title="Safely retreat before the next encounter begins.">
+                        ✓ Safe Retreat
+                    </button>
+                `;
             } else {
                 const currentEncounter = activeMission.missionState && typeof activeMission.missionState.getCurrentEncounter === 'function'
                     ? activeMission.missionState.getCurrentEncounter()
                     : null;
                 if (currentEncounter) {
                     // Check if this is a fresh mission (no combat log entries yet)
-                    const hasCombatStarted = activeMission.missionState.combatLog && 
+                    const hasCombatStarted = activeMission.missionState.combatLog &&
                         activeMission.missionState.combatLog.some(log => log.encounter === currentEncounter.encounterNumber);
-                    
+
                     if (!hasCombatStarted) {
-                        // Show blank combat area for fresh missions
-                        mainAreaContent = `
-                            <div class="combat-area" data-exile-id="${exile.id}">
-                                <div class="encounter-info">Preparing for Mission...</div>
-                                <div class="combat-display blank">
-                                    <div class="mission-preview">
-                                        Press End Turn to begin the encounter
+                        // Check if we should show preview for fresh mission
+                        if (!activeMission.monsterPreview && !pendingDecision) {
+                            // Generate preview for fresh mission
+                            const scoutingBonus = exile.stats?.scoutingBonus || 1.0;
+                            activeMission.monsterPreview = this.generateMonsterPreview(currentEncounter.monster, scoutingBonus);
+
+                            // Add pending decision
+                            turnState.pendingDecisions.push({
+                                exileId: exile.id,
+                                choices: ['retreat', 'continue']
+                            });
+                        }
+
+                        // Show monster preview instead of blank area
+                        if (activeMission.monsterPreview) {
+                            mainAreaContent = this.renderMonsterPreview(exile.id, activeMission.monsterPreview);
+                        } else {
+                            // Fallback to blank area
+                            mainAreaContent = `
+                                <div class="combat-area" data-exile-id="${exile.id}">
+                                    <div class="encounter-info">Preparing for Mission...</div>
+                                    <div class="combat-display blank">
+                                        <div class="mission-preview">
+                                            Press End Turn to begin the encounter
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
+                        }
+
                         actionButtons = `
                             <button class="btn-small retreat-btn info" 
                                     onclick="exileRowManager.showRetreatOptions(${exile.id})"
-                                    title="Cancel mission before it starts.">
-                                ✓ Cancel Mission
+                                    title="Retreat early and lose Morale.">
+                                ⚠️ Retreat
                             </button>
                         `;
                     } else {
@@ -304,7 +357,7 @@ const exileRowManager = {
     async startMonsterDeathAnimation(combatDisplay) {
         const monsterIcon = combatDisplay.querySelector('.monster-icon');
         const healthRing = combatDisplay.querySelector('.monster-health-ring');
-        
+
         if (!monsterIcon || monsterIcon.classList.contains('dying')) return;
 
         // Immediately hide health ring
@@ -324,7 +377,7 @@ const exileRowManager = {
     async animateMonsterDeath(combatDisplay) {
         const monsterIcon = combatDisplay.querySelector('.monster-icon');
         const healthRing = combatDisplay.querySelector('.monster-health-ring');
-        
+
         if (!monsterIcon) return;
 
         // Immediately hide health ring if not already hidden
@@ -345,11 +398,11 @@ const exileRowManager = {
 
         // Remove dying class and hide elements
         monsterIcon.classList.remove('dying');
-        
+
         // Set final state manually
         monsterIcon.style.opacity = '0';
         monsterIcon.style.transform = 'translateY(30px) scale(0.5)';
-        
+
         // Ensure health ring is completely hidden
         if (healthRing) {
             healthRing.style.display = 'none';
@@ -419,7 +472,7 @@ const exileRowManager = {
         const healthRing = combatDisplay.querySelector('.monster-health-ring');
         const healthRingBg = combatDisplay.querySelector('.health-ring-bg');
         const healthRingFill = combatDisplay.querySelector('.health-ring-fill');
-        
+
         if (!monsterIcon || !monsterWrapper) return;
 
         // Reset monster icon position and add spawning class
@@ -434,7 +487,7 @@ const exileRowManager = {
             healthRing.style.opacity = '1';
             healthRing.style.transform = ''; // Reset any death transform
         }
-        
+
         // Reset individual ring elements
         if (healthRingBg) {
             healthRingBg.style.opacity = '1';
@@ -442,7 +495,7 @@ const exileRowManager = {
         if (healthRingFill) {
             healthRingFill.style.opacity = '1';
             healthRingFill.classList.add('resetting');
-            
+
             // Reset health bar to full
             this.updateMonsterHealthBar(combatDisplay, newMonster.currentLife, newMonster.life);
         }
@@ -464,11 +517,11 @@ const exileRowManager = {
             const rowElement = document.querySelector(`[data-exile-id="${exileId}"]`);
             const combatArea = rowElement ? rowElement.querySelector('.combat-area') : null;
             const combatDisplay = combatArea ? combatArea.querySelector('.combat-display') : null;
-            
+
             if (combatDisplay) {
                 // Animate monster death and disappearance
                 await this.animateMonsterDeath(combatDisplay);
-                
+
                 // Get the new encounter
                 const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
                 if (activeMission) {
@@ -479,18 +532,18 @@ const exileRowManager = {
                         if (encounterInfo) {
                             encounterInfo.textContent = `Transitioning to next encounter...`;
                         }
-                        
+
                         // Small pause for dramatic effect
                         await this.wait(500);
-                        
+
                         // Update encounter info for new encounter
                         if (encounterInfo) {
                             encounterInfo.textContent = `Next Encounter - ${newEncounter.getDescription()}`;
                         }
-                        
+
                         // Animate new monster spawning
                         await this.animateMonsterSpawn(combatDisplay, newEncounter.monster);
-                        
+
                         // Update encounter info to ready state
                         if (encounterInfo) {
                             encounterInfo.textContent = `Ready - ${newEncounter.getDescription()}`;
@@ -588,17 +641,45 @@ const exileRowManager = {
             // Get all active missions (do NOT filter out pending decisions)
             const activeMissions = turnState.activeMissions;
 
-            // === NEW: Pre-process any missions awaiting next encounter ===
+            // === NEW: Process pending decisions and advance encounters ===
             const exilesAdvanced = [];
+
+            // Handle pending decisions for 'continue' choice
+            const continuingExiles = [];
+            turnState.pendingDecisions.forEach(decision => {
+                if (decision.choices.includes('continue')) {
+                    // Player chose to continue - advance to next encounter
+                    const mission = activeMissions.find(m => m.exileId === decision.exileId);
+                    if (mission) {
+                        // Clear the preview and decision
+                        delete mission.monsterPreview;
+                        continuingExiles.push(decision.exileId);
+
+                        // Advance to next encounter
+                        missionSystem.advanceToNextEncounter(decision.exileId);
+
+                        // Update the row so the DOM for the new encounter is present
+                        this.updateRow(this.getRowForExile(decision.exileId), gameState.exiles.find(e => e.id === decision.exileId));
+                        exilesAdvanced.push(decision.exileId);
+                    }
+                }
+            });
+
+            // Remove processed decisions
+            turnState.pendingDecisions = turnState.pendingDecisions.filter(d => !continuingExiles.includes(d.exileId));
+
+            // Handle missions awaiting next encounter (legacy support)
             activeMissions.forEach(mission => {
                 const missionState = mission.missionState;
-                if (missionState.awaitingNextEncounter) {
+                if (missionState.awaitingNextEncounter && !exilesAdvanced.includes(mission.exileId)) {
                     missionSystem.advanceToNextEncounter(mission.exileId);
                     // Update the row so the DOM for the new encounter is present
                     this.updateRow(this.getRowForExile(mission.exileId), gameState.exiles.find(e => e.id === mission.exileId));
                     exilesAdvanced.push(mission.exileId);
                 }
             });
+
+
 
             console.log("Processing turns for missions:", activeMissions);
 
@@ -721,7 +802,7 @@ const exileRowManager = {
                 if (combatDisplay && combatDisplay.classList.contains('blank')) {
                     await this.animateInitialCombatSetup(combatDisplay, exile.id, currentEncounter);
                 }
-                
+
                 result = missionSystem.processMissionTurn(exileId);
                 combatLogEntry = missionState.combatLog.filter(log => log.encounter === currentEncounter.encounterNumber).pop();
             } else if (combatLogEntry.result && (combatLogEntry.result.outcome === 'combat_continue' || combatLogEntry.result.outcome === 'continue')) {
@@ -766,7 +847,7 @@ const exileRowManager = {
 
                                 console.log("Exile attacks for", action.finalDamage, monsterDies ? "(KILLING BLOW)" : "");
                                 await this.animateAttack(combatDisplay, 'exile', action.finalDamage, monsterDies);
-                                
+
                                 // Update monster health bar (use stored monster reference)
                                 if (currentEncounter.monster) {
                                     this.updateMonsterHealthBar(combatDisplay, action.targetHealthAfter, currentEncounter.monster.life);
@@ -821,16 +902,16 @@ const exileRowManager = {
                         encounterInfo.textContent = "Victory!";
                     }
                     await this.wait(500); // Brief pause to show victory message
-                    
+
                     // Start unified death animation
                     await this.startMonsterDeathAnimation(combatDisplay);
-                    
+
                 } else if (lastCombat.result.outcome === 'culled') {
                     if (encounterInfo) {
                         encounterInfo.textContent = "Executed! (Culling Strike)";
                     }
                     await this.wait(500); // Brief pause to show culling message
-                    
+
                     // Start unified death animation
                     await this.startMonsterDeathAnimation(combatDisplay);
                 }
@@ -839,11 +920,7 @@ const exileRowManager = {
             // Handle the mission result
             if (result) {
                 if (result.type === 'encounter_complete' && result.hasNextEncounter) {
-                    // Instead of waiting for a decision, immediately process the next encounter on End Turn
-                    // Remove any pending decision for this exile
-                    turnState.pendingDecisions = turnState.pendingDecisions.filter(d => d.exileId !== exileId);
-                    // Immediately process the next encounter (End Turn will call this again)
-                    // No need to add a pending decision, just update the row
+                    // Just update the row - preview will be generated in updateRow when awaitingNextEncounter is detected
                     this.updateRow(this.getRowForExile(exileId), exile);
                 } else if (result.type === 'mission_complete') {
                     // NOW apply the mission completion rewards after animation completes
@@ -1003,6 +1080,122 @@ const exileRowManager = {
         return new Promise(resolve => setTimeout(resolve, ms));
     },
 
+    // Generate monster preview based on scouting bonus
+    generateMonsterPreview(monster, scoutingBonus = 1.0) {
+        const baseChance = 0.5;
+        const actualChance = baseChance * scoutingBonus;
+
+        const rollReveal = () => Math.random() < actualChance;
+
+        // Helper function to get rarity display
+        const getRarityDisplay = (rarity) => {
+            if (!rarity || rarity === 'common') return '';
+            return rarity.charAt(0).toUpperCase() + rarity.slice(1);
+        };
+
+        // Generate preview object
+        const preview = {
+            // Basic info
+            name: rollReveal() ? monster.name : '???',
+            rarity: getRarityDisplay(monster.rarity || 'common'),
+
+            // Core stats
+            life: rollReveal() ? monster.life : '??',
+            attackSpeed: rollReveal() ? (monster.attackSpeed || 'Normal') : '??',
+            defense: rollReveal() ? (monster.defense || 0) : '??',
+
+            // Damage types - roll for each independently
+            damage: {
+                physical: rollReveal() ? (monster.damage?.physical || 0) : '??',
+                fire: rollReveal() ? (monster.damage?.fire || 0) : '??',
+                cold: rollReveal() ? (monster.damage?.cold || 0) : '??',
+                lightning: rollReveal() ? (monster.damage?.lightning || 0) : '??',
+                chaos: rollReveal() ? (monster.damage?.chaos || 0) : '??'
+            },
+
+            // Resistances - roll for each independently  
+            resistances: {
+                fire: rollReveal() ? (monster.resistances?.fire || 0) : '??',
+                cold: rollReveal() ? (monster.resistances?.cold || 0) : '??',
+                lightning: rollReveal() ? (monster.resistances?.lightning || 0) : '??',
+                chaos: rollReveal() ? (monster.resistances?.chaos || 0) : '??'
+            },
+
+            // Loot information - roll for each independently
+            loot: {
+                dropChance: rollReveal() ? (monster.loot?.dropChance || '10-30') + '%' : '??%',
+                goldRange: rollReveal() ? `${monster.loot?.goldMin || 5}-${monster.loot?.goldMax || 15}` : '??-??',
+                chaosChance: rollReveal() ? (monster.loot?.chaosChance || 5) + '%' : '??%',
+                exaltChance: rollReveal() ? (monster.loot?.exaltChance || 1) + '%' : '??%'
+            }
+        };
+
+        return preview;
+    },
+
+    // Render monster preview UI
+    renderMonsterPreview(exileId, preview) {
+        const rarityText = preview.rarity ? `<strong>${preview.rarity}</strong> ` : '';
+
+        // Helper to format damage values with colors
+        const formatDamage = (value, type) => {
+            if (value === '??') return '<span class="unknown">??</span>';
+            if (value === 0) return '<span class="zero">0</span>';
+
+            const colorClass = `element-${type}`;
+            return `<span class="${colorClass}">${value}</span>`;
+        };
+
+        // Helper to format resistance values with colors
+        const formatResistance = (value, type) => {
+            if (value === '??') return '<span class="unknown">??</span>';
+
+            const colorClass = `element-${type}`;
+            return `<span class="${colorClass}">${value}%</span>`;
+        };
+
+        return `
+            <div class="combat-area" data-exile-id="${exileId}">
+                <div class="monster-preview-card">
+                    <h4>Up Next: ${rarityText}${preview.name}</h4>
+                    <div class="preview-stats">
+                        <div class="stat-column">
+                            <div class="stat-row">
+                                <span class="stat-label">Life:</span>
+                                <span class="stat-value">${preview.life}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Def:</span>
+                                <span class="stat-value">${preview.defense}</span>
+                            </div>
+                                <div class="stat-label">Resists:</div>
+                                <div class="resistance-types">
+                                    🔥: ${formatResistance(preview.resistances.fire, 'fire')}<br>
+                                    🧊: ${formatResistance(preview.resistances.cold, 'cold')}<br>
+                                    ⚡: ${formatResistance(preview.resistances.lightning, 'lightning')}<br>
+                                    🫧: ${formatResistance(preview.resistances.chaos, 'chaos')}
+                                </div>
+                        </div>
+                        <div class="stat-column">
+                            <div class="stat-row">
+                                <span class="stat-label">Aspd:</span>
+                                <span class="stat-value">${preview.attackSpeed}</span>
+                            </div>
+                                <div class="stat-label">Damage:</div>
+                                <div class="damage-types">
+                                    🔨: ${formatDamage(preview.damage.physical, 'physical')}<br>
+                                    🔥: ${formatDamage(preview.damage.fire, 'fire')}<br>
+                                    🧊: ${formatDamage(preview.damage.cold, 'cold')}<br>
+                                    ⚡: ${formatDamage(preview.damage.lightning, 'lightning')}<br>
+                                    🫧: ${formatDamage(preview.damage.chaos, 'chaos')}
+                                </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
     // Handle player decision
     handleDecision(exileId, decision) {
         // Process the decision
@@ -1049,7 +1242,7 @@ const exileRowManager = {
     showRetreatOptions(exileId) {
         const exile = gameState.exiles.find(e => e.id === exileId);
         const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
-        
+
         if (!exile || !activeMission) return;
 
         const currentEncounter = activeMission.missionState.getCurrentEncounter();
@@ -1059,24 +1252,24 @@ const exileRowManager = {
 
         let message;
         let confirmText = 'Retreat';
-        
+
         if (retreatInfo.type === 'risky') {
             message = `${exile.name} wants to retreat from combat!\n\n` +
-                     `⚠️ RISKY RETREAT:\n` +
-                     `• ${retreatInfo.chance}% chance of success\n` +
-                     `• If failed: Monster gets 1 free attack\n` +
-                     `• 50% gold loss, 50% item loss\n` +
-                     `• 50% chance to lose each orb type\n` +
-                     `• Experience is preserved\n\n` +
-                     `Are you sure you want to risk it?`;
+                `⚠️ RISKY RETREAT:\n` +
+                `• ${retreatInfo.chance}% chance of success\n` +
+                `• If failed: Monster gets 1 free attack\n` +
+                `• 50% gold loss, 50% item loss\n` +
+                `• 50% chance to lose each orb type\n` +
+                `• Experience is preserved\n\n` +
+                `Are you sure you want to risk it?`;
             confirmText = 'Risk It';
         } else {
             message = `${exile.name} can safely retreat from this encounter.\n\n` +
-                     `✓ SAFE RETREAT:\n` +
-                     `• No damage taken\n` +
-                     `• Mission progress lost\n` +
-                     `• No mission rewards\n\n` +
-                     `Retreat now?`;
+                `✓ SAFE RETREAT:\n` +
+                `• No damage taken\n` +
+                `• Mission progress lost\n` +
+                `• No mission rewards\n\n` +
+                `Retreat now?`;
         }
 
         if (confirm(message)) {
@@ -1088,13 +1281,13 @@ const exileRowManager = {
     async attemptRetreat(exileId, retreatType) {
         const exile = gameState.exiles.find(e => e.id === exileId);
         const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
-        
+
         if (!exile || !activeMission) return;
 
         // Use the existing encounterSystem's processRetreat method
         if (typeof turnBasedCombat !== 'undefined' && turnBasedCombat.processRetreat) {
             const retreatResult = turnBasedCombat.processRetreat(activeMission.missionState);
-            
+
             if (retreatResult.success) {
                 // Retreat successful
                 if (retreatResult.type === 'risky') {
@@ -1102,39 +1295,39 @@ const exileRowManager = {
                 } else {
                     uiSystem.log(`✓ ${retreatResult.message}`, 'success');
                 }
-                
+
                 // Complete the mission with retreat using existing system
                 this.completeMissionWithRetreat(activeMission, exile);
-                
+
             } else {
                 // Retreat failed
                 uiSystem.log(`❌ ${retreatResult.message} Took ${Math.floor(retreatResult.damage)} damage!`, 'failure');
-                
+
                 // Update health display
                 const rowId = this.getRowForExile(exileId);
                 if (rowId) {
                     const row = document.querySelector(`[data-exile-id="${exileId}"]`);
                     this.updateHealthBar(row, exile.currentLife, exile.stats.life);
                 }
-                
+
                 // Check if exile died from the failed retreat
                 if (exile.currentLife <= 0) {
                     uiSystem.log(`💀 ${exile.name} was killed during the failed retreat!`, 'failure');
                     this.handleExileDeath(activeMission, exile);
                     return;
                 }
-                
+
                 // Continue combat - exile is still in the encounter
                 uiSystem.log(`${exile.name} remains in combat after the failed retreat.`, 'info');
             }
         }
-        
+
         // Refresh the row display
         const rowId = this.getRowForExile(exileId);
         if (rowId) {
             this.updateRow(rowId, exile);
         }
-        
+
         // Save game state
         game.saveGame();
     },
@@ -1143,7 +1336,7 @@ const exileRowManager = {
     completeMissionWithRetreat(activeMission, exile) {
         // Apply retreat rewards/penalties using the mission state system
         const rewardSummary = activeMission.missionState.applyRewards();
-        
+
         // Log the retreat outcome
         if (rewardSummary) {
             if (rewardSummary.wasRetreat && rewardSummary.retreatType === 'risky') {
@@ -1151,7 +1344,7 @@ const exileRowManager = {
             } else {
                 uiSystem.log(`${exile.name} retreated safely.`, 'success');
             }
-            
+
             // Log what was gained/lost
             if (rewardSummary.gold > 0) {
                 uiSystem.log(`+${rewardSummary.gold} gold`, 'info');
