@@ -322,7 +322,6 @@
             import { monsterSpawnSystem } from './js/systems/monsterSpawnSystem.js';
             import { turnBasedCombat, MissionState, Encounter } from './js/systems/encounterSystem.js';
             import { missionGeneration } from './js/systems/missionGenerationSystem.js';
-            // import { characterScreenSystem } from './js/systems/characterScreenSystem.js';
             import { passiveSystem } from './js/systems/passiveSystem.js';
             import { uiSystem } from './js/systems/uiSystem.js';
 
@@ -351,7 +350,6 @@
             window.MissionState = MissionState;
             window.Encounter = Encounter;
             window.missionGeneration = missionGeneration;
-            // window.characterScreenSystem = characterScreenSystem;
             window.passiveSystem = passiveSystem;
             window.uiSystem = uiSystem;
 
@@ -359,9 +357,9 @@
             console.log("Game systems loaded:", {
                 monsters: !!window.monsterDB,
                 bosses: !!window.bossDB,
-                itemBases: !!window.itemBases,  // NEW: Check item data
+                itemBases: !!window.itemBases,  
                 itemDB: !!window.itemDB,
-                items: {  // NEW: Detailed item system check
+                items: {  
                     database: !!window.itemDB,
                     bases: !!window.itemBases,
                     Equipment: !!window.Equipment,
@@ -373,7 +371,6 @@
                 exile: !!window.exileSystem,
                 combat: !!window.combatSystem,
                 mission: !!window.missionSystem,
-                // characterScreen: !!window.characterScreenSystem,
                 passive: !!window.passiveSystem,
                 ui: !!window.uiSystem
             });
