@@ -147,17 +147,17 @@ const exileFactory = {
         return exile;
     },
     
-    // Restore an exile from saved data
-    restoreExile(savedData) {
-        // This ensures we have all properties even if save is from older version
-        const defaultExile = this.createExile({ 
-            name: savedData.name,
-            class: savedData.class 
-        });
+    // // Restore an exile from saved data
+    // restoreExile(savedData) {
+    //     // This ensures we have all properties even if save is from older version
+    //     const defaultExile = this.createExile({ 
+    //         name: savedData.name,
+    //         class: savedData.class 
+    //     });
         
-        // Merge saved data over defaults
-        return Object.assign(defaultExile, savedData);
-    }
+    //     // Merge saved data over defaults
+    //     return Object.assign(defaultExile, savedData);
+    // }
 };
 
 // Make available globally

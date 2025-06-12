@@ -264,8 +264,6 @@ const passiveSystem = {
             // Close the modal
             this.closePassiveSelection();
 
-            // Update character screen if open (remove this if you don't have it anymore)
-            // characterScreenSystem.updateCharacterScreenIfOpen();
 
             uiSystem.log(`Selected ${selectedPassive.name}!`, "legendary");
         }

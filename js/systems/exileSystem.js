@@ -6,96 +6,96 @@ class ExileSystem {
         console.log("Exile system initialized");
     }
 
-    // Get morale status text
-    getMoraleStatus(morale) {
-        if (morale >= 90) return "Confident";
-        if (morale >= 70) return "Content";
-        if (morale >= 50) return "Discouraged";
-        if (morale >= 25) return "Demoralized";
-        if (morale >= 10) return "Wavering";
-        return "Broken";
-    }
+    // // Get morale status text
+    // getMoraleStatus(morale) {
+    //     if (morale >= 90) return "Confident";
+    //     if (morale >= 70) return "Content";
+    //     if (morale >= 50) return "Discouraged";
+    //     if (morale >= 25) return "Demoralized";
+    //     if (morale >= 10) return "Wavering";
+    //     return "Broken";
+    // }
 
-    // Create morale tooltip text
-    createMoraleTooltip(morale) {
-        let tooltip = `Morale: ${morale}/100\n`;
-        tooltip += `―――――――――――――――\n`;
+    // // Create morale tooltip text
+    // createMoraleTooltip(morale) {
+    //     let tooltip = `Morale: ${morale}/100\n`;
+    //     tooltip += `―――――――――――――――\n`;
 
-        if (morale >= 90) {
-            tooltip += "Confident:\n";
-            tooltip += "+10% Damage\n";
-            tooltip += "+5% Defense";
-        } else if (morale >= 70) {
-            tooltip += "Content:\n";
-            tooltip += "No bonuses or penalties";
-        } else if (morale >= 50) {
-            tooltip += "Discouraged:\n";
-            tooltip += "-5% Damage";
-        } else if (morale >= 25) {
-            tooltip += "Demoralized:\n";
-            tooltip += "-10% Damage\n";
-            tooltip += "-5% Defense";
-        } else {
-            tooltip += "Broken:\n";
-            tooltip += "-20% Damage\n";
-            tooltip += "-10% Defense";
-        }
+    //     if (morale >= 90) {
+    //         tooltip += "Confident:\n";
+    //         tooltip += "+10% Damage\n";
+    //         tooltip += "+5% Defense";
+    //     } else if (morale >= 70) {
+    //         tooltip += "Content:\n";
+    //         tooltip += "No bonuses or penalties";
+    //     } else if (morale >= 50) {
+    //         tooltip += "Discouraged:\n";
+    //         tooltip += "-5% Damage";
+    //     } else if (morale >= 25) {
+    //         tooltip += "Demoralized:\n";
+    //         tooltip += "-10% Damage\n";
+    //         tooltip += "-5% Defense";
+    //     } else {
+    //         tooltip += "Broken:\n";
+    //         tooltip += "-20% Damage\n";
+    //         tooltip += "-10% Defense";
+    //     }
 
-        return tooltip;
-    }
+    //     return tooltip;
+    // }
 
-    createNewExile(className) {
-        const classData = classDefinitions[className];
-        gameState.exile = {
-            id: gameState.nextExileId++,
-            name: nameGenerator.generateName(),
-            class: className,
-            level: 1,
-            experience: 0,
-            experienceNeeded: 100,
-            morale: 65,
-            baseStats: { ...classData.baseStats },
-            stats: {
-                life: classData.baseStats.life,
-                damage: classData.baseStats.damage,
-                defense: classData.baseStats.defense,
-                fireResist: 0,
-                coldResist: 0,
-                lightningResist: 0,
-                chaosResist: 0,
-                goldFindBonus: 0,
-                escapeChance: 0,
-                moraleResistance: 0,
-                moraleGain: 0
-            },
-            passives: {
-                allocated: [],
-                pendingPoints: 1,
-                rerollsUsed: 0
-            }
-        };
-        //temp still calling game object methods
-        this.recalculateStats();
-        uiSystem.updateDisplay();
-    }
+    // createNewExile(className) {
+    //     const classData = classDefinitions[className];
+    //     gameState.exile = {
+    //         id: gameState.nextExileId++,
+    //         name: nameGenerator.generateName(),
+    //         class: className,
+    //         level: 1,
+    //         experience: 0,
+    //         experienceNeeded: 100,
+    //         morale: 65,
+    //         baseStats: { ...classData.baseStats },
+    //         stats: {
+    //             life: classData.baseStats.life,
+    //             damage: classData.baseStats.damage,
+    //             defense: classData.baseStats.defense,
+    //             fireResist: 0,
+    //             coldResist: 0,
+    //             lightningResist: 0,
+    //             chaosResist: 0,
+    //             goldFindBonus: 0,
+    //             escapeChance: 0,
+    //             moraleResistance: 0,
+    //             moraleGain: 0
+    //         },
+    //         passives: {
+    //             allocated: [],
+    //             pendingPoints: 1,
+    //             rerollsUsed: 0
+    //         }
+    //     };
+    //     //temp still calling game object methods
+    //     this.recalculateStats();
+    //     uiSystem.updateDisplay();
+    // }
 
 
-    randomizeExileClass() {
-        const classes = Object.keys(classDefinitions);
-        const randomClass = classes[Math.floor(Math.random() * classes.length)];
-        gameState.exile.class = randomClass;
+    // randomizeExileClass() {
+    //     const classes = Object.keys(classDefinitions);
+    //     const randomClass = classes[Math.floor(Math.random() * classes.length)];
+    //     gameState.exile.class = randomClass;
 
-        uiSystem.log(`${gameState.exile.name} is a ${classDefinitions[randomClass].name}!`, "info");
-    }
+    //     uiSystem.log(`${gameState.exile.name} is a ${classDefinitions[randomClass].name}!`, "info");
+    // }
 
     // Give a random notable as starting passive
-    giveStartingNotable() {
-        const notables = passiveHelpers.getPassivesByTier('notable');
-        const randomNotable = notables[Math.floor(Math.random() * notables.length)];
-        gameState.exile.passives.allocated.push(randomNotable.id);
+    // giveStartingNotable() {
+    //     const notables = passiveHelpers.getPassivesByTier('notable');
+    //     const randomNotable = notables[Math.floor(Math.random() * notables.length)];
+    //     gameState.exile.passives.allocated.push(randomNotable.id);
 
-        uiSystem.log(`${gameState.exile.name} starts with ${randomNotable.name}!`, "legendary");
-    }
+    //     uiSystem.log(`${gameState.exile.name} starts with ${randomNotable.name}!`, "legendary");
+    // }
 
 
     handleExileDeath(exileId = null) {
@@ -151,80 +151,80 @@ class ExileSystem {
     }
 
     // Assign a mission to an exile
-    assignMissionToExile(exileName, areaId, missionId) {
-        // Check if mission is available
-        if (!isMissionAvailable(areaId, missionId)) {
-            uiSystem.log("Cannot assign to unavailable mission!", "failure");  // TEMPORARY
-            return false;
-        }
+    // assignMissionToExile(exileName, areaId, missionId) {
+    //     // Check if mission is available
+    //     if (!isMissionAvailable(areaId, missionId)) {
+    //         uiSystem.log("Cannot assign to unavailable mission!", "failure");  // TEMPORARY
+    //         return false;
+    //     }
 
-        // Check if exile is already assigned to something
-        const existingAssignment = this.getExileAssignment(exileName);
-        if (existingAssignment) {
-            // Unassign from current mission first
-            this.unassignExile(exileName);
-        }
+    //     // Check if exile is already assigned to something
+    //     const existingAssignment = this.getExileAssignment(exileName);
+    //     if (existingAssignment) {
+    //         // Unassign from current mission first
+    //         this.unassignExile(exileName);
+    //     }
 
-        // Find exile by name to get ID
-        const exile = gameState.exiles.find(e => e.name === exileName);
-        if (!exile) {
-            uiSystem.log("Exile not found!", "failure");
-            return false;
-        }
+    //     // Find exile by name to get ID
+    //     const exile = gameState.exiles.find(e => e.name === exileName);
+    //     if (!exile) {
+    //         uiSystem.log("Exile not found!", "failure");
+    //         return false;
+    //     }
 
-        // Initialize assignments if needed
-        if (!turnState.assignments) {
-            turnState.assignments = [];
-        }
+    //     // Initialize assignments if needed
+    //     if (!turnState.assignments) {
+    //         turnState.assignments = [];
+    //     }
 
-        // Add new assignment using exileId
-        turnState.assignments.push({
-            exileId: exile.id,
-            areaId: areaId,
-            missionId: missionId
-        });
+    //     // Add new assignment using exileId
+    //     turnState.assignments.push({
+    //         exileId: exile.id,
+    //         areaId: areaId,
+    //         missionId: missionId
+    //     });
 
-        const missionData = getMissionData(areaId, missionId);
-        uiSystem.log(`📋 ${exileName} assigned to ${missionData.name}`, "info");  // TEMPORARY
+    //     const missionData = getMissionData(areaId, missionId);
+    //     uiSystem.log(`📋 ${exileName} assigned to ${missionData.name}`, "info");  // TEMPORARY
 
-        // Update displays
-        worldMapSystem.updateWorldMapDisplay();
-        game.saveGame();                    // TEMPORARY
+    //     // Update displays
+    //     worldMapSystem.updateWorldMapDisplay();
+    //     game.saveGame();                    // TEMPORARY
 
-        return true;
-    }
+    //     return true;
+    // }
 
-    // Unassign an exile from their mission
-    unassignExile(exileName) {
-        // Initialize assignments if needed
-        if (!turnState.assignments) {
-            turnState.assignments = [];
-        }
+    // // Unassign an exile from their mission
+    // unassignExile(exileName) {
+    //     // Initialize assignments if needed
+    //     if (!turnState.assignments) {
+    //         turnState.assignments = [];
+    //     }
 
-        // Find exile by name to get ID
-        const exile = gameState.exiles.find(e => e.name === exileName);
-        if (!exile) {
-            uiSystem.log("Exile not found!", "failure");
-            return false;
-        }
+    //     // Find exile by name to get ID
+    //     const exile = gameState.exiles.find(e => e.name === exileName);
+    //     if (!exile) {
+    //         uiSystem.log("Exile not found!", "failure");
+    //         return false;
+    //     }
 
-        const assignmentIndex = turnState.assignments.findIndex(a => a.exileId === exile.id);
+    //     const assignmentIndex = turnState.assignments.findIndex(a => a.exileId === exile.id);
 
-        if (assignmentIndex === -1) {
-            uiSystem.log(`${exileName} is not assigned to any mission`, "info");  // TEMPORARY
-            return false;
-        }
+    //     if (assignmentIndex === -1) {
+    //         uiSystem.log(`${exileName} is not assigned to any mission`, "info");  // TEMPORARY
+    //         return false;
+    //     }
 
-        // Remove assignment
-        turnState.assignments.splice(assignmentIndex, 1);
-        uiSystem.log(`📋 ${exileName} unassigned from mission`, "info");  // TEMPORARY
+    //     // Remove assignment
+    //     turnState.assignments.splice(assignmentIndex, 1);
+    //     uiSystem.log(`📋 ${exileName} unassigned from mission`, "info");  // TEMPORARY
 
-        // Update displays
-        worldMapSystem.updateWorldMapDisplay();
-        game.saveGame();                    // TEMPORARY
+    //     // Update displays
+    //     worldMapSystem.updateWorldMapDisplay();
+    //     game.saveGame();                    // TEMPORARY
 
-        return true;
-    }
+    //     return true;
+    // }
 
     // Calculate total passive bonuses
     calculatePassiveEffects(exile = null) {
@@ -353,55 +353,55 @@ class ExileSystem {
         return effects;
     }
 
-    // Calculate morale change from combat results
-    calculateMoraleChange(combatResult, exile) {
-        // Get morale resistance (can be negative)
-        const moraleResist = (exile.stats.moraleResistance || 0) / 100;
-        const moraleGain = exile.stats.moraleGain || 0; // NEW: flat morale gain
+    // // Calculate morale change from combat results
+    // calculateMoraleChange(combatResult, exile) {
+    //     // Get morale resistance (can be negative)
+    //     const moraleResist = (exile.stats.moraleResistance || 0) / 100;
+    //     const moraleGain = exile.stats.moraleGain || 0; // NEW: flat morale gain
 
-        let result;
-        if (combatResult.outcome === 'victory') {
-            const lifePercent = (exile.stats.life - combatResult.totalDamageTaken) / exile.stats.life;
-            if (lifePercent <= 0.05) {
-                result = { change: -4, message: "Nah... that was too bloody close it aint fun no more." };
-            } else if (lifePercent <= 0.15) {
-                result = { change: +6, message: "My heart races, I feel... ALIVE!" };
-            } else if (lifePercent <= 0.3) {
-                result = { change: +4, message: "Hah! A good challenge!" };
-            } else if (lifePercent >= 0.95 && combatResult.winChancePerRound >= 0.30) {
-                result = { change: -4, message: "This is beneath me..." };
-            } else if (lifePercent >= 0.90) {
-                result = { change: -2, message: "This is too easy, I need a real challenge!" };
-            } else {
-                result = { change: +1, message: "A fair and reasonable fight." };
-            }
-        } else if (combatResult.outcome === 'retreat') {
-            if (combatResult.rounds >= 8) {
-                result = { change: +3, message: "Phew that was a close one, but I did it!" };
-            } else if (combatResult.rounds >= 5) {
-                result = { change: -2, message: "Ah, I'm not on my game today..." };
-            } else {
-                result = { change: -4, message: "This is just embarrassing..." };
-            }
-        } else {
-            // Death - no morale change since exile is dead
-            return { change: 0, message: "" };
-        }
+    //     let result;
+    //     if (combatResult.outcome === 'victory') {
+    //         const lifePercent = (exile.stats.life - combatResult.totalDamageTaken) / exile.stats.life;
+    //         if (lifePercent <= 0.05) {
+    //             result = { change: -4, message: "Nah... that was too bloody close it aint fun no more." };
+    //         } else if (lifePercent <= 0.15) {
+    //             result = { change: +6, message: "My heart races, I feel... ALIVE!" };
+    //         } else if (lifePercent <= 0.3) {
+    //             result = { change: +4, message: "Hah! A good challenge!" };
+    //         } else if (lifePercent >= 0.95 && combatResult.winChancePerRound >= 0.30) {
+    //             result = { change: -4, message: "This is beneath me..." };
+    //         } else if (lifePercent >= 0.90) {
+    //             result = { change: -2, message: "This is too easy, I need a real challenge!" };
+    //         } else {
+    //             result = { change: +1, message: "A fair and reasonable fight." };
+    //         }
+    //     } else if (combatResult.outcome === 'retreat') {
+    //         if (combatResult.rounds >= 8) {
+    //             result = { change: +3, message: "Phew that was a close one, but I did it!" };
+    //         } else if (combatResult.rounds >= 5) {
+    //             result = { change: -2, message: "Ah, I'm not on my game today..." };
+    //         } else {
+    //             result = { change: -4, message: "This is just embarrassing..." };
+    //         }
+    //     } else {
+    //         // Death - no morale change since exile is dead
+    //         return { change: 0, message: "" };
+    //     }
 
-        // Apply morale resistance scaling (works both positive and negative)
-        let adjustedChange = result.change;
-        if (adjustedChange !== 0 && moraleResist !== 0) {
-            adjustedChange = Math.round(adjustedChange * (1 + moraleResist));
-            if (adjustedChange === 0 && result.change !== 0) {
-                adjustedChange = result.change > 0 ? 1 : -1;
-            }
-        }
+    //     // Apply morale resistance scaling (works both positive and negative)
+    //     let adjustedChange = result.change;
+    //     if (adjustedChange !== 0 && moraleResist !== 0) {
+    //         adjustedChange = Math.round(adjustedChange * (1 + moraleResist));
+    //         if (adjustedChange === 0 && result.change !== 0) {
+    //             adjustedChange = result.change > 0 ? 1 : -1;
+    //         }
+    //     }
 
-        // Apply flat morale gain/penalty
-        adjustedChange += moraleGain;
+    //     // Apply flat morale gain/penalty
+    //     adjustedChange += moraleGain;
 
-        return { change: adjustedChange, message: result.message };
-    }
+    //     return { change: adjustedChange, message: result.message };
+    // }
 
 
     // GEAR + PASSIVES + LEVELS MATH AND SCALING

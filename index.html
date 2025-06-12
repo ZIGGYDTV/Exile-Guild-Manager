@@ -314,6 +314,7 @@
 
             // Import new game systems
             import { exileSystem } from './js/systems/exileSystem.js';
+            import { moraleSystem } from './js/systems/moraleSystem.js';
             import { combatSystem } from './js/systems/combatSystem.js';
             import { missionSystem } from './js/systems/missionSystem.js';
             import { inventorySystem } from './js/systems/inventorySystem.js';
@@ -321,16 +322,16 @@
             import { monsterSpawnSystem } from './js/systems/monsterSpawnSystem.js';
             import { turnBasedCombat, MissionState, Encounter } from './js/systems/encounterSystem.js';
             import { missionGeneration } from './js/systems/missionGenerationSystem.js';
-            import { characterScreenSystem } from './js/systems/characterScreenSystem.js';
+            // import { characterScreenSystem } from './js/systems/characterScreenSystem.js';
             import { passiveSystem } from './js/systems/passiveSystem.js';
             import { uiSystem } from './js/systems/uiSystem.js';
 
             // Make them globally available during transition
             window.monsterDB = monsterDB;
             window.bossDB = bossDB;
-            window.itemBases = itemBases;  // NEW: Make item data available
+            window.itemBases = itemBases;  
             window.itemDB = itemDB;
-            window.Equipment = Equipment;  // NEW: Make classes available
+            window.Equipment = Equipment;  
             window.Weapon = Weapon;
             window.Armor = Armor;
             window.Jewelry = Jewelry;
@@ -340,6 +341,7 @@
             window.statDB = statDB;
             window.rarityDB = rarityDB;
             window.exileSystem = exileSystem;
+            window.moraleSystem = moraleSystem;
             window.combatSystem = combatSystem;
             window.missionSystem = missionSystem;
             window.inventorySystem = inventorySystem;
@@ -349,7 +351,7 @@
             window.MissionState = MissionState;
             window.Encounter = Encounter;
             window.missionGeneration = missionGeneration;
-            window.characterScreenSystem = characterScreenSystem;
+            // window.characterScreenSystem = characterScreenSystem;
             window.passiveSystem = passiveSystem;
             window.uiSystem = uiSystem;
 
@@ -371,7 +373,7 @@
                 exile: !!window.exileSystem,
                 combat: !!window.combatSystem,
                 mission: !!window.missionSystem,
-                characterScreen: !!window.characterScreenSystem,
+                // characterScreen: !!window.characterScreenSystem,
                 passive: !!window.passiveSystem,
                 ui: !!window.uiSystem
             });

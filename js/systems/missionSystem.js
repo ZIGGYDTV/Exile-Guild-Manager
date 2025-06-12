@@ -150,7 +150,7 @@ class MissionSystem {
 
             // Calculate and apply morale change (preserve existing system)
             if (combatResult.outcome !== 'death') {
-                moraleResult = exileSystem.calculateMoraleChange(combatResult, exile);
+                moraleResult = moraleSystem.calculateMoraleChange(combatResult, exile);
 
                 if (moraleResult.change !== 0) {
                     exile.morale = Math.max(0, Math.min(100, exile.morale + moraleResult.change));
