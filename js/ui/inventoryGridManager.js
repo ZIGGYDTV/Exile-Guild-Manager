@@ -1410,7 +1410,7 @@ const inventoryGridManager = {
     clearItemDetailPanel() {
         const detailContent = document.getElementById('item-detail-content');
         if (detailContent) {
-            detailContent.innerHTML = '<p class="no-item-selected">Select an item to view details</p>';
+            detailContent.innerHTML = '<p class="no-item-selected">Select an item to view details</p><p class="no-item-selected">Select an exile to manage their equipment. The Equipment tab is ⚔️.</p><p class="no-item-selected">Ctrl+Left Click to quickly equip or unequip items.</p><p class="no-item-selected">Lock items you don\'t want to sell.</p>';
         }
 
         const actionsContainer = document.getElementById('item-actions');

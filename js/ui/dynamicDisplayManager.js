@@ -211,16 +211,17 @@ const dynamicDisplayManager = {
         const content = document.getElementById('tab-overview');
         content.innerHTML = `
             <h2>Guild Overview</h2>
-            <p style="font-weight: bold;">Total Exiles: ${gameState.exiles.length}</p>
+            <p style="font-weight: bold;">Total Deaths: ${gameState.exiles.filter(e => e.status === 'dead').length}</p>
+            <p style="font-weight: bold;"></p>
             <p style="font-weight: bold;">Available for missions: ${gameState.exiles.filter(e => e.status === 'idle').length}</p>
             <br>
-            <p>Check your exile's stats, passives and equipment while they are resting.</p>
+            <p>Check your exile's stats 👤, and manage their passives ✨ and equipment ⚔️ while they are resting.</p>
             <br>
             <p>Assign exiles to missions to acquire resources and gear.</p>
             <br>
             <p>Use the recruitment tab to expand your guild options when you have resources to spare.</p>
             <br>
-            <p>Use the Activity Log to see more details about what's happening.</p>
+            <p>Use the Activity Log 📜 to see more details about what's happening.</p>
             `;
     },
 
