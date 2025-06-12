@@ -137,10 +137,6 @@ const exileRowManager = {
         // Check if exile is in active mission
         const activeMission = turnState.activeMissions.find(m => m.exileId === exile.id);
 
-        // Check for pending decision for this exile
-        const pendingDecision = turnState.pendingDecisions.find(d => d.exileId === exile.id);
-        const isBetweenEncounters = pendingDecision && Array.isArray(pendingDecision.choices) && pendingDecision.choices.includes('retreat') && pendingDecision.choices.includes('continue');
-
         if (activeMission && activeMission.missionState) {
             const currentEncounter = activeMission.missionState && typeof activeMission.missionState.getCurrentEncounter === 'function'
                 ? activeMission.missionState.getCurrentEncounter()
@@ -171,55 +167,28 @@ const exileRowManager = {
                 // Initialize monster health bar after HTML is added
                 setTimeout(() => this.initializeMonsterHealthBar(exile.id, currentEncounter.monster), 0);
 
-                if (isBetweenEncounters) {
-                    // Only show safe retreat between encounters
+                // --- NEW RETREAT BUTTON LOGIC ---
+                const retreatInfo = this.getRetreatInfo(exile.id, currentEncounter);
+                if (retreatInfo.available && retreatInfo.type === 'risky' && currentEncounter.monster.currentLife > 0) {
+                    // Show Risky Retreat during combat
+                    actionButtons = `
+                        <button class="btn-small retreat-btn warning" 
+                                onclick="exileRowManager.showRetreatOptions(${exile.id})"
+                                title="${retreatInfo.description}">
+                            ⚠️ Risky Retreat
+                        </button>
+                    `;
+                } else if (retreatInfo.available && retreatInfo.type === 'safe' && currentEncounter.monster.currentLife <= 0) {
+                    // Show Safe Retreat between encounters (after victory, before next encounter)
                     actionButtons = `
                         <button class="btn-small retreat-btn info" 
                                 onclick="exileRowManager.showRetreatOptions(${exile.id})"
-                                title="Safely retreat from the encounter with no penalties.">
+                                title="${retreatInfo.description}">
                             ✓ Safe Retreat
                         </button>
                     `;
-                } else if (pendingDecision) {
-                    // In-combat decisions: Manually build action buttons
-                    let buttons = [];
-                    // 1. Retreat Button (using the new system)
-                    const retreatInfo = this.getRetreatInfo(exile.id, currentEncounter);
-                    if (retreatInfo.available && retreatInfo.type === 'risky') {
-                        buttons.push(`
-                            <button class="btn-small retreat-btn warning" 
-                                    onclick="exileRowManager.showRetreatOptions(${exile.id})"
-                                    title="${retreatInfo.description}">
-                                ⚠️ Risky Retreat
-                            </button>
-                        `);
-                    }
-                    // 2. Flask Button (for future use)
-                    if (exile.flask && exile.flask.charges > 0) {
-                        buttons.push(`
-                            <button class="btn-small decision-btn" 
-                                    onclick="exileRowManager.handleDecision(${exile.id}, 'use_flask')"
-                                    title="Use Flask: Restore ${exile.flask.healing || 50} life. ${exile.flask.charges} charges left.">
-                                Use Flask
-                            </button>
-                        `);
-                    }
-                    actionButtons = buttons.join('');
                 } else {
-                    // Between-encounter decisions (e.g., after killing a monster)
-                    const retreatInfo = this.getRetreatInfo(exile.id, currentEncounter);
-                    if (retreatInfo.available && retreatInfo.type === 'safe') {
-                        actionButtons = `
-                            <button class="btn-small retreat-btn info" 
-                                    onclick="exileRowManager.showRetreatOptions(${exile.id})"
-                                    title="${retreatInfo.description}">
-                                ✓ Safe Retreat
-                            </button>
-                        `;
-                    } else {
-                        // No actions needed, waiting for End Turn
-                        actionButtons = '';
-                    }
+                    actionButtons = '';
                 }
             }
         } else {
@@ -723,6 +692,12 @@ const exileRowManager = {
                 });
             }
         }
+        // === NEW: After all animations and result handling, update the row to show retreat button ===
+        const rowId = this.getRowForExile(exileId);
+        if (rowId) {
+            const exileObj = gameState.exiles.find(e => e.id === exileId);
+            this.updateRow(rowId, exileObj);
+        }
     },
 
     // Add new method to show no-attack indicator
@@ -868,16 +843,6 @@ const exileRowManager = {
 
     // Get retreat information for an exile
     getRetreatInfo(exileId, currentEncounter) {
-        // If between encounters (pending decision for retreat/continue), only allow safe retreat
-        const pendingDecision = turnState.pendingDecisions.find(d => d.exileId === exileId);
-        const isBetweenEncounters = pendingDecision && Array.isArray(pendingDecision.choices) && pendingDecision.choices.includes('retreat') && pendingDecision.choices.includes('continue');
-        if (isBetweenEncounters) {
-            return {
-                available: true,
-                type: 'safe',
-                description: 'Safely retreat before the next encounter begins.'
-            };
-        }
         if (!currentEncounter || !currentEncounter.monster) {
             return { available: false };
         }
