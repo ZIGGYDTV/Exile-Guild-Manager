@@ -531,8 +531,20 @@ class MissionSystem {
 
         const { missionState } = activeMission;
         const exile = gameState.exiles.find(e => e.id === exileId);
-        const currentEncounter = missionState.getCurrentEncounter();
 
+        // NEW: Handle between-encounters state
+        if (missionState.awaitingNextEncounter) {
+            missionState.awaitingNextEncounter = false;
+            missionState.nextEncounter();
+            // After advancing, return a result to trigger the next encounter's combat
+            return {
+                type: 'next_encounter_started',
+                exileId: exileId,
+                encounter: missionState.getCurrentEncounter().getDescription()
+            };
+        }
+
+        const currentEncounter = missionState.getCurrentEncounter();
         if (!currentEncounter || !exile) {
             console.error("Invalid mission state");
             return null;
@@ -607,12 +619,12 @@ class MissionSystem {
         encounter.status = 'victory';
 
         // Check if more encounters remain
-        const nextEncounter = missionState.nextEncounter();
-
+        const nextEncounter = missionState.encounters[missionState.currentEncounterIndex + 1];
         if (nextEncounter) {
-            // More encounters - allow safe retreat or continue
+            // Set between-encounters flag, do NOT advance yet
+            missionState.awaitingNextEncounter = true;
             return {
-                type: 'encounter_complete',
+                type: 'awaiting_next_encounter',
                 exileId: exileId,
                 loot: loot,
                 gold: goldDrop,
@@ -809,6 +821,19 @@ class MissionSystem {
 
         // Log success
         uiSystem.log(`${exile.name} mission rewards applied: +${rewards.gold} gold, +${rewards.experience} exp`, "success");
+    }
+
+    // Advance to the next encounter without processing a turn
+    advanceToNextEncounter(exileId) {
+        const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
+        if (!activeMission) return null;
+        const missionState = activeMission.missionState;
+        if (missionState.awaitingNextEncounter) {
+            missionState.awaitingNextEncounter = false;
+            const next = missionState.nextEncounter();
+            return next;
+        }
+        return null;
     }
 }
 

@@ -138,57 +138,42 @@ const exileRowManager = {
         const activeMission = turnState.activeMissions.find(m => m.exileId === exile.id);
 
         if (activeMission && activeMission.missionState) {
-            const currentEncounter = activeMission.missionState && typeof activeMission.missionState.getCurrentEncounter === 'function'
-                ? activeMission.missionState.getCurrentEncounter()
-                : null;
-            if (currentEncounter) {
-                // Show combat display for active missions
-                mainAreaContent = `
-                <div class="combat-area" data-exile-id="${exile.id}">
-                    <div class="encounter-info">Ready - ${currentEncounter.getDescription()}</div>
-                    <div class="combat-display">
-                        <div class="combat-icon exile-icon" data-side="exile">⚔️</div>
-                        <div class="vs-text">VS</div>
-                        <div class="monster-icon-wrapper">
-                            <div class="monster-health-ring">
-                                <svg class="health-ring-svg" viewBox="0 0 40 40">
-                                    <circle class="health-ring-bg" cx="20" cy="20" r="18" />
-                                    <circle class="health-ring-fill" cx="20" cy="20" r="18" 
-                                            stroke-dasharray="${113.1}" 
-                                            stroke-dashoffset="0" />
-                                </svg>
-                            </div>
-                            <div class="combat-icon monster-icon" data-side="monster">👹</div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            // NEW: Between-encounters state
+            if (activeMission.missionState.awaitingNextEncounter) {
+                mainAreaContent = `<div class=\"combat-area\" data-exile-id=\"${exile.id}\">\n  <div class=\"encounter-info\">Ready - Awaiting Next Encounter</div>\n</div>`;
+                actionButtons = `
+                    <button class=\"btn-small retreat-btn info\" 
+                            onclick=\"exileRowManager.showRetreatOptions(${exile.id})\"
+                            title=\"Safely retreat before the next encounter begins.\">\n                        ✓ Safe Retreat\n                    </button>\n                `;
+            } else {
+                const currentEncounter = activeMission.missionState && typeof activeMission.missionState.getCurrentEncounter === 'function'
+                    ? activeMission.missionState.getCurrentEncounter()
+                    : null;
+                if (currentEncounter) {
+                    // Show combat display for active missions
+                    mainAreaContent = `
+                    <div class=\"combat-area\" data-exile-id=\"${exile.id}\">\n                        <div class=\"encounter-info\">Ready - ${currentEncounter.getDescription()}</div>\n                        <div class=\"combat-display\">\n                            <div class=\"combat-icon exile-icon\" data-side=\"exile\">⚔️</div>\n                            <div class=\"vs-text\">VS</div>\n                            <div class=\"monster-icon-wrapper\">\n                                <div class=\"monster-health-ring\">\n                                    <svg class=\"health-ring-svg\" viewBox=\"0 0 40 40\">\n                                        <circle class=\"health-ring-bg\" cx=\"20\" cy=\"20\" r=\"18\" />\n                                        <circle class=\"health-ring-fill\" cx=\"20\" cy=\"20\" r=\"18\" \n                                                stroke-dasharray=\"113.1\" \n                                                stroke-dashoffset=\"0\" />\n                                    </svg>\n                                </div>\n                                <div class=\"combat-icon monster-icon\" data-side=\"monster\">👹</div>\n                            </div>\n                        </div>\n                    </div>\n                `;
 
-                // Initialize monster health bar after HTML is added
-                setTimeout(() => this.initializeMonsterHealthBar(exile.id, currentEncounter.monster), 0);
+                    // Initialize monster health bar after HTML is added
+                    setTimeout(() => this.initializeMonsterHealthBar(exile.id, currentEncounter.monster), 0);
 
-                // --- NEW RETREAT BUTTON LOGIC ---
-                const retreatInfo = this.getRetreatInfo(exile.id, currentEncounter);
-                if (retreatInfo.available && retreatInfo.type === 'risky' && currentEncounter.monster.currentLife > 0) {
-                    // Show Risky Retreat during combat
-                    actionButtons = `
-                        <button class="btn-small retreat-btn warning" 
-                                onclick="exileRowManager.showRetreatOptions(${exile.id})"
-                                title="${retreatInfo.description}">
-                            ⚠️ Risky Retreat
-                        </button>
-                    `;
-                } else if (retreatInfo.available && retreatInfo.type === 'safe' && currentEncounter.monster.currentLife <= 0) {
-                    // Show Safe Retreat between encounters (after victory, before next encounter)
-                    actionButtons = `
-                        <button class="btn-small retreat-btn info" 
-                                onclick="exileRowManager.showRetreatOptions(${exile.id})"
-                                title="${retreatInfo.description}">
-                            ✓ Safe Retreat
-                        </button>
-                    `;
-                } else {
-                    actionButtons = '';
+                    // --- RETREAT BUTTON LOGIC ---
+                    const retreatInfo = this.getRetreatInfo(exile.id, currentEncounter);
+                    if (retreatInfo.available && retreatInfo.type === 'risky' && currentEncounter.monster.currentLife > 0) {
+                        // Show Risky Retreat during combat
+                        actionButtons = `
+                            <button class=\"btn-small retreat-btn warning\" 
+                                    onclick=\"exileRowManager.showRetreatOptions(${exile.id})\"
+                                    title=\"${retreatInfo.description}\">\n                                ⚠️ Risky Retreat\n                            </button>\n                        `;
+                    } else if (retreatInfo.available && retreatInfo.type === 'safe' && currentEncounter.monster.currentLife <= 0) {
+                        // Show Safe Retreat between encounters (after victory, before next encounter)
+                        actionButtons = `
+                            <button class=\"btn-small retreat-btn info\" 
+                                    onclick=\"exileRowManager.showRetreatOptions(${exile.id})\"
+                                    title=\"${retreatInfo.description}\">\n                                ✓ Safe Retreat\n                            </button>\n                        `;
+                    } else {
+                        actionButtons = '';
+                    }
                 }
             }
         } else {
@@ -495,13 +480,33 @@ const exileRowManager = {
             // Get all active missions (do NOT filter out pending decisions)
             const activeMissions = turnState.activeMissions;
 
+            // === NEW: Pre-process any missions awaiting next encounter ===
+            const exilesAdvanced = [];
+            activeMissions.forEach(mission => {
+                const missionState = mission.missionState;
+                if (missionState.awaitingNextEncounter) {
+                    missionSystem.advanceToNextEncounter(mission.exileId);
+                    // Update the row so the DOM for the new encounter is present
+                    this.updateRow(this.getRowForExile(mission.exileId), gameState.exiles.find(e => e.id === mission.exileId));
+                    exilesAdvanced.push(mission.exileId);
+                }
+            });
+
             console.log("Processing turns for missions:", activeMissions);
 
             // Process all missions simultaneously
-            const combatPromises = activeMissions.map(mission =>
-                this.animateCombat(mission.exileId)
-            );
-
+            const combatPromises = activeMissions.map(mission => {
+                if (exilesAdvanced.includes(mission.exileId)) {
+                    // Defer animateCombat for exiles that just advanced to next encounter
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            this.animateCombat(mission.exileId).then(resolve);
+                        }, 0);
+                    });
+                } else {
+                    return this.animateCombat(mission.exileId);
+                }
+            });
             await Promise.all(combatPromises);
 
             // Increment turn counter
@@ -549,28 +554,57 @@ const exileRowManager = {
         const exile = gameState.exiles.find(e => e.id === exileId);
         const row = document.querySelector(`[data-exile-id="${exileId}"]`);
 
-        if (!row || !exile) return;
+        if (!row || !exile) {
+            console.log('[DEBUG] animateCombat early return: missing row or exile', { row, exile });
+            return;
+        }
 
         const combatArea = row.querySelector('.combat-area');
         const combatDisplay = combatArea ? combatArea.querySelector('.combat-display') : null;
-        if (!combatDisplay) return;
+        if (!combatDisplay) {
+            console.log('[DEBUG] animateCombat early return: missing combatDisplay', { combatArea, combatDisplay });
+            return;
+        }
 
         // Get the active mission to check combat log
         const activeMission = turnState.activeMissions.find(m => m.exileId === exileId);
-        if (!activeMission) return;
+        if (!activeMission) {
+            console.log('[DEBUG] animateCombat early return: missing activeMission', { activeMission });
+            return;
+        }
 
-        // Store monster reference at start of animation (before it potentially gets cleared)
-        const currentEncounter = activeMission.missionState.getCurrentEncounter();
-        const monster = currentEncounter ? currentEncounter.monster : null;
+        const missionState = activeMission.missionState;
+        const currentEncounter = missionState.getCurrentEncounter();
+        if (!currentEncounter) {
+            console.log('[DEBUG] animateCombat early return: missing currentEncounter', { currentEncounter });
+            return;
+        }
 
-        // Process the turn - rewards will NOT be applied for mission completion
-        const result = missionSystem.processMissionTurn(exileId);
-        console.log("Turn result:", result);
+        // Find the combat log entry for the current encounter
+        let combatLogEntry = missionState.combatLog.find(log => log.encounter === currentEncounter.encounterNumber);
+        let result;
+        if (!combatLogEntry) {
+            // No combat log yet for this encounter, process the first turn
+            console.log('[DEBUG] BEFORE processMissionTurn:', {
+                currentEncounterNumber: currentEncounter.encounterNumber,
+                combatLog: missionState.combatLog
+            });
+            result = missionSystem.processMissionTurn(exileId);
+            // Get the new combat log entry
+            combatLogEntry = missionState.combatLog.find(log => log.encounter === currentEncounter.encounterNumber);
+            console.log('[DEBUG] AFTER processMissionTurn:', {
+                currentEncounterNumber: currentEncounter.encounterNumber,
+                combatLog: missionState.combatLog,
+                foundLogEntry: combatLogEntry,
+                foundRounds: combatLogEntry && combatLogEntry.result ? combatLogEntry.result.rounds : undefined
+            });
+        } else {
+            // Already have a combat log, use the latest result
+            result = combatLogEntry.result;
+        }
 
-        // Get the combat log from the last turn
-        const combatLog = activeMission.missionState.combatLog;
-        const lastCombat = combatLog[combatLog.length - 1];
-
+        // Now animate the combat log entry as before
+        const lastCombat = combatLogEntry;
         if (lastCombat && lastCombat.result && lastCombat.result.rounds) {
             const rounds = lastCombat.result.rounds;
             const finalOutcome = lastCombat.result.outcome;
@@ -604,8 +638,8 @@ const exileRowManager = {
                             await this.animateAttack(combatDisplay, 'exile', action.finalDamage, monsterDies);
                             
                             // Update monster health bar (use stored monster reference)
-                            if (monster) {
-                                this.updateMonsterHealthBar(combatDisplay, action.targetHealthAfter, monster.life);
+                            if (currentEncounter.monster) {
+                                this.updateMonsterHealthBar(combatDisplay, action.targetHealthAfter, currentEncounter.monster.life);
                             }
 
                             // Small delay between multiple attacks
@@ -690,6 +724,9 @@ const exileRowManager = {
                     exileId: exileId,
                     choices: result.choices
                 });
+            } else if (result.type === 'next_encounter_started') {
+                // Start the next encounter's combat/animation immediately
+                await this.animateCombat(exileId);
             }
         }
         // === NEW: After all animations and result handling, update the row to show retreat button ===
