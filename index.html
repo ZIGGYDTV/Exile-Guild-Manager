@@ -280,7 +280,8 @@
                 <div class="passive-modal-actions">
                     <button id="confirm-passive-btn" onclick="passiveSystem.confirmPassive()" disabled>Confirm
                         Selection</button>
-                    <button id="reroll-passive-btn" onclick="passiveSystem.rerollPassiveChoices()">Reroll (X gold)</button>
+                    <button id="reroll-passive-btn" onclick="passiveSystem.rerollPassiveChoices()">Reroll (X
+                        gold)</button>
                     <button onclick="passiveSystem.closePassiveSelection()">Cancel</button>
                 </div>
             </div>
@@ -290,7 +291,6 @@
 
         <!-- SCRIPTS MUST GO LAST html elements need to be loaded for these to interact with -->
         <script src="js/gameState.js"></script>
-        <script src="js/data/passives.js"></script>
         <script src="js/nameGenerator.js"></script>
         <script src="js/systems/exileFactory.js"></script>
 
@@ -314,6 +314,7 @@
 
             // Import new game systems
             import { exileSystem } from './js/systems/exileSystem.js';
+            import { classDefinitions } from './js/data/classes.js';
             import { moraleSystem } from './js/systems/moraleSystem.js';
             import { combatSystem } from './js/systems/combatSystem.js';
             import { missionSystem } from './js/systems/missionSystem.js';
@@ -323,14 +324,15 @@
             import { turnBasedCombat, MissionState, Encounter } from './js/systems/encounterSystem.js';
             import { missionGeneration } from './js/systems/missionGenerationSystem.js';
             import { passiveSystem } from './js/systems/passiveSystem.js';
+            import { passiveTypes, passiveDefinitions, passiveHelpers } from './js/data/passives.js';
             import { uiSystem } from './js/systems/uiSystem.js';
 
             // Make them globally available during transition
             window.monsterDB = monsterDB;
             window.bossDB = bossDB;
-            window.itemBases = itemBases;  
+            window.itemBases = itemBases;
             window.itemDB = itemDB;
-            window.Equipment = Equipment;  
+            window.Equipment = Equipment;
             window.Weapon = Weapon;
             window.Armor = Armor;
             window.Jewelry = Jewelry;
@@ -340,6 +342,11 @@
             window.statDB = statDB;
             window.rarityDB = rarityDB;
             window.exileSystem = exileSystem;
+            window.passiveSystem = passiveSystem;
+            window.passiveTypes = passiveTypes;
+            window.passiveDefinitions = passiveDefinitions;
+            window.passiveHelpers = passiveHelpers;
+            window.classDefinitions = classDefinitions;
             window.moraleSystem = moraleSystem;
             window.combatSystem = combatSystem;
             window.missionSystem = missionSystem;
@@ -350,16 +357,15 @@
             window.MissionState = MissionState;
             window.Encounter = Encounter;
             window.missionGeneration = missionGeneration;
-            window.passiveSystem = passiveSystem;
             window.uiSystem = uiSystem;
 
             // Log that systems are loaded
             console.log("Game systems loaded:", {
                 monsters: !!window.monsterDB,
                 bosses: !!window.bossDB,
-                itemBases: !!window.itemBases,  
+                itemBases: !!window.itemBases,
                 itemDB: !!window.itemDB,
-                items: {  
+                items: {
                     database: !!window.itemDB,
                     bases: !!window.itemBases,
                     Equipment: !!window.Equipment,
@@ -371,7 +377,6 @@
                 exile: !!window.exileSystem,
                 combat: !!window.combatSystem,
                 mission: !!window.missionSystem,
-                passive: !!window.passiveSystem,
                 ui: !!window.uiSystem
             });
         </script>

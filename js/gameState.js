@@ -102,32 +102,32 @@ const worldState = {
         // More areas discovered through play
     },
     
-    // === AREA CONNECTIONS ===
-    connections: {
-        beach_to_swamp: {
-            discovered: false,  // Has player learned this exists?
-            unlocked: false,    // Can player travel here?
-            from: "beach",
-            to: "swamp",
-            requirements: {
-                type: "mission",  // mission, boss, exploration, item
-                target: "wreckageScavenging",
-                value: 1 // Complete wreckage scavenging once
-            }
-        },
-        beach_to_cliffs: {
-            discovered: false,
-            unlocked: false,
-            from: "beach",
-            to: "cliffs", 
-            requirements: {
-                type: "boss",
-                target: "tideWarden",
-                value: 1
-            }
-        }
-        // More connections discovered through play
-    },
+    // // === AREA CONNECTIONS ===
+    // connections: {
+    //     beach_to_swamp: {
+    //         discovered: false,  // Has player learned this exists?
+    //         unlocked: false,    // Can player travel here?
+    //         from: "beach",
+    //         to: "swamp",
+    //         requirements: {
+    //             type: "mission",  // mission, boss, exploration, item
+    //             target: "wreckageScavenging",
+    //             value: 1 // Complete wreckage scavenging once
+    //         }
+    //     },
+    //     beach_to_cliffs: {
+    //         discovered: false,
+    //         unlocked: false,
+    //         from: "beach",
+    //         to: "cliffs", 
+    //         requirements: {
+    //             type: "boss",
+    //             target: "tideWarden",
+    //             value: 1
+    //         }
+    //     }
+    //     // More connections discovered through play
+    // },
     
     // === GLOBAL WORLD EVENTS ===
     activeEvents: [], // Future: storms, invasions, etc.

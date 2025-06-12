@@ -137,7 +137,7 @@ class MonsterDatabase {
             attackSpeed: 0.8,
             damageTypes: { physical: 1.0 },
             ilvl: 1,
-            xpValue: 4,
+            xpValue: 5,
             tags: ['beast', 'undead', 'beach'],
             drops: {
                 dropChance: 3.0,
@@ -169,12 +169,12 @@ class MonsterDatabase {
 
         // Example swarm monster
         this.register(new Monster({
-            id: 'crab_swarm',
-            name: 'Crab Swarm',
-            life: 100,
-            damage: 6,
-            defense: 3,
-            attackSpeed: 1.5, // Attacks frequently
+            id: 'crabling_swarm',
+            name: 'Crabling Swarm',
+            life: 55,
+            damage: 2,
+            defense: 1,
+            attackSpeed: 2.5, 
             damageTypes: { physical: 1.0 },
             ilvl: 2,
             xpValue: 10,
@@ -186,7 +186,8 @@ class MonsterDatabase {
                 0.25: { damageMultiplier: 0.4 }
             },
             drops: {
-                dropChance: 0.2
+                dropChance: 0.05,
+                gold: { min: 2, max: 11 },
             }
         }));
 

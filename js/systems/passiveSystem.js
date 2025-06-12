@@ -355,8 +355,5 @@ const passiveSystem = {
     }
 };
 
-// Make available globally
-window.passiveSystem = passiveSystem;
-
 // Export for module use
 export { passiveSystem };
