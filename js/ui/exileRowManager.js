@@ -523,10 +523,8 @@ const exileRowManager = {
         });
 
         try {
-            // Get all active missions without pending decisions
-            const activeMissions = turnState.activeMissions.filter(m =>
-                !turnState.pendingDecisions.find(d => d.exileId === m.exileId)
-            );
+            // Get all active missions (do NOT filter out pending decisions)
+            const activeMissions = turnState.activeMissions;
 
             console.log("Processing turns for missions:", activeMissions);
 
@@ -708,17 +706,17 @@ const exileRowManager = {
         // Handle the mission result
         if (result) {
             if (result.type === 'encounter_complete' && result.hasNextEncounter) {
-                // Instead of immediately transitioning, add a pending decision for retreat/continue
-                turnState.pendingDecisions.push({
-                    exileId: exileId,
-                    choices: ['retreat', 'continue']
-                });
-                // Update the row to show the new state (retreat button, preview, etc.)
+                // Instead of waiting for a decision, immediately process the next encounter on End Turn
+                // Remove any pending decision for this exile
+                turnState.pendingDecisions = turnState.pendingDecisions.filter(d => d.exileId !== exileId);
+                // Immediately process the next encounter (End Turn will call this again)
+                // No need to add a pending decision, just update the row
                 this.updateRow(this.getRowForExile(exileId), exile);
             } else if (result.type === 'mission_complete') {
                 // NOW apply the mission completion rewards after animation completes
                 missionSystem.applyMissionRewards(exileId, result.rewards);
             } else if (result.type === 'decision_needed') {
+                // If there are other types of decisions, handle as before
                 turnState.pendingDecisions.push({
                     exileId: exileId,
                     choices: result.choices
