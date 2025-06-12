@@ -162,7 +162,8 @@ const exileRowManager = {
 
                     // --- RETREAT BUTTON LOGIC ---
                     const retreatInfo = this.getRetreatInfo(exile.id, currentEncounter);
-                    if (retreatInfo.available && retreatInfo.type === 'risky' && currentEncounter.monster.currentLife > 0) {
+                    // Hide Risky Retreat during combat animations
+                    if (!this.activeAnimations[exile.id] && retreatInfo.available && retreatInfo.type === 'risky' && currentEncounter.monster.currentLife > 0) {
                         // Show Risky Retreat during combat
                         actionButtons = `
                             <button class=\"btn-small retreat-btn warning\" 
@@ -551,12 +552,30 @@ const exileRowManager = {
         }
     },
 
+    // Hide the Risky Retreat button for a given exile
+    hideRiskyRetreatButton(exileId) {
+        const row = document.querySelector(`[data-exile-id="${exileId}"]`);
+        if (!row) return;
+        const btn = row.querySelector('.retreat-btn.warning');
+        if (btn) btn.style.display = 'none';
+    },
+
+    // Show the Risky Retreat button for a given exile
+    showRiskyRetreatButton(exileId) {
+        const row = document.querySelector(`[data-exile-id="${exileId}"]`);
+        if (!row) return;
+        const btn = row.querySelector('.retreat-btn.warning');
+        if (btn) btn.style.display = '';
+    },
+
     async animateCombat(exileId) {
         if (this.activeAnimations[exileId]) {
             console.log(`[DEBUG] animateCombat: Animation already in progress for exile ${exileId}, skipping.`);
             return;
         }
         this.activeAnimations[exileId] = true;
+        // Hide the Risky Retreat button during animation
+        this.hideRiskyRetreatButton(exileId);
         try {
             console.log(`Starting combat animation for exile ${exileId}`);
 
@@ -739,6 +758,14 @@ const exileRowManager = {
             }
         } finally {
             this.activeAnimations[exileId] = false;
+            // Show the Risky Retreat button after animation
+            this.showRiskyRetreatButton(exileId);
+            // Update row to show Risky Retreat button after animation (in case other state changed)
+            const rowId = this.getRowForExile(exileId);
+            if (rowId) {
+                const exileObj = gameState.exiles.find(e => e.id === exileId);
+                this.updateRow(rowId, exileObj);
+            }
         }
     },
 
