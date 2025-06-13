@@ -855,7 +855,7 @@ const exileRowManager = {
 
                                 // Small delay between multiple attacks
                                 if (round.exileActions.length > 1) {
-                                    await this.wait(100);
+                                    await this.wait(10);
                                 }
                             }
                         }
@@ -879,7 +879,7 @@ const exileRowManager = {
 
                                 // Small delay between multiple attacks
                                 if (round.monsterActions.length > 1) {
-                                    await this.wait(100);
+                                    await this.wait(10);
                                 }
                             }
                         }
@@ -888,11 +888,11 @@ const exileRowManager = {
                     // If nothing happened this round (no attacks), still show the round
                     if ((!round.exileActions || round.exileActions.length === 0) &&
                         (!round.monsterActions || round.monsterActions.length === 0)) {
-                        await this.wait(1000); // Just wait to show the round happened
+                        await this.wait(500); // Just wait to show the round happened
                     }
 
                     // Wait before next round
-                    await this.wait(1000);
+                    await this.wait(200);
                 }
 
                 // Show final outcome
