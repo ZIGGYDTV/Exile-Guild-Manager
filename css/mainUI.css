@@ -98,6 +98,22 @@ body {
     background: linear-gradient(to right, #914e02, #d7921a);
 }
 
+/* Pulse animation for no vitality */
+.vitality-bar.pulse-red {
+    animation: pulse-red 0.5s ease-in-out 2;
+}
+
+@keyframes pulse-red {
+    0%, 100% { 
+        background-color: rgba(50, 50, 50, 0.8);
+        box-shadow: none;
+    }
+    50% { 
+        background-color: rgba(255, 68, 68, 0.3);
+        box-shadow: 0 0 10px #ff4444;
+    }
+}
+
 .exp-bar .status-bar-fill {
     background: linear-gradient(to right, #bd7420, #e89c19);
 }
@@ -113,6 +129,16 @@ body {
     color: white;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     z-index: 1;  /* Ensure it's above the fill */
+}
+
+/* FAILED HEALING WARNING ON VIT BAR */
+.vitality-bar.pulse-red {
+    animation: pulse-red 0.5s ease-in-out 2;
+}
+
+@keyframes pulse-red {
+    0%, 100% { background-color: var(--vitality-color); }
+    50% { background-color: #ff4444; box-shadow: 0 0 5px #ff4444; }
 }
 
 /* Combat Area with Header */

@@ -41,7 +41,7 @@ const gameState = {
         chaosOrbs: 0,
         exaltedOrbs: 1,
         materials: 0, // For future crafting
-        rations: 0    // For future vitality system
+        food: 10    // For future vitality system
     },
     
     // === INVENTORY ===
@@ -60,8 +60,9 @@ const gameState = {
     // === SETTINGS ===
     settings: {
         autoSave: true,
-        combatSpeed: 1, // 1x, 2x, skip
-        pauseOnDecisions: true
+        useFoodWhileResting: true,
+        // combatSpeed: 1, // 1x, 2x, skip
+        // pauseOnDecisions: true
     }
 };
 

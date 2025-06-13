@@ -5,7 +5,8 @@ const classDefinitions = {
         baseStats: {
             life: 90,    // Lower life
             damage: 12,  // Higher damage  
-            defense: 4   // Lower defense
+            defense: 4,   // Lower defense
+            vitality: 90 
         },
         passiveWeights: {  // To add any tag simply add to passives and then add here with a weight
             "damage": 2.0,
@@ -24,7 +25,9 @@ const classDefinitions = {
         baseStats: {
             life: 110,   // Higher life
             damage: 9,   // Lower damage
-            defense: 7   // Higher defense  
+            defense: 7,
+            vitality: 110,
+            lifeRegen: 1 
         },
         passiveWeights: {
             "defense": 1.5,
@@ -40,9 +43,10 @@ const classDefinitions = {
     brawler: {
         name: "Brawler",
         baseStats: {
-            life: 105,   // Balanced high
+            life: 100,   // Balanced high
             damage: 11,  // High damage
-            defense: 5   // Medium defense
+            defense: 5,
+            vitality: 100
         },
         passiveWeights: {
             "damage": 2.5,

@@ -193,12 +193,12 @@ export class MissionState {
         // 50% chance to lose each orb type (instead of losing all)
         let chaosOrbsLost = 0;
         let exaltedOrbsLost = 0;
-        
+
         if (this.totalChaosOrbs > 0 && Math.random() < 0.5) {
             chaosOrbsLost = this.totalChaosOrbs;
             this.totalChaosOrbs = 0;
         }
-        
+
         if (this.totalExaltedOrbs > 0 && Math.random() < 0.5) {
             exaltedOrbsLost = this.totalExaltedOrbs;
             this.totalExaltedOrbs = 0;
@@ -391,6 +391,66 @@ export class TurnBasedCombatSystem {
                     break;
                 }
             }
+
+
+            // EXILE HEALING AFTER ATTACKS BUT BEFORE MONSTER ATTACKS
+            // Calculate total hits and damage from this round's actions
+            const totalHits = roundData.exileActions.filter(action =>
+                action.type === 'attack' && action.finalDamage > 0
+            ).length;
+
+            const roundDamageDealt = roundData.exileActions
+                .filter(action => action.type === 'attack')
+                .reduce((sum, action) => sum + action.finalDamage, 0);
+
+            // Apply healing effects at end of exile's attacks
+            if (exileLife > 0 && exileLife < exile.stats.life) {
+                // Life Regen - heals every round
+                if (exile.stats.lifeRegen > 0) {
+                    const regenAmount = exileSystem.healExile(exile, exile.stats.lifeRegen, "regen");
+                    if (regenAmount > 0) {
+                        exileLife += regenAmount;
+                        roundData.events.push({
+                            type: 'heal',
+                            source: 'regen',
+                            amount: regenAmount,
+                            exileHealthAfter: exileLife
+                        });
+                    }
+                }
+
+                // Life Gain on Hit - heal for each hit that landed
+                if (exile.stats.lifeGainOnHit > 0 && totalHits > 0) {
+                    const gainAmount = exileSystem.healExile(exile, exile.stats.lifeGainOnHit * totalHits, "gain on hit");
+                    if (gainAmount > 0) {
+                        exileLife += gainAmount;
+                        roundData.events.push({
+                            type: 'heal',
+                            source: 'gain on hit',
+                            amount: gainAmount,
+                            hits: totalHits,
+                            exileHealthAfter: exileLife
+                        });
+                    }
+                }
+
+                // Life Leech - heal based on damage dealt this round
+                if (exile.stats.lifeLeech > 0 && roundDamageDealt > 0) {
+                    const leechAmount = Math.floor(roundDamageDealt * exile.stats.lifeLeech / 100);
+                    const healedAmount = exileSystem.healExile(exile, leechAmount, "leech");
+                    if (healedAmount > 0) {
+                        exileLife += healedAmount;
+                        roundData.events.push({
+                            type: 'heal',
+                            source: 'leech',
+                            amount: healedAmount,
+                            damageDealt: roundDamageDealt,
+                            exileHealthAfter: exileLife
+                        });
+                    }
+                }
+            }
+
 
             // === MONSTER ATTACKS === (if still alive)
             if (!monster.isDead()) {

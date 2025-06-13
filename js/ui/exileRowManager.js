@@ -118,8 +118,8 @@ const exileRowManager = {
                     <div class="status-bar-text">${exile.currentLife || exile.stats.life}/${exile.stats.life}</div>
                 </div>
                 <div class="status-bar vitality-bar">
-                    <div class="status-bar-fill" style="width: 100%"></div>
-                    <div class="status-bar-text">100/100</div>
+                    <div class="status-bar-fill" style="width: ${(exile.currentVitality / exile.maxVitality) * 100}%"}></div>
+                    <div class="status-bar-text">${exile.currentVitality}/${exile.maxVitality}</div>
                 </div>
                 <div class="status-bar morale-bar">
                     <div class="status-bar-fill" style="width: ${exile.morale}%"></div>
@@ -641,7 +641,7 @@ const exileRowManager = {
             // Get all active missions (do NOT filter out pending decisions)
             const activeMissions = turnState.activeMissions;
 
-            // === NEW: Process pending decisions and advance encounters ===
+            // === Process pending decisions and advance encounters ===
             const exilesAdvanced = [];
 
             // Handle pending decisions for 'continue' choice
@@ -698,6 +698,51 @@ const exileRowManager = {
             });
             await Promise.all(combatPromises);
 
+            // Process resting exiles
+            gameState.exiles.forEach(exile => {
+                // Only process living, idle exiles
+                if (exile.status === 'idle' || exile.status === 'resting') {
+                    // Check if we're using food
+                    const useFood = gameState.settings.useFoodWhileResting && gameState.resources.food > 0;
+
+                    if (useFood) {
+                        // Rest with food
+                        const vitalityRecovered = Math.min(10, exile.maxVitality - exile.currentVitality);
+                        if (vitalityRecovered > 0 || exile.morale < 100) {
+                            exile.currentVitality += vitalityRecovered;
+                            exile.morale = Math.min(100, exile.morale + 1);  // ? HERE to tune rest morale 1/2
+                            gameState.resources.food--;
+
+                            uiSystem.log(`${exile.name} rests with food: +${vitalityRecovered} vitality, +1 morale`, "success");
+                        }
+                    } else {
+                        // Rest without food
+                        const vitalityRecovered = Math.min(5, exile.maxVitality - exile.currentVitality);
+                        if (vitalityRecovered > 0 || exile.morale > 0) {
+                            exile.currentVitality += vitalityRecovered;
+                            exile.morale = Math.max(0, exile.morale - 1);  // ? HERE to tune rest morale 2/2
+
+                            if (vitalityRecovered > 0) {
+                                uiSystem.log(`${exile.name} rests without food: +${vitalityRecovered} vitality, -1 morale`, "info");
+                            } else if (exile.currentVitality >= exile.maxVitality) {
+                                // Full vitality but still losing morale
+                                uiSystem.log(`${exile.name} is fully rested but hungry: -1 morale`, "warning");
+                            }
+                        }
+                    }
+                }
+            });
+
+            gameState.exiles.forEach(exile => {
+                if (exile.status === 'idle' && exile.currentLife < exile.stats.life) {
+                    // They might have just returned from mission, try to heal
+                    const healed = exileSystem.healExile(exile, exile.stats.life - exile.currentLife, "town healing");
+                    if (healed > 0) {
+                        uiSystem.log(`${exile.name} healed for ${healed} in town`, "success");
+                    }
+                }
+            });
+
             // Increment turn counter
             turnState.currentTurn++;
             turnState.turnsToday++;
@@ -720,6 +765,10 @@ const exileRowManager = {
 
             // Refresh all rows to show new states
             this.refreshAllRows();
+
+            // Update resource display
+            uiSystem.updateDisplay();
+
 
         } catch (error) {
             console.error("Error during turn processing:", error);
@@ -1376,6 +1425,17 @@ const exileRowManager = {
 
         // Refresh all rows to show updated state
         this.refreshAllRows();
+    },
+
+    // FAILED HEALING WARNING ON VIT BAR
+    pulseVitalityBar(exileId) {
+        const vitalityBar = document.querySelector(`[data-exile-id="${exileId}"] .vitality-bar`);
+        if (vitalityBar) {
+            vitalityBar.classList.add('pulse-red');
+            setTimeout(() => {
+                vitalityBar.classList.remove('pulse-red');
+            }, 1000);
+        }
     },
 
     // Handle exile death from failed retreat

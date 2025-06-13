@@ -185,7 +185,7 @@ const game = {
         }
     },
 
-
+// TODO: Level up logic should probably be moved to it's own file at some point
     checkLevelUp(exile) {
         while (exile.experience >= exile.experienceNeeded) {
             exile.level++;
@@ -193,7 +193,9 @@ const game = {
             exile.experienceNeeded = exile.level * 100;
 
             // Only give life on level up
-            exile.baseStats.life += 20;
+            exile.baseStats.life += 10;
+            exile.baseStats.vitality += 10;
+            exile.currentVitality = Math.min(exile.currentVitality + 10, exile.baseStats.vitality);
 
             // Give passive point
             exile.passives.pendingPoints++;

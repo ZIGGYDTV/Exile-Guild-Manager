@@ -106,18 +106,18 @@ class ExileSystem {
         if (!exileId) {
             exileId = gameState.selectedExileId;
         }
-        
+
         // Find the dying exile
         const fallenExile = gameState.exiles.find(e => e.id === exileId);
         if (!fallenExile) {
             console.error(`Exile ${exileId} not found!`);
             return;
         }
-        
+
         // Mark as dead
         fallenExile.status = 'dead';
         fallenExile.currentHp = 0;
-        
+
         // Equipment is LOST - clear it without returning to inventory
         Object.keys(fallenExile.equipment).forEach(slot => {
             if (fallenExile.equipment[slot]) {
@@ -125,15 +125,15 @@ class ExileSystem {
                 fallenExile.equipment[slot] = null;
             }
         });
-        
+
         // Log the death
         uiSystem.log(`${fallenExile.name} has fallen in combat! All equipped items were lost.`, "death");
-        
+
         // Update displays
         if (typeof exileRowManager !== 'undefined') {
             exileRowManager.updateRow(exileRowManager.getRowForExile(exileId), fallenExile);
         }
-        
+
         // Save the game state
         game.saveGame();
     }
@@ -145,11 +145,11 @@ class ExileSystem {
         if (!turnState.assignments) {
             turnState.assignments = [];
         }
-        
+
         // Find exile by name to get ID
         const exile = gameState.exiles.find(e => e.name === exileName);
         if (!exile) return null;
-        
+
         return turnState.assignments.find(a => a.exileId === exile.id) || null;
     }
 
@@ -559,7 +559,7 @@ class ExileSystem {
                 // Add from regular stats (check both camelCase and lowercase)
                 gearLightRadius += item.stats.lightRadius || item.stats.lightradius || 0;
                 gearMoveSpeed += item.stats.moveSpeed || item.stats.movespeed || 0;
-                
+
                 // Add from implicit stats (check both camelCase and lowercase)
                 if (item.implicitStats) {
                     gearLightRadius += item.implicitStats.lightRadius || item.implicitStats.lightradius || 0;
@@ -579,7 +579,7 @@ class ExileSystem {
         // Store light radius and movement speed in stats
         exile.stats.lightRadius = totalLightRadius;
         exile.stats.moveSpeed = totalMoveSpeed;
-        
+
         // Apply to scouting bonus (base 1.0 + bonuses)
         exile.stats.scoutingBonus = 1.0 + (totalLightRadius / 100) + (totalMoveSpeed / 200);
         // End of light radius effects on scouting and exploration from gear + passives
@@ -590,8 +590,40 @@ class ExileSystem {
         exile.stats.defense = Math.max(1, exile.stats.defense);
     }
 
+    healExile(exile, amount, source = "unknown") {
+        // Can't heal dead exiles
+        if (exile.currentLife <= 0) return 0;
 
-    // More methods will be added here...
+        // Calculate potential healing (capped by missing health)
+        const missingHealth = exile.stats.life - exile.currentLife;
+        const healingNeeded = Math.min(amount, missingHealth);
+
+        // Check if we have enough vitality
+        const healingPossible = Math.min(healingNeeded, exile.currentVitality);
+
+        if (healingPossible > 0) {
+            // Apply healing
+            exile.currentLife += healingPossible;
+            exile.currentVitality -= healingPossible;
+
+            // Log significant healing
+            if (healingPossible >= 10) {
+                uiSystem.log(`${exile.name} healed for ${healingPossible} (${source})`, "success");
+            }
+        } else if (healingNeeded > 0) {
+            // Wanted to heal but no vitality
+            if (source !== "regen") { // Don't spam for regen
+                uiSystem.log(`${exile.name} has no vitality to heal!`, "warning");
+            }
+
+            // Pulse vitality bar
+            if (typeof exileRowManager !== 'undefined') {
+                exileRowManager.pulseVitalityBar(exile.id);
+            }
+        }
+
+        return healingPossible; // Return actual amount healed
+    }
 }
 
 // Create singleton instance

@@ -25,10 +25,12 @@ const uiSystem = {
      const goldEl = document.getElementById('gold');
      const chaosEl = document.getElementById('chaos-orbs');
      const exaltedEl = document.getElementById('exalted-orbs');
+     const foodEl = document.getElementById('food');
 
      if (goldEl) goldEl.textContent = gameState.resources.gold;
      if (chaosEl) chaosEl.textContent = gameState.resources.chaosOrbs;
      if (exaltedEl) exaltedEl.textContent = gameState.resources.exaltedOrbs;
+     if (foodEl) foodEl.textContent = gameState.resources.food;
 
         // Optional: Add the glow effect for currency changes
         const chaosElem = document.getElementById('chaos-orbs');
