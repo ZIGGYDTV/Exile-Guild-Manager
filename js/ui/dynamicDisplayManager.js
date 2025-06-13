@@ -137,6 +137,43 @@ const dynamicDisplayManager = {
             });
         });
         this.setupEquipmentKeyTracking();
+
+        // Add reset button
+        const tabsContainer = document.querySelector('.dynamic-tabs');
+        if (tabsContainer && !tabsContainer.querySelector('.reset-game-button')) {
+            const resetButton = document.createElement('button');
+            resetButton.className = 'dynamic-tab reset-game-button';
+            resetButton.innerHTML = '⏻';
+            resetButton.title = 'Reset Game';
+            resetButton.style.cssText = `
+                color: #ff4444;
+                font-size: 1.2em;
+                padding: 8px;
+                margin-top: auto;
+                border: 1px solid #ff4444;
+                background: transparent;
+                transition: all 0.2s;
+                display: block;
+                width: 100%;
+            `;
+            resetButton.onmouseout = () => {
+                resetButton.style.backgroundColor = 'transparent';
+                resetButton.style.color = '#ff4444';
+            };
+            resetButton.onclick = () => {
+                if (confirm('Are you sure you want to reset the game? This will delete all progress and cannot be undone.')) {
+                    game.resetGame();
+                    this.refreshCurrentTab();
+                    if (typeof inventoryGridManager !== 'undefined') {
+                        inventoryGridManager.updateDisplay();
+                    }
+                    if (typeof uiSystem !== 'undefined') {
+                        uiSystem.log('Game has been reset', 'system');
+                    }
+                }
+            };
+            tabsContainer.appendChild(resetButton);
+        }
     },
 
     setupEquipmentKeyTracking() {
