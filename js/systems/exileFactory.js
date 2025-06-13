@@ -127,7 +127,7 @@ const exileFactory = {
     createTestExile(level = 5) {
         const exile = this.createExile({
             level: level,
-            startingPoints: 0 // We'll allocate them
+            startingPoints: 0 
         });
 
         // Give them some passives

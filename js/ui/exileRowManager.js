@@ -65,6 +65,17 @@ const exileRowManager = {
         }
     },
 
+    toggleExileFood(exileId) {
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        if (!exile) return;
+
+        // Toggle the setting (default true if not set)
+        exile.useFood = exile.useFood === false ? true : false;
+
+        uiSystem.log(`${exile.name} food consumption: ${exile.useFood ? 'ON' : 'OFF'}`, "info");
+        game.saveGame();
+    },
+
     // Open mission assignment from Exile Row Button
     openMissionAssignment(rowId) {
         // Select this row first
@@ -287,8 +298,18 @@ const exileRowManager = {
             switch (exile.status) {
                 case 'idle':
                 case 'resting':
-                    mainAreaContent = `<div class="idle-message">Resting in town</div>`;
-                    actionButtons = `<button class="btn-small" onclick="exileRowManager.assignToMission(${rowId})">Assign Mission</button>`;
+                    mainAreaContent = `<div class="idle-message">Resting in town.<br><i>Assign food rations to recover morale and additional Vit.</i></div>`;
+                    const foodChecked = exile.useFood !== false ? 'checked' : ''; // Default to true
+                    actionButtons = `
+                <div class="action-buttons-vertical">
+                    <button class="btn-small" onclick="exileRowManager.assignToMission(${rowId})">Assign Mission</button>
+                    <label class="food-toggle">
+                        <input type="checkbox" ${foodChecked} 
+                            onchange="exileRowManager.toggleExileFood(${exile.id})">
+                        Use Food
+                    </label>
+                </div>
+                `;
                     break;
 
                 case 'assigned':
@@ -679,8 +700,6 @@ const exileRowManager = {
                 }
             });
 
-
-
             console.log("Processing turns for missions:", activeMissions);
 
             // Process all missions simultaneously
@@ -703,7 +722,7 @@ const exileRowManager = {
                 // Only process living, idle exiles
                 if (exile.status === 'idle' || exile.status === 'resting') {
                     // Check if we're using food
-                    const useFood = gameState.settings.useFoodWhileResting && gameState.resources.food > 0;
+                    const useFood = exile.useFood !== false && gameState.resources.food > 0;
 
                     if (useFood) {
                         // Rest with food
@@ -768,7 +787,6 @@ const exileRowManager = {
 
             // Update resource display
             uiSystem.updateDisplay();
-
 
         } catch (error) {
             console.error("Error during turn processing:", error);
@@ -974,6 +992,31 @@ const exileRowManager = {
                 } else if (result.type === 'mission_complete') {
                     // NOW apply the mission completion rewards after animation completes
                     missionSystem.applyMissionRewards(exileId, result.rewards);
+                } else if (result.type === 'death') {
+                    // Show death animation first
+                    const row = document.querySelector(`[data-exile-id="${exileId}"]`);
+                    const combatArea = row.querySelector('.combat-area');
+                    const combatDisplay = combatArea ? combatArea.querySelector('.combat-display') : null;
+                    
+                    if (combatDisplay) {
+                        // Show death animation
+                        const exileIcon = combatDisplay.querySelector('.exile-icon');
+                        if (exileIcon) {
+                            exileIcon.classList.add('dying');
+                        }
+                        
+                        // Wait for animation to complete
+                        await this.wait(1500);
+                        
+                        // Now process the actual death
+                        exileSystem.handleExileDeath(exileId);
+                        
+                        // Remove from active missions
+                        turnState.activeMissions = turnState.activeMissions.filter(m => m.exileId !== exileId);
+                        
+                        // Clear any pending decisions
+                        turnState.pendingDecisions = turnState.pendingDecisions.filter(d => d.exileId !== exileId);
+                    }
                 } else if (result.type === 'decision_needed') {
                     // If there are other types of decisions, handle as before
                     turnState.pendingDecisions.push({
@@ -1131,55 +1174,39 @@ const exileRowManager = {
 
     // Generate monster preview based on scouting bonus
     generateMonsterPreview(monster, scoutingBonus = 1.0) {
-        const baseChance = 0.5;
-        const actualChance = baseChance * scoutingBonus;
+        // Helper function to determine if a stat should be revealed
+        const rollReveal = () => Math.random() < scoutingBonus;
 
-        const rollReveal = () => Math.random() < actualChance;
+        // Calculate actual damage values based on total damage and damage type distribution
+        const totalDamage = monster.damage;
+        const damageTypes = monster.damageTypes || { physical: 1.0 };
 
-        // Helper function to get rarity display
-        const getRarityDisplay = (rarity) => {
-            if (!rarity || rarity === 'common') return '';
-            return rarity.charAt(0).toUpperCase() + rarity.slice(1);
+        // Calculate actual damage values
+        const damage = {
+            physical: rollReveal() ? Math.floor(totalDamage * (damageTypes.physical || 0)) : '??',
+            fire: rollReveal() ? Math.floor(totalDamage * (damageTypes.fire || 0)) : '??',
+            cold: rollReveal() ? Math.floor(totalDamage * (damageTypes.cold || 0)) : '??',
+            lightning: rollReveal() ? Math.floor(totalDamage * (damageTypes.lightning || 0)) : '??',
+            chaos: rollReveal() ? Math.floor(totalDamage * (damageTypes.chaos || 0)) : '??'
         };
 
-        // Generate preview object
-        const preview = {
-            // Basic info
-            name: rollReveal() ? monster.name : '???',
-            rarity: getRarityDisplay(monster.rarity || 'common'),
+        // Calculate resistances
+        const resistances = {
+            fire: rollReveal() ? (monster.resistances?.fire || 0) : '??',
+            cold: rollReveal() ? (monster.resistances?.cold || 0) : '??',
+            lightning: rollReveal() ? (monster.resistances?.lightning || 0) : '??',
+            chaos: rollReveal() ? (monster.resistances?.chaos || 0) : '??'
+        };
 
-            // Core stats
+        return {
+            name: monster.name,
+            rarity: monster.tier || null,
             life: rollReveal() ? monster.life : '??',
-            attackSpeed: rollReveal() ? (monster.attackSpeed || 'Normal') : '??',
-            defense: rollReveal() ? (monster.defense || 0) : '??',
-
-            // Damage types - roll for each independently
-            damage: {
-                physical: rollReveal() ? (monster.damage?.physical || 0) : '??',
-                fire: rollReveal() ? (monster.damage?.fire || 0) : '??',
-                cold: rollReveal() ? (monster.damage?.cold || 0) : '??',
-                lightning: rollReveal() ? (monster.damage?.lightning || 0) : '??',
-                chaos: rollReveal() ? (monster.damage?.chaos || 0) : '??'
-            },
-
-            // Resistances - roll for each independently  
-            resistances: {
-                fire: rollReveal() ? (monster.resistances?.fire || 0) : '??',
-                cold: rollReveal() ? (monster.resistances?.cold || 0) : '??',
-                lightning: rollReveal() ? (monster.resistances?.lightning || 0) : '??',
-                chaos: rollReveal() ? (monster.resistances?.chaos || 0) : '??'
-            },
-
-            // Loot information - roll for each independently
-            loot: {
-                dropChance: rollReveal() ? (monster.loot?.dropChance || '10-30') + '%' : '??%',
-                goldRange: rollReveal() ? `${monster.loot?.goldMin || 5}-${monster.loot?.goldMax || 15}` : '??-??',
-                chaosChance: rollReveal() ? (monster.loot?.chaosChance || 5) + '%' : '??%',
-                exaltChance: rollReveal() ? (monster.loot?.exaltChance || 1) + '%' : '??%'
-            }
+            defense: rollReveal() ? monster.defense : '??',
+            attackSpeed: rollReveal() ? monster.attackSpeed : '??',
+            damage: damage,
+            resistances: resistances
         };
-
-        return preview;
     },
 
     // Render monster preview UI
@@ -1470,5 +1497,4 @@ const exileRowManager = {
         // Refresh all rows
         this.refreshAllRows();
     }
-
 };

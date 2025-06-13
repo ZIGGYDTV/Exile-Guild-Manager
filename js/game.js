@@ -71,6 +71,11 @@ const game = {
                     worldState.areas.beach.missions.crab_hunting.currentInstance =
                         missionGeneration.generateMissionInstance('beach', 'crab_hunting');
                 }
+                if (worldState.areas.beach?.missions.wreckageScavenging &&
+                    !worldState.areas.beach.missions.wreckageScavenging.currentInstance) {
+                    worldState.areas.beach.missions.wreckageScavenging.currentInstance =
+                        missionGeneration.generateMissionInstance('beach', 'wreckageScavenging');
+                }
             }
         } else {
             console.log("areaDefinitions not loaded yet - skipping area initialization");
@@ -178,7 +183,7 @@ const game = {
         // Optional: Add a second test exile for development
         const ADD_TEST_EXILE = true; // Change to false for production
         if (ADD_TEST_EXILE) {
-            const testExile = exileFactory.createTestExile(3);
+            const testExile = exileFactory.createTestExile(2);
             exileSystem.recalculateStats(startingExile);
             gameState.exiles.push(testExile);
             uiSystem.log(`${testExile.name} the ${classDefinitions[testExile.class].name} joins for testing!`, "info");
@@ -989,7 +994,7 @@ const game = {
     dayReportData: {
         missionResults: [],
         exileUpdates: [],
-        lootGained: { gold: 0, chaosOrbs: 0, exaltedOrbs: 0, items: [] },
+        lootGained: { gold: 0, chaosOrbs: 0, exaltedOrbs: 0, food: 0, items: [] },
         discoveries: [],
         combatDetails: []
     },

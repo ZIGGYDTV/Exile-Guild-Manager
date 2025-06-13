@@ -140,7 +140,7 @@ const areaDefinitions = {
                 name: "Scavenge Ship Wreckage",
                 description: "Search through the remains of wrecked vessels for salvageable materials",
                 discovered: false, // Must be found through exploration
-                ilvl: { min: 2, max: 4 }, // Item level range for gear drops
+                ilvl: { min: 5, max: 5 }, // Item level range for gear drops
                 eliteModifiers: {
                     magic: 0.2, // 20% more magic spawns
                     rare: 0.01  // 1% more rare spawns

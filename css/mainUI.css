@@ -592,6 +592,19 @@ body {
     justify-content: flex-end;
 }
 
+/* Assignment and Food Checkbox */
+.action-buttons-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;  /* Space between the button and checkbox */
+    align-items: center;
+}
+
+.food-toggle {
+    margin-top: 4px;  /* Additional spacing for the checkbox */
+}
+
+
 /* Exile Status States */
 .exile-row.idle {
     border-left: 4px solid #4CAF50;

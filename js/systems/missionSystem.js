@@ -118,6 +118,7 @@ class MissionSystem {
             gameState.resources.gold += goldEarned;
             gameState.resources.chaosOrbs += rewards.chaosOrbs;
             gameState.resources.exaltedOrbs += rewards.exaltedOrbs;
+            gameState.resources.food = (gameState.resources.food || 0) + rewards.food;
             exile.experience += expEarned;  // Update the specific exile's experience
 
             // Log special currency rewards
@@ -276,6 +277,7 @@ class MissionSystem {
                 experience: expEarned,
                 chaosOrbs: rewards ? rewards.chaosOrbs : 0,
                 exaltedOrbs: rewards ? rewards.exaltedOrbs : 0,
+                food: rewards ? rewards.food : 0,
                 gearFound: newGear || null
             },
 
@@ -358,7 +360,7 @@ class MissionSystem {
         game.dayReportData = {
             missionResults: [],
             exileUpdates: [],
-            lootGained: { gold: 0, chaosOrbs: 0, exaltedOrbs: 0, items: [] },
+            lootGained: { gold: 0, chaosOrbs: 0, exaltedOrbs: 0, food: 0, items: [] },
             discoveries: [],
             combatDetails: []
         };
@@ -396,7 +398,8 @@ class MissionSystem {
                 const preMissionResources = {
                     gold: gameState.resources.gold,
                     chaosOrbs: gameState.resources.chaosOrbs,
-                    exaltedOrbs: gameState.resources.exaltedOrbs
+                    exaltedOrbs: gameState.resources.exaltedOrbs,
+                    food: gameState.resources.food
                 };
                 const preMissionInventoryCount = gameState.inventory.items.length;
 
@@ -409,6 +412,7 @@ class MissionSystem {
                         gold: gameState.resources.gold - preMissionResources.gold,
                         chaosOrbs: gameState.resources.chaosOrbs - preMissionResources.chaosOrbs,
                         exaltedOrbs: gameState.resources.exaltedOrbs - preMissionResources.exaltedOrbs,
+                        food: gameState.resources.food - preMissionResources.food,
                         gearFound: gameState.inventory.items.length > preMissionInventoryCount ?
                             gameState.inventory.items[gameState.inventory.items.length - 1] : null
                     };
@@ -423,6 +427,7 @@ class MissionSystem {
                     game.dayReportData.lootGained.gold += actualRewards.gold;
                     game.dayReportData.lootGained.chaosOrbs += actualRewards.chaosOrbs;
                     game.dayReportData.lootGained.exaltedOrbs += actualRewards.exaltedOrbs;
+                    game.dayReportData.lootGained.food += actualRewards.food;
                     if (actualRewards.gearFound) {
                         game.dayReportData.lootGained.items.push(actualRewards.gearFound);
                     }
@@ -574,7 +579,14 @@ class MissionSystem {
                 currentEncounterNumber: currentEncounter.encounterNumber,
                 combatLog: missionState.combatLog
             });
-            return this.handleExileDeath(activeMission, turnResult);
+            
+            // Return death result for animation system to handle
+            return {
+                type: 'death',
+                exileId: exileId,
+                activeMission: activeMission,
+                turnResult: turnResult
+            };
         } else {
             // Combat continues - present choices to player
             // DEBUG: Log combat log after processing turn
@@ -607,12 +619,13 @@ class MissionSystem {
         let goldDrop = 0;
         let chaosDrop = 0;
         let exaltedDrop = 0;
+        let foodDrop = 0;
 
         if (encounter.monster.drops) {
             if (encounter.monster.drops.gold) {
                 const goldRange = encounter.monster.drops.gold;
                 goldDrop = Math.floor(Math.random() * (goldRange.max - goldRange.min + 1)) + goldRange.min;
-                
+
                 if (encounter.monster.lootBonus && encounter.monster.lootBonus > 1) {
                     goldDrop = Math.floor(goldDrop * encounter.monster.lootBonus);
                 }
@@ -623,11 +636,14 @@ class MissionSystem {
             if (encounter.monster.drops.exaltedOrbs && Math.random() < encounter.monster.drops.exaltedOrbs) {
                 exaltedDrop = 1;
             }
+            if (encounter.monster.drops.food && Math.random() < encounter.monster.drops.food) {
+                foodDrop = 1;
+            }
         }
 
         // Add currency to mission pool (applied when mission completes)
         // Notice we are now passing the variables, not hardcoded 0s.
-        missionState.addCurrency(goldDrop, chaosDrop, exaltedDrop);
+        missionState.addCurrency(goldDrop, chaosDrop, exaltedDrop, foodDrop);
         missionState.totalExperience += encounter.monster.xpValue;
 
         // Update encounter status
@@ -695,7 +711,7 @@ class MissionSystem {
         exile.flask.charges--;
 
         uiSystem.log(`🧪 ${exile.name} used a flask, restoring ${healing} life. (${exile.flask.charges} charges left)`, 'info');
-        
+
         // In the future, you might want to update the UI immediately here.
         if (typeof exileRowManager !== 'undefined') {
             const rowId = exileRowManager.getRowForExile(exile.id);
@@ -785,6 +801,7 @@ class MissionSystem {
             gold: missionState.totalGold,
             chaosOrbs: missionState.totalChaosOrbs,
             exaltedOrbs: missionState.totalExaltedOrbs,
+            food: missionState.totalFood,
             items: missionState.lootPool.length,
             experience: missionState.totalExperience,
             wasRetreat: missionState.status === 'retreated',
@@ -808,6 +825,7 @@ class MissionSystem {
         gameState.resources.gold += rewards.gold || 0;
         gameState.resources.chaosOrbs += rewards.chaosOrbs || 0;
         gameState.resources.exaltedOrbs += rewards.exaltedOrbs || 0;
+        gameState.resources.food += rewards.food || 0;
 
         // Add items to inventory
         if (rewards.itemList && rewards.itemList.length > 0) {
@@ -828,7 +846,7 @@ class MissionSystem {
         if (typeof exileSystem !== 'undefined' && exileSystem.checkLevelUp) {
             exileSystem.checkLevelUp(exile);
         }
-        
+
         // Update the display after applying rewards
         if (typeof uiSystem !== 'undefined') {
             uiSystem.updateDisplay();
@@ -836,6 +854,11 @@ class MissionSystem {
 
         // Log success
         uiSystem.log(`${exile.name} mission rewards applied: +${rewards.gold} gold, +${rewards.experience} exp`, "success");
+        // Log food gains if any
+        if (rewards.food > 0) {
+            uiSystem.log(`🍖 Found ${rewards.food} food!`, "success");
+        }
+
     }
 
     // Advance to the next encounter without processing a turn

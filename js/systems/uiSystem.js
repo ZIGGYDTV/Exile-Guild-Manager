@@ -90,7 +90,7 @@ const uiSystem = {
         while (logContainer.children.length > 100) {
             logContainer.removeChild(logContainer.lastChild);
         }
-    }
+    },
 };
 
 // Make available globally

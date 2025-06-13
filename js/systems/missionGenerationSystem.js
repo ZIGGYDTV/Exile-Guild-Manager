@@ -35,8 +35,8 @@ export class MissionGenerationSystem {
     
     getEncounterCount(missionType) {
         const counts = {
-            exploration: { min: 2, max: 4 },
-            scavenging: { min: 1, max: 3 },
+            exploration: { min: 2, max: 3 },
+            scavenging: { min: 1, max: 1 },
             hunting: { min: 2, max: 3 },
             raid: { min: 3, max: 5 },
             boss: { min: 1, max: 1 }

@@ -73,7 +73,8 @@ function calculateCompleteMissionRewards(areaId, missionId, outcome) {
         gold: randomBetween(missionData.baseRewards.gold.min, missionData.baseRewards.gold.max),
         experience: randomBetween(missionData.baseRewards.experience.min, missionData.baseRewards.experience.max),
         chaosOrbs: 0,
-        exaltedOrbs: 0
+        exaltedOrbs: 0,
+        food: 0
     };
 
     // Apply mission-specific reward modifiers

@@ -11,7 +11,6 @@ const turnState = {
     turnsToday: 1,       // Turns taken today (1-10)
     turnsPerDay: 10,     // Config: how many turns per day
     assignments: [
-        // { exileId: 1, areaId: "beach", missionId: "shorelineExploration", encountersRemaining: 3 }
     ],
     
     // Missions currently being processed
@@ -60,7 +59,6 @@ const gameState = {
     // === SETTINGS ===
     settings: {
         autoSave: true,
-        useFoodWhileResting: true,
         // combatSpeed: 1, // 1x, 2x, skip
         // pauseOnDecisions: true
     }
@@ -90,6 +88,16 @@ const worldState = {
                     currentInstance: null  
                 },
                 crab_hunting: {
+                    discovered: true,
+                    completions: 0,
+                    firstCompleted: false,
+                    lastCompleted: null,
+                    cooldownUntil: null,
+                    bestTime: null,
+                    casualtyCount: 0,
+                    currentInstance: null  
+                },
+                wreckageScavenging: {
                     discovered: true,
                     completions: 0,
                     firstCompleted: false,

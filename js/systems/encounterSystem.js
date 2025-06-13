@@ -48,6 +48,7 @@ export class MissionState {
         this.totalExperience = 0;
         this.totalChaosOrbs = 0;
         this.totalExaltedOrbs = 0;
+        this.totalFood = 0;
         this.combatLog = [];
         this.retreatType = null; // 'safe' or 'risky'
     }
@@ -89,10 +90,11 @@ export class MissionState {
     }
 
     // Add currency to pool
-    addCurrency(gold = 0, chaos = 0, exalted = 0) {
+    addCurrency(gold = 0, chaos = 0, exalted = 0, food = 0) {
         this.totalGold += gold;
         this.totalChaosOrbs += chaos;
         this.totalExaltedOrbs += exalted;
+        this.totalFood = (this.totalFood || 0) + food;
     }
 
     // Move to next encounter
@@ -173,6 +175,12 @@ export class MissionState {
             this.addCurrency(0, 0, 1);
             this.combatLog.push(`⭐ Found an Exalted Orb!`);
         }
+
+        // Roll for food drops
+        if (monster.drops?.food && Math.random() < monster.drops.food) {
+            this.addCurrency(0, 0, 0, 1); // Add 1 food
+            this.combatLog.push(`🍖 Found food!`);
+        }
     }
 
     // UPDATED METHOD: Apply penalty only for risky retreats
@@ -193,6 +201,7 @@ export class MissionState {
         // 50% chance to lose each orb type (instead of losing all)
         let chaosOrbsLost = 0;
         let exaltedOrbsLost = 0;
+        let foodLost = 0;
 
         if (this.totalChaosOrbs > 0 && Math.random() < 0.5) {
             chaosOrbsLost = this.totalChaosOrbs;
@@ -203,6 +212,12 @@ export class MissionState {
             exaltedOrbsLost = this.totalExaltedOrbs;
             this.totalExaltedOrbs = 0;
         }
+
+        if (this.totalFood > 0 && Math.random() < 0.5) {
+            foodLost = this.totalFood;
+            this.totalFood = 0;
+        }
+        if (foodLost > 0) this.combatLog.push(`   - Lost ${foodLost} food`);
 
         // Lose 50% of items (randomly) - keep existing logic
         let itemsLost = 0;
@@ -243,6 +258,7 @@ export class MissionState {
         gameState.resources.gold += this.totalGold;
         gameState.resources.chaosOrbs += this.totalChaosOrbs;
         gameState.resources.exaltedOrbs += this.totalExaltedOrbs;
+        gameState.resources.food += this.totalFood;
 
         // Add items to inventory
         this.lootPool.forEach(item => {

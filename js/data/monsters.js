@@ -20,7 +20,8 @@ export class Monster {
             // Add currency drops
             gold: baseData.drops?.gold || { min: 0, max: 0 },
             chaosOrbs: baseData.drops?.chaosOrbs || 0,  // Flat chance (0-1)
-            exaltedOrbs: baseData.drops?.exaltedOrbs || 0  // Flat chance (0-1)
+            exaltedOrbs: baseData.drops?.exaltedOrbs || 0,  // Flat chance (0-1)
+            food: baseData.drops?.food || 0  // Flat chance (0-1)
         };
 
         // New properties for enhanced system
@@ -140,11 +141,33 @@ class MonsterDatabase {
             xpValue: 5,
             tags: ['beast', 'undead', 'beach'],
             drops: {
-                dropChance: 3.0,
+                dropChance: 0.1,
                 // Add currency drops
                 gold: { min: 5, max: 22 },
                 chaosOrbs: 0.05,  
-                exaltedOrbs: 0.01    
+                exaltedOrbs: 0.01,   
+                food: 1 
+            }
+        }));
+
+        this.register(new Monster({
+            id: 'bilgerat',
+            name: 'Bilgerat',
+            life: 45,
+            damage: 4,
+            defense: 1,
+            attackSpeed: 1.4,
+            damageTypes: { physical: 1.0 },
+            ilvl: 2,
+            xpValue: 11,
+            tags: ['beast', 'yucky', 'beach'],
+            drops: {
+                dropChance: 0.11,
+                // Add currency drops
+                gold: { min: 2, max: 18 },
+                chaosOrbs: 0.02,  
+                exaltedOrbs: 0.01,   
+                food: 1 
             }
         }));
 
@@ -164,6 +187,25 @@ class MonsterDatabase {
                 gold: { min: 9, max: 44 },
                 chaosOrbs: 0.02,   // 2% chance
                 exaltedOrbs: 0.001  // 0.1% chance
+            }
+        }));
+
+        this.register(new Monster({
+            id: 'uber_crab',
+            name: 'Uber Crab',
+            life: 200,
+            damage: 15,
+            defense: 12,
+            attackSpeed: 2,
+            damageTypes: { physical: 0.3, cold: 0.3, lightning: 0.3 },
+            ilvl: 5,
+            xpValue: 500,
+            tags: ['uber', 'crab', 'beach'],
+            drops: {
+                dropChance: 1,
+                gold: { min: 444, max: 777 },
+                chaosOrbs: 1,   
+                exaltedOrbs: 1  
             }
         }));
 
@@ -188,6 +230,7 @@ class MonsterDatabase {
             drops: {
                 dropChance: 0.05,
                 gold: { min: 2, max: 11 },
+                food: 2 
             }
         }));
 
