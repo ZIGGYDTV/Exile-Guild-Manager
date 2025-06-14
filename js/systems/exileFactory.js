@@ -19,8 +19,8 @@ const exileFactory = {
 
             // === PROGRESSION ===
             level: options.level || 1,
-            experience: 0,
-            experienceNeeded: 100,
+            experience: options.experience || 0,
+            experienceNeeded: (options.level || 1) * 100,  // Ensure correct XP needed for level
 
             // === STATUS ===
             status: 'idle', // idle, resting, assigned, in_mission, dead
@@ -170,6 +170,64 @@ const exileFactory = {
     //     // Merge saved data over defaults
     //     return Object.assign(defaultExile, savedData);
     // }
+
+    // Add experience and check for level up
+    addExperience(exile, amount) {
+        if (!exile) return;
+        
+        exile.experience += amount;
+        this.checkLevelUp(exile);
+        
+        // Update UI if available
+        if (typeof uiSystem !== 'undefined') {
+            uiSystem.updateDisplay();
+        }
+    },
+
+    // Check and process level ups
+    checkLevelUp(exile) {
+        if (!exile) return;
+
+        while (exile.experience >= exile.experienceNeeded) {
+            exile.level++;
+            exile.experience -= exile.experienceNeeded;
+            exile.experienceNeeded = exile.level * 100;
+
+            // Only give life on level up
+            exile.baseStats.life += 10;
+            exile.baseStats.vitality += 10;
+            exile.currentVitality = Math.min(exile.currentVitality + 10, exile.baseStats.vitality);
+
+            // Give passive point
+            exile.passives.pendingPoints++;
+
+            uiSystem.log(`🎉 LEVEL UP! ${exile.name} is now level ${exile.level}!`, "legendary");
+
+            // Recalculate stats
+            if (typeof exileSystem !== 'undefined') {
+                exileSystem.recalculateStats(exile);
+            }
+        }
+    },
+
+    // Test method to verify level up functionality
+    testLevelUp(exileId, expAmount = 100) {
+        const exile = gameState.exiles.find(e => e.id === exileId);
+        if (!exile) {
+            console.error(`Exile ${exileId} not found!`);
+            return;
+        }
+
+        console.log(`Before adding ${expAmount} XP:`);
+        console.log(`Level: ${exile.level}`);
+        console.log(`Experience: ${exile.experience}/${exile.experienceNeeded}`);
+
+        this.addExperience(exile, expAmount);
+
+        console.log(`After adding ${expAmount} XP:`);
+        console.log(`Level: ${exile.level}`);
+        console.log(`Experience: ${exile.experience}/${exile.experienceNeeded}`);
+    }
 };
 
 // Make available globally

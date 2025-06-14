@@ -839,17 +839,9 @@ class MissionSystem {
             });
         }
 
-        // Add experience to exile
-        exile.experience += rewards.experience || 0;
-
-        // Check for level up
-        if (typeof exileSystem !== 'undefined' && exileSystem.checkLevelUp) {
-            exileSystem.checkLevelUp(exile);
-        }
-
-        // Update the display after applying rewards
-        if (typeof uiSystem !== 'undefined') {
-            uiSystem.updateDisplay();
+        // Add experience to exile using exileFactory
+        if (rewards.experience > 0) {
+            exileFactory.addExperience(exile, rewards.experience);
         }
 
         // Log success
@@ -858,7 +850,6 @@ class MissionSystem {
         if (rewards.food > 0) {
             uiSystem.log(`🍖 Found ${rewards.food} food!`, "success");
         }
-
     }
 
     // Advance to the next encounter without processing a turn
